@@ -5,20 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Edit, Trash2, CheckCircle, Share2 } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, CheckCircle, Share2, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface JournalEntry {
   id: string;
   title: string;
   content: string;
   date: string;
+  created_at: string;
   is_answered: boolean;
   is_shared: boolean;
+  testimony_text?: string;
 }
 
 const Journal = () => {
@@ -28,8 +30,17 @@ const Journal = () => {
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sharingEntry, setSharingEntry] = useState<JournalEntry | null>(null);
+  const [testimonyText, setTestimonyText] = useState("God has answered my prayer");
+  const [isTestimonyDialogOpen, setIsTestimonyDialogOpen] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const filteredEntries = entries.filter(entry =>
+    entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    entry.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   useEffect(() => {
     fetchEntries();
@@ -121,26 +132,40 @@ const Journal = () => {
     }
   };
 
-  const shareAsTestimony = async (entry: JournalEntry) => {
-    if (!user) return;
+  const openTestimonyDialog = (entry: JournalEntry) => {
+    setSharingEntry(entry);
+    setTestimonyText(entry.testimony_text || "God has answered my prayer");
+    setIsTestimonyDialogOpen(true);
+  };
+
+  const shareAsTestimony = async () => {
+    if (!user || !sharingEntry) return;
 
     try {
+      const fullTestimonyContent = `${testimonyText}\n\n${sharingEntry.content}`;
+      
       const { error } = await supabase
         .from("testimonies")
         .insert({
           user_id: user.id,
-          title: entry.title,
-          content: entry.content,
+          title: sharingEntry.title,
+          content: fullTestimonyContent,
         });
 
       if (error) throw error;
 
       await supabase
         .from("journal_entries")
-        .update({ is_shared: true })
-        .eq("id", entry.id);
+        .update({ 
+          is_shared: true,
+          testimony_text: testimonyText
+        })
+        .eq("id", sharingEntry.id);
 
       toast.success("Shared as testimony! Awaiting admin approval.");
+      setIsTestimonyDialogOpen(false);
+      setSharingEntry(null);
+      setTestimonyText("God has answered my prayer");
       fetchEntries();
     } catch (error: any) {
       toast.error(error.message);
@@ -148,24 +173,35 @@ const Journal = () => {
   };
 
   return (
-    <div className="min-h-screen gradient-subtle">
-      <div className="max-w-4xl mx-auto p-4 md:p-8">
-        <div className="flex justify-between items-center mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/dashboard")}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
+    <TooltipProvider>
+      <div className="min-h-screen gradient-subtle">
+        <div className="max-w-4xl mx-auto p-4 md:p-8">
+          <div className="flex justify-between items-center mb-6">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate("/dashboard")}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Return to Dashboard</TooltipContent>
+            </Tooltip>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => { setEditingEntry(null); setTitle(""); setContent(""); }}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Entry
-              </Button>
-            </DialogTrigger>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button onClick={() => { setEditingEntry(null); setTitle(""); setContent(""); }}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      New Entry
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Create a new journal entry</TooltipContent>
+                </Tooltip>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>{editingEntry ? "Edit Entry" : "New Journal Entry"}</DialogTitle>
@@ -203,9 +239,22 @@ const Journal = () => {
         <h1 className="text-4xl font-heading font-bold gradient-primary bg-clip-text text-transparent mb-2">
           My Prayer Journal
         </h1>
-        <p className="text-muted-foreground mb-8">
+        <p className="text-muted-foreground mb-4">
           Your private space for prayers and reflections
         </p>
+
+        {/* Search Bar */}
+        <div className="mb-8">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search your journal entries..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
 
         {loading ? (
           <div className="text-center py-12">
@@ -217,49 +266,77 @@ const Journal = () => {
               <p className="text-muted-foreground mb-4">No entries yet. Start your journey!</p>
             </CardContent>
           </Card>
+        ) : filteredEntries.length === 0 ? (
+          <Card className="shadow-medium">
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">No entries found matching your search.</p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-4">
-            {entries.map((entry) => (
+            {filteredEntries.map((entry) => (
               <Card key={entry.id} className="shadow-medium hover:shadow-glow transition-shadow">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <CardTitle className="text-xl mb-1">{entry.title}</CardTitle>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(entry.date).toLocaleDateString()}
+                        {new Date(entry.created_at).toLocaleDateString()} at {new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <Button
-                        variant={entry.is_answered ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => toggleAnswered(entry)}
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                      </Button>
-                      {!entry.is_shared && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => shareAsTestimony(entry)}
-                        >
-                          <Share2 className="h-4 w-4" />
-                        </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant={entry.is_answered ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => toggleAnswered(entry)}
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {entry.is_answered ? "Mark as unanswered" : "Mark as answered"}
+                        </TooltipContent>
+                      </Tooltip>
+                      {entry.is_answered && !entry.is_shared && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openTestimonyDialog(entry)}
+                            >
+                              <Share2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Share as testimony</TooltipContent>
+                        </Tooltip>
                       )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(entry)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(entry.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(entry)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit entry</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(entry.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Delete entry</TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
                 </CardHeader>
@@ -282,8 +359,49 @@ const Journal = () => {
             ))}
           </div>
         )}
+
+        {/* Testimony Sharing Dialog */}
+        <Dialog open={isTestimonyDialogOpen} onOpenChange={setIsTestimonyDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Share as Testimony</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="testimony-text">Testimony Message</Label>
+                <Textarea
+                  id="testimony-text"
+                  value={testimonyText}
+                  onChange={(e) => setTestimonyText(e.target.value)}
+                  placeholder="God has answered my prayer..."
+                  rows={3}
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  This message will appear at the beginning of your testimony
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={shareAsTestimony} className="flex-1">
+                  Share Testimony
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsTestimonyDialogOpen(false);
+                    setSharingEntry(null);
+                    setTestimonyText("God has answered my prayer");
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 

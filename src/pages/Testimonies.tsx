@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Sparkles, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Testimony {
   id: string;
@@ -18,7 +20,13 @@ interface Testimony {
 const Testimonies = () => {
   const [testimonies, setTestimonies] = useState<Testimony[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+
+  const filteredTestimonies = testimonies.filter(testimony =>
+    testimony.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    testimony.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   useEffect(() => {
     fetchTestimonies();
@@ -40,16 +48,22 @@ const Testimonies = () => {
   };
 
   return (
-    <div className="min-h-screen gradient-subtle">
-      <div className="max-w-4xl mx-auto p-4 md:p-8">
-        <Button
-          variant="ghost"
-          className="mb-6"
-          onClick={() => navigate("/dashboard")}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
-        </Button>
+    <TooltipProvider>
+      <div className="min-h-screen gradient-subtle">
+        <div className="max-w-4xl mx-auto p-4 md:p-8">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                className="mb-6"
+                onClick={() => navigate("/dashboard")}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Return to Dashboard</TooltipContent>
+          </Tooltip>
 
         <div className="flex items-center gap-3 mb-2">
           <Sparkles className="h-8 w-8 text-accent" />
@@ -57,9 +71,22 @@ const Testimonies = () => {
             Testimonies
           </h1>
         </div>
-        <p className="text-muted-foreground mb-8">
+        <p className="text-muted-foreground mb-4">
           Stories of answered prayers and faith journeys from our community
         </p>
+
+        {/* Search Bar */}
+        <div className="mb-8">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search testimonies..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
 
         {loading ? (
           <div className="text-center py-12">
@@ -71,9 +98,15 @@ const Testimonies = () => {
               <p className="text-muted-foreground">No testimonies yet. Be the first to share!</p>
             </CardContent>
           </Card>
+        ) : filteredTestimonies.length === 0 ? (
+          <Card className="shadow-medium">
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">No testimonies found matching your search.</p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-6">
-            {testimonies.map((testimony) => (
+            {filteredTestimonies.map((testimony) => (
               <Card key={testimony.id} className="shadow-medium hover:shadow-glow transition-shadow">
                 <CardHeader>
                   <CardTitle className="text-2xl">{testimony.title}</CardTitle>
@@ -94,6 +127,7 @@ const Testimonies = () => {
         )}
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 
