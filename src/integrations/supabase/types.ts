@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      encouragement_messages: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       guidelines: {
         Row: {
           content: string
@@ -57,6 +78,7 @@ export type Database = {
           id: string
           is_answered: boolean
           is_shared: boolean
+          testimony_text: string | null
           title: string
           updated_at: string
           user_id: string
@@ -68,6 +90,7 @@ export type Database = {
           id?: string
           is_answered?: boolean
           is_shared?: boolean
+          testimony_text?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -79,6 +102,7 @@ export type Database = {
           id?: string
           is_answered?: boolean
           is_shared?: boolean
+          testimony_text?: string | null
           title?: string
           updated_at?: string
           user_id?: string

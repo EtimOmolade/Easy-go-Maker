@@ -59,7 +59,7 @@ const Dashboard = () => {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     
     const { data, error } = await supabase
-      .from("encouragement_messages")
+      .from("encouragement_messages" as any)
       .select("*")
       .gte("created_at", twentyFourHoursAgo)
       .order("created_at", { ascending: false })
@@ -67,7 +67,7 @@ const Dashboard = () => {
       .maybeSingle();
 
     if (!error && data) {
-      setEncouragementMessage(data);
+      setEncouragementMessage(data as unknown as EncouragementMessage);
     }
   };
 
