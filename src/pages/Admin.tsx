@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+// Backend integration placeholder - Supabase commented out for prototype
+// import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { STORAGE_KEYS, getFromStorage, setToStorage, MockTestimony, MockGuideline, MockEncouragementMessage } from "@/data/mockData";
 
 interface Testimony {
   id: string;
@@ -48,122 +50,87 @@ const Admin = () => {
   }, []);
 
   const fetchTestimonies = async () => {
-    const { data, error } = await supabase
-      .from("testimonies")
-      .select("id, title, content, date, approved, profiles(name)")
-      .order("date", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching testimonies:", error);
-    } else {
-      setTestimonies(data || []);
-    }
+    const allTestimonies = getFromStorage<MockTestimony[]>(STORAGE_KEYS.TESTIMONIES, []);
+    const sorted = [...allTestimonies].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    setTestimonies(sorted as Testimony[]);
   };
 
   const fetchEncouragementMessages = async () => {
-    const { data, error } = await supabase
-      .from("encouragement_messages" as any)
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    if (!error && data) {
-      setEncouragementMessages(data as unknown as EncouragementMessage[]);
-    }
+    const messages = getFromStorage<MockEncouragementMessage[]>(STORAGE_KEYS.ENCOURAGEMENT, []);
+    const sorted = [...messages].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    setEncouragementMessages(sorted.slice(0, 10) as EncouragementMessage[]);
   };
 
   const handleCreateGuideline = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      const { error } = await supabase
-        .from("guidelines")
-        .insert({
-          title,
-          week_number: parseInt(weekNumber),
-          content,
-        });
+    const guidelines = getFromStorage<MockGuideline[]>(STORAGE_KEYS.GUIDELINES, []);
+    const newGuideline: MockGuideline = {
+      id: String(Date.now()),
+      title,
+      week_number: parseInt(weekNumber),
+      content,
+      date_uploaded: new Date().toISOString()
+    };
+    guidelines.push(newGuideline);
+    setToStorage(STORAGE_KEYS.GUIDELINES, guidelines);
 
-      if (error) throw error;
-
-      toast.success("Guideline created successfully");
-      setTitle("");
-      setWeekNumber("");
-      setContent("");
-      setIsDialogOpen(false);
-    } catch (error: any) {
-      toast.error(error.message);
-    }
+    toast.success("Guideline created successfully");
+    setTitle("");
+    setWeekNumber("");
+    setContent("");
+    setIsDialogOpen(false);
   };
 
   const handleCreateEncouragement = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!user) return;
 
-    try {
-      const { error } = await supabase
-        .from("encouragement_messages" as any)
-        .insert({
-          content: encouragementContent,
-          created_by: user.id,
-        });
+    const messages = getFromStorage<MockEncouragementMessage[]>(STORAGE_KEYS.ENCOURAGEMENT, []);
+    const newMessage: MockEncouragementMessage = {
+      id: String(Date.now()),
+      content: encouragementContent,
+      created_at: new Date().toISOString(),
+      created_by: user.id
+    };
+    messages.push(newMessage);
+    setToStorage(STORAGE_KEYS.ENCOURAGEMENT, messages);
 
-      if (error) throw error;
-
-      toast.success("Encouragement message posted! It will be visible for 24 hours.");
-      setEncouragementContent("");
-      setIsEncouragementDialogOpen(false);
-      fetchEncouragementMessages();
-    } catch (error: any) {
-      toast.error(error.message);
-    }
+    toast.success("Encouragement message posted! It will be visible for 24 hours.");
+    setEncouragementContent("");
+    setIsEncouragementDialogOpen(false);
+    fetchEncouragementMessages();
   };
 
   const handleDeleteEncouragement = async (id: string) => {
     if (!confirm("Are you sure you want to delete this encouragement message?")) return;
 
-    const { error } = await supabase
-      .from("encouragement_messages" as any)
-      .delete()
-      .eq("id", id);
+    const messages = getFromStorage<MockEncouragementMessage[]>(STORAGE_KEYS.ENCOURAGEMENT, []);
+    const updated = messages.filter(m => m.id !== id);
+    setToStorage(STORAGE_KEYS.ENCOURAGEMENT, updated);
 
-    if (error) {
-      toast.error("Error deleting message");
-    } else {
-      toast.success("Message deleted");
-      fetchEncouragementMessages();
-    }
+    toast.success("Message deleted");
+    fetchEncouragementMessages();
   };
 
   const handleApproveTestimony = async (id: string, approved: boolean) => {
-    const { error } = await supabase
-      .from("testimonies")
-      .update({ approved })
-      .eq("id", id);
+    const testimonies = getFromStorage<MockTestimony[]>(STORAGE_KEYS.TESTIMONIES, []);
+    const updated = testimonies.map(t => t.id === id ? { ...t, approved } : t);
+    setToStorage(STORAGE_KEYS.TESTIMONIES, updated);
 
-    if (error) {
-      toast.error("Error updating testimony");
-    } else {
-      toast.success(approved ? "Testimony approved" : "Testimony rejected");
-      fetchTestimonies();
-    }
+    toast.success(approved ? "Testimony approved" : "Testimony rejected");
+    fetchTestimonies();
   };
 
   const handleDeleteTestimony = async (id: string) => {
     if (!confirm("Are you sure you want to delete this testimony?")) return;
 
-    const { error } = await supabase
-      .from("testimonies")
-      .delete()
-      .eq("id", id);
+    const testimonies = getFromStorage<MockTestimony[]>(STORAGE_KEYS.TESTIMONIES, []);
+    const updated = testimonies.filter(t => t.id !== id);
+    setToStorage(STORAGE_KEYS.TESTIMONIES, updated);
 
-    if (error) {
-      toast.error("Error deleting testimony");
-    } else {
-      toast.success("Testimony deleted");
-      fetchTestimonies();
-    }
+    toast.success("Testimony deleted");
+    fetchTestimonies();
   };
 
   const pendingTestimonies = testimonies.filter((t) => !t.approved);
@@ -175,11 +142,7 @@ const Admin = () => {
         <div className="max-w-6xl mx-auto p-4 md:p-8">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                className="mb-6"
-                onClick={() => navigate("/dashboard")}
-              >
+              <Button variant="ghost" className="mb-6" onClick={() => navigate("/dashboard")}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
               </Button>
@@ -224,49 +187,24 @@ const Admin = () => {
                       <form onSubmit={handleCreateGuideline} className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="title">Title</Label>
-                          <Input
-                            id="title"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="e.g., Prayers for Peace"
-                            required
-                          />
+                          <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Prayers for Peace" required />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="week">Week Number</Label>
-                          <Input
-                            id="week"
-                            type="number"
-                            value={weekNumber}
-                            onChange={(e) => setWeekNumber(e.target.value)}
-                            placeholder="1"
-                            required
-                            min="1"
-                          />
+                          <Input id="week" type="number" value={weekNumber} onChange={(e) => setWeekNumber(e.target.value)} placeholder="1" required min="1" />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="content">Content</Label>
-                          <Textarea
-                            id="content"
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            placeholder="Enter the prayer guideline content..."
-                            rows={12}
-                            required
-                          />
+                          <Textarea id="content" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Enter the prayer guideline content..." rows={12} required />
                         </div>
-                        <Button type="submit" className="w-full">
-                          Create Guideline
-                        </Button>
+                        <Button type="submit" className="w-full">Create Guideline</Button>
                       </form>
                     </DialogContent>
                   </Dialog>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">
-                  Create and manage weekly prayer guidelines for the community.
-                </p>
+                <p className="text-muted-foreground">Create and manage weekly prayer guidelines for the community.</p>
               </CardContent>
             </Card>
           </TabsContent>
@@ -280,18 +218,13 @@ const Admin = () => {
                       <Megaphone className="h-6 w-6 text-accent" />
                       Daily Encouragement Messages
                     </CardTitle>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Post encouragement messages that will be visible to all users for 24 hours
-                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">Post encouragement messages that will be visible to all users for 24 hours</p>
                   </div>
                   <Dialog open={isEncouragementDialogOpen} onOpenChange={setIsEncouragementDialogOpen}>
                     <DialogTrigger asChild>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            New Message
-                          </Button>
+                          <Button><Plus className="mr-2 h-4 w-4" />New Message</Button>
                         </TooltipTrigger>
                         <TooltipContent>Post a new encouragement message</TooltipContent>
                       </Tooltip>
@@ -303,21 +236,10 @@ const Admin = () => {
                       <form onSubmit={handleCreateEncouragement} className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="encouragement">Message</Label>
-                          <Textarea
-                            id="encouragement"
-                            value={encouragementContent}
-                            onChange={(e) => setEncouragementContent(e.target.value)}
-                            placeholder="Write an encouraging message or teaching for the community..."
-                            rows={8}
-                            required
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            This message will be visible to all users for 24 hours from posting
-                          </p>
+                          <Textarea id="encouragement" value={encouragementContent} onChange={(e) => setEncouragementContent(e.target.value)} placeholder="Write an encouraging message or teaching for the community..." rows={8} required />
+                          <p className="text-xs text-muted-foreground">This message will be visible to all users for 24 hours from posting</p>
                         </div>
-                        <Button type="submit" className="w-full">
-                          Post Message
-                        </Button>
+                        <Button type="submit" className="w-full">Post Message</Button>
                       </form>
                     </DialogContent>
                   </Dialog>
@@ -325,9 +247,7 @@ const Admin = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {encouragementMessages.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">
-                    No encouragement messages yet. Post one to inspire the community!
-                  </p>
+                  <p className="text-muted-foreground text-center py-8">No encouragement messages yet. Post one to inspire the community!</p>
                 ) : (
                   encouragementMessages.map((message) => (
                     <Card key={message.id} className="bg-accent/5">
@@ -336,20 +256,12 @@ const Admin = () => {
                           <p className="whitespace-pre-wrap flex-1">{message.content}</p>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleDeleteEncouragement(message.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => handleDeleteEncouragement(message.id)}><Trash2 className="h-4 w-4" /></Button>
                             </TooltipTrigger>
                             <TooltipContent>Delete message</TooltipContent>
                           </Tooltip>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-4">
-                          Posted {new Date(message.created_at).toLocaleDateString()} at {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-4">Posted {new Date(message.created_at).toLocaleDateString()} at {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                       </CardContent>
                     </Card>
                   ))
@@ -360,12 +272,9 @@ const Admin = () => {
 
           <TabsContent value="testimonies">
             <div className="space-y-6">
-              {/* Pending Testimonies */}
               {pendingTestimonies.length > 0 && (
                 <Card className="shadow-medium border-2 border-accent/20">
-                  <CardHeader>
-                    <CardTitle>Pending Approval ({pendingTestimonies.length})</CardTitle>
-                  </CardHeader>
+                  <CardHeader><CardTitle>Pending Approval ({pendingTestimonies.length})</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
                     {pendingTestimonies.map((testimony) => (
                       <Card key={testimony.id} className="bg-muted/50">
@@ -373,46 +282,26 @@ const Admin = () => {
                           <div className="flex justify-between items-start">
                             <div>
                               <CardTitle className="text-lg">{testimony.title}</CardTitle>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}
-                              </p>
+                              <p className="text-sm text-muted-foreground mt-1">By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}</p>
                             </div>
                             <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => handleApproveTestimony(testimony.id, true)}
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDeleteTestimony(testimony.id)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                              <Button size="sm" onClick={() => handleApproveTestimony(testimony.id, true)}><Check className="h-4 w-4" /></Button>
+                              <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}><X className="h-4 w-4" /></Button>
                             </div>
                           </div>
                         </CardHeader>
-                        <CardContent>
-                          <p className="whitespace-pre-wrap text-sm">{testimony.content}</p>
-                        </CardContent>
+                        <CardContent><p className="whitespace-pre-wrap text-sm">{testimony.content}</p></CardContent>
                       </Card>
                     ))}
                   </CardContent>
                 </Card>
               )}
 
-              {/* Approved Testimonies */}
               <Card className="shadow-medium">
-                <CardHeader>
-                  <CardTitle>Approved Testimonies ({approvedTestimonies.length})</CardTitle>
-                </CardHeader>
+                <CardHeader><CardTitle>Approved Testimonies ({approvedTestimonies.length})</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   {approvedTestimonies.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">
-                      No approved testimonies yet
-                    </p>
+                    <p className="text-muted-foreground text-center py-8">No approved testimonies yet</p>
                   ) : (
                     approvedTestimonies.map((testimony) => (
                       <Card key={testimony.id}>
@@ -420,22 +309,12 @@ const Admin = () => {
                           <div className="flex justify-between items-start">
                             <div>
                               <CardTitle className="text-lg">{testimony.title}</CardTitle>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}
-                              </p>
+                              <p className="text-sm text-muted-foreground mt-1">By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}</p>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDeleteTestimony(testimony.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}><Trash2 className="h-4 w-4" /></Button>
                           </div>
                         </CardHeader>
-                        <CardContent>
-                          <p className="whitespace-pre-wrap text-sm">{testimony.content}</p>
-                        </CardContent>
+                        <CardContent><p className="whitespace-pre-wrap text-sm">{testimony.content}</p></CardContent>
                       </Card>
                     ))
                   )}

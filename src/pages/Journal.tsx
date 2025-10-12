@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+// Backend integration placeholder - Supabase commented out for prototype
+// import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { STORAGE_KEYS, getFromStorage, setToStorage, MockJournalEntry, MockTestimony } from "@/data/mockData";
 
 interface JournalEntry {
   id: string;
@@ -49,6 +51,14 @@ const Journal = () => {
   const fetchEntries = async () => {
     if (!user) return;
 
+    // Get entries from localStorage
+    const allEntries = getFromStorage<MockJournalEntry[]>(STORAGE_KEYS.JOURNAL_ENTRIES, []);
+    const userEntries = allEntries.filter(entry => entry.user_id === user.id);
+    setEntries(userEntries);
+    setLoading(false);
+
+    // Backend integration: Uncomment when restoring Supabase
+    /*
     const { data, error } = await supabase
       .from("journal_entries")
       .select("*")
@@ -61,6 +71,7 @@ const Journal = () => {
       setEntries(data || []);
     }
     setLoading(false);
+    */
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,6 +79,47 @@ const Journal = () => {
     if (!user) return;
 
     try {
+      const allEntries = getFromStorage<MockJournalEntry[]>(STORAGE_KEYS.JOURNAL_ENTRIES, []);
+      
+      if (editingEntry) {
+        // Update existing entry
+        const updatedEntries = allEntries.map(entry =>
+          entry.id === editingEntry.id
+            ? { ...entry, title, content }
+            : entry
+        );
+        setToStorage(STORAGE_KEYS.JOURNAL_ENTRIES, updatedEntries);
+        toast.success("Entry updated successfully");
+      } else {
+        // Create new entry
+        const now = new Date().toISOString();
+        const newEntry: MockJournalEntry = {
+          id: String(Date.now()),
+          user_id: user.id,
+          title,
+          content,
+          date: now.split('T')[0],
+          created_at: now,
+          is_answered: false,
+          is_shared: false
+        };
+        allEntries.push(newEntry);
+        setToStorage(STORAGE_KEYS.JOURNAL_ENTRIES, allEntries);
+        
+        // Update streak
+        updateStreak();
+        
+        toast.success("Entry created successfully");
+      }
+
+      setTitle("");
+      setContent("");
+      setEditingEntry(null);
+      setIsDialogOpen(false);
+      fetchEntries();
+
+      // Backend integration: Uncomment when restoring Supabase
+      /*
       if (editingEntry) {
         const { error } = await supabase
           .from("journal_entries")
@@ -84,15 +136,45 @@ const Journal = () => {
         if (error) throw error;
         toast.success("Entry created successfully");
       }
-
-      setTitle("");
-      setContent("");
-      setEditingEntry(null);
-      setIsDialogOpen(false);
-      fetchEntries();
+      */
     } catch (error: any) {
       toast.error(error.message);
     }
+  };
+
+  const updateStreak = () => {
+    if (!user) return;
+    
+    const profiles = getFromStorage<any[]>(STORAGE_KEYS.PROFILES, []);
+    const today = new Date().toISOString().split('T')[0];
+    
+    const updatedProfiles = profiles.map(profile => {
+      if (profile.id === user.id) {
+        const lastDate = profile.last_journal_date;
+        let newStreak = profile.streak_count;
+        
+        if (!lastDate || lastDate < today) {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          
+          if (lastDate === yesterdayStr) {
+            newStreak += 1;
+          } else if (lastDate < yesterdayStr) {
+            newStreak = 1;
+          }
+          
+          return {
+            ...profile,
+            streak_count: newStreak,
+            last_journal_date: today
+          };
+        }
+      }
+      return profile;
+    });
+    
+    setToStorage(STORAGE_KEYS.PROFILES, updatedProfiles);
   };
 
   const handleEdit = (entry: JournalEntry) => {
@@ -105,6 +187,15 @@ const Journal = () => {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this entry?")) return;
 
+    const allEntries = getFromStorage<MockJournalEntry[]>(STORAGE_KEYS.JOURNAL_ENTRIES, []);
+    const updatedEntries = allEntries.filter(entry => entry.id !== id);
+    setToStorage(STORAGE_KEYS.JOURNAL_ENTRIES, updatedEntries);
+    
+    toast.success("Entry deleted");
+    fetchEntries();
+
+    // Backend integration: Uncomment when restoring Supabase
+    /*
     const { error } = await supabase
       .from("journal_entries")
       .delete()
@@ -116,9 +207,23 @@ const Journal = () => {
       toast.success("Entry deleted");
       fetchEntries();
     }
+    */
   };
 
   const toggleAnswered = async (entry: JournalEntry) => {
+    const allEntries = getFromStorage<MockJournalEntry[]>(STORAGE_KEYS.JOURNAL_ENTRIES, []);
+    const updatedEntries = allEntries.map(e =>
+      e.id === entry.id
+        ? { ...e, is_answered: !e.is_answered }
+        : e
+    );
+    setToStorage(STORAGE_KEYS.JOURNAL_ENTRIES, updatedEntries);
+    
+    toast.success(entry.is_answered ? "Marked as unanswered" : "Marked as answered!");
+    fetchEntries();
+
+    // Backend integration: Uncomment when restoring Supabase
+    /*
     const { error } = await supabase
       .from("journal_entries")
       .update({ is_answered: !entry.is_answered })
@@ -130,6 +235,7 @@ const Journal = () => {
       toast.success(entry.is_answered ? "Marked as unanswered" : "Marked as answered!");
       fetchEntries();
     }
+    */
   };
 
   const openTestimonyDialog = (entry: JournalEntry) => {
@@ -144,6 +250,41 @@ const Journal = () => {
     try {
       const fullTestimonyContent = `${testimonyText}\n\n${sharingEntry.content}`;
       
+      // Get profiles to get user name
+      const profiles = getFromStorage<any[]>(STORAGE_KEYS.PROFILES, []);
+      const userProfile = profiles.find(p => p.id === user.id);
+      
+      // Add to testimonies
+      const testimonies = getFromStorage<MockTestimony[]>(STORAGE_KEYS.TESTIMONIES, []);
+      const newTestimony: MockTestimony = {
+        id: String(Date.now()),
+        user_id: user.id,
+        title: sharingEntry.title,
+        content: fullTestimonyContent,
+        date: new Date().toISOString().split('T')[0],
+        approved: false,
+        profiles: { name: userProfile?.name || 'User' }
+      };
+      testimonies.push(newTestimony);
+      setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
+
+      // Update journal entry
+      const allEntries = getFromStorage<MockJournalEntry[]>(STORAGE_KEYS.JOURNAL_ENTRIES, []);
+      const updatedEntries = allEntries.map(e =>
+        e.id === sharingEntry.id
+          ? { ...e, is_shared: true, testimony_text: testimonyText }
+          : e
+      );
+      setToStorage(STORAGE_KEYS.JOURNAL_ENTRIES, updatedEntries);
+
+      toast.success("Shared as testimony! Awaiting admin approval.");
+      setIsTestimonyDialogOpen(false);
+      setSharingEntry(null);
+      setTestimonyText("God has answered my prayer");
+      fetchEntries();
+
+      // Backend integration: Uncomment when restoring Supabase
+      /*
       const { error } = await supabase
         .from("testimonies")
         .insert({
@@ -167,6 +308,7 @@ const Journal = () => {
       setSharingEntry(null);
       setTestimonyText("God has answered my prayer");
       fetchEntries();
+      */
     } catch (error: any) {
       toast.error(error.message);
     }

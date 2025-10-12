@@ -34,6 +34,14 @@ const EncouragementPopup = ({ streakCount, previousStreak }: EncouragementPopupP
   const [message, setMessage] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
+    // Check if popup has been shown in this session
+    const popupShown = sessionStorage.getItem('encouragement_popup_shown');
+    
+    if (popupShown) {
+      // Already shown in this session, don't show again
+      return;
+    }
+
     // Check if user just hit a milestone
     const milestones = [1, 10, 20, 50];
     const justHitMilestone = milestones.some(
@@ -45,6 +53,8 @@ const EncouragementPopup = ({ streakCount, previousStreak }: EncouragementPopupP
       if (encouragement) {
         setMessage(encouragement);
         setIsOpen(true);
+        // Mark popup as shown for this session
+        sessionStorage.setItem('encouragement_popup_shown', 'true');
       }
     }
   }, [streakCount, previousStreak]);

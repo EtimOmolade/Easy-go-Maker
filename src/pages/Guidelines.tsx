@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+// Backend integration placeholder - Supabase commented out for prototype
+// import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { STORAGE_KEYS, getFromStorage, MockGuideline } from "@/data/mockData";
 
 interface Guideline {
   id: string;
@@ -24,6 +26,15 @@ const Guidelines = () => {
   }, []);
 
   const fetchGuidelines = async () => {
+    // Get guidelines from localStorage
+    const guidelinesData = getFromStorage<MockGuideline[]>(STORAGE_KEYS.GUIDELINES, []);
+    // Sort by week number descending
+    const sorted = [...guidelinesData].sort((a, b) => b.week_number - a.week_number);
+    setGuidelines(sorted as Guideline[]);
+    setLoading(false);
+
+    // Backend integration: Uncomment when restoring Supabase
+    /*
     const { data, error } = await supabase
       .from("guidelines")
       .select("*")
@@ -35,6 +46,7 @@ const Guidelines = () => {
       setGuidelines(data || []);
     }
     setLoading(false);
+    */
   };
 
   return (

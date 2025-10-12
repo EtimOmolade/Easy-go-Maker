@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
+// Backend integration placeholder - Supabase commented out for prototype
+// import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { ArrowLeft, Award } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
 
 interface ProfileData {
   name: string;
@@ -33,6 +35,24 @@ const Profile = () => {
   const fetchProfile = async () => {
     if (!user) return;
 
+    // Get profile from localStorage
+    const profiles = getFromStorage<any[]>(STORAGE_KEYS.PROFILES, []);
+    const userProfile = profiles.find(p => p.id === user.id);
+    
+    if (userProfile) {
+      const profileData: ProfileData = {
+        name: userProfile.name,
+        email: userProfile.email,
+        streak_count: userProfile.streak_count,
+        reminders_enabled: userProfile.reminders_enabled
+      };
+      setProfile(profileData);
+      setName(profileData.name);
+      setReminders(profileData.reminders_enabled);
+    }
+
+    // Backend integration: Uncomment when restoring Supabase
+    /*
     const { data, error } = await supabase
       .from("profiles")
       .select("name, email, streak_count, reminders_enabled")
@@ -46,6 +66,7 @@ const Profile = () => {
       setName(data.name);
       setReminders(data.reminders_enabled);
     }
+    */
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -53,6 +74,22 @@ const Profile = () => {
     if (!user) return;
 
     setLoading(true);
+    
+    // Update profile in localStorage
+    const profiles = getFromStorage<any[]>(STORAGE_KEYS.PROFILES, []);
+    const updatedProfiles = profiles.map(p =>
+      p.id === user.id
+        ? { ...p, name, reminders_enabled: reminders }
+        : p
+    );
+    setToStorage(STORAGE_KEYS.PROFILES, updatedProfiles);
+    
+    toast.success("Profile updated successfully");
+    fetchProfile();
+    setLoading(false);
+
+    // Backend integration: Uncomment when restoring Supabase
+    /*
     const { error } = await supabase
       .from("profiles")
       .update({ name, reminders_enabled: reminders })
@@ -65,6 +102,7 @@ const Profile = () => {
       fetchProfile();
     }
     setLoading(false);
+    */
   };
 
   const getBadges = (streak: number) => {

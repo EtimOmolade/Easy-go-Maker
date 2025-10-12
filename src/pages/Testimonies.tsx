@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+// Backend integration placeholder - Supabase commented out for prototype
+// import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Sparkles, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { STORAGE_KEYS, getFromStorage, MockTestimony } from "@/data/mockData";
 
 interface Testimony {
   id: string;
@@ -33,6 +35,17 @@ const Testimonies = () => {
   }, []);
 
   const fetchTestimonies = async () => {
+    // Get approved testimonies from localStorage
+    const allTestimonies = getFromStorage<MockTestimony[]>(STORAGE_KEYS.TESTIMONIES, []);
+    const approved = allTestimonies
+      .filter(t => t.approved)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    setTestimonies(approved as Testimony[]);
+    setLoading(false);
+
+    // Backend integration: Uncomment when restoring Supabase
+    /*
     const { data, error } = await supabase
       .from("testimonies")
       .select("id, title, content, date, profiles(name)")
@@ -45,6 +58,7 @@ const Testimonies = () => {
       setTestimonies(data || []);
     }
     setLoading(false);
+    */
   };
 
   return (

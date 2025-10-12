@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+// Backend integration placeholder - Supabase commented out for prototype
+// import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, BookOpen } from "lucide-react";
+import { mockUsers, mockProfiles, STORAGE_KEYS, setToStorage } from "@/data/mockData";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -29,6 +31,61 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Mock authentication - check if user exists or create new one
+      const existingUser = mockUsers.find(u => u.email === email);
+      
+      if (isLogin) {
+        // Login: check if user exists
+        if (!existingUser) {
+          throw new Error("User not found. Please sign up first.");
+        }
+        
+        // Simulate admin check - if email ends with @admin.com, user is admin
+        const mockUser = { id: existingUser.id, email: existingUser.email };
+        setToStorage(STORAGE_KEYS.CURRENT_USER, mockUser);
+        
+        toast.success("Welcome back!");
+        navigate("/dashboard");
+      } else {
+        // Sign up: create new user
+        if (existingUser) {
+          throw new Error("User already exists. Please login instead.");
+        }
+        
+        // Create new user
+        const newUser = {
+          id: String(Date.now()),
+          email,
+          name: name || "User",
+          isAdmin: email.endsWith('@admin.com')
+        };
+        
+        // Add to mock users
+        mockUsers.push(newUser);
+        
+        // Create profile
+        const newProfile = {
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email,
+          streak_count: 0,
+          reminders_enabled: true,
+          last_journal_date: null
+        };
+        
+        const profiles = JSON.parse(localStorage.getItem(STORAGE_KEYS.PROFILES) || '[]');
+        profiles.push(newProfile);
+        localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(profiles));
+        
+        // Set current user
+        setToStorage(STORAGE_KEYS.CURRENT_USER, { id: newUser.id, email: newUser.email });
+        
+        toast.success("Account created! Welcome to Prayer Journal.");
+        navigate("/dashboard");
+      }
+      
+      // Backend integration: Uncomment when restoring Supabase
+      /*
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -52,6 +109,7 @@ const Auth = () => {
         toast.success("Account created! Welcome to Prayer Journal.");
         navigate("/dashboard");
       }
+      */
     } catch (error: any) {
       toast.error(error.message || "An error occurred");
     } finally {
@@ -60,6 +118,10 @@ const Auth = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    toast.info("Google sign-in is not available in prototype mode");
+    
+    // Backend integration: Uncomment when restoring Supabase
+    /*
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -72,6 +134,7 @@ const Auth = () => {
     } catch (error: any) {
       toast.error(error.message || "An error occurred");
     }
+    */
   };
 
   return (
@@ -108,11 +171,14 @@ const Auth = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="your@email.com"
+                placeholder="your@email.com (use @admin.com for admin access)"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                Tip: Use an email ending with @admin.com to access admin features
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
