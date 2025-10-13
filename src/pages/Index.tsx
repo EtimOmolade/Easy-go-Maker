@@ -42,7 +42,7 @@ const Index = () => {
               size="lg"
               variant="outline"
               onClick={() => navigate("/auth")}
-              className="border-white text-white hover:bg-white/10 text-lg px-8"
+              className="border-white text-white hover:bg-white/10 bg-transparent text-lg px-8"
             >
               Sign In
             </Button>

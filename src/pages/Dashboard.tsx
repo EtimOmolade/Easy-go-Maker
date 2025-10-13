@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
+// Backend integration placeholder - Supabase commented out for prototype
+// import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone } from "lucide-react";
@@ -9,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import StreakBadge from "@/components/StreakBadge";
 import EncouragementPopup from "@/components/EncouragementPopup";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { STORAGE_KEYS, getFromStorage, MockProfile, MockEncouragementMessage } from "@/data/mockData";
 
 interface Profile {
   name: string;
@@ -36,9 +38,26 @@ const Dashboard = () => {
     }
   }, [user]);
 
-  const fetchProfile = async () => {
+  const fetchProfile = () => {
     if (!user) return;
 
+    // Mock data fetch
+    const profiles = getFromStorage<MockProfile[]>(STORAGE_KEYS.PROFILES, []);
+    const userProfile = profiles.find(p => p.id === user.id);
+
+    if (userProfile) {
+      if (profile) {
+        setPreviousStreak(profile.streak_count);
+      }
+      setProfile({
+        name: userProfile.name,
+        streak_count: userProfile.streak_count,
+        reminders_enabled: userProfile.reminders_enabled
+      });
+    }
+
+    // Backend integration: Uncomment when restoring Supabase
+    /*
     const { data, error } = await supabase
       .from("profiles")
       .select("name, streak_count, reminders_enabled")
@@ -53,13 +72,32 @@ const Dashboard = () => {
       }
       setProfile(data);
     }
+    */
   };
 
-  const fetchEncouragementMessage = async () => {
+  const fetchEncouragementMessage = () => {
+    // Mock data fetch - get most recent message from last 24 hours
+    const messages = getFromStorage<MockEncouragementMessage[]>(STORAGE_KEYS.ENCOURAGEMENT, []);
+    const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+    
+    const recentMessage = messages
+      .filter(msg => new Date(msg.created_at).getTime() > twentyFourHoursAgo)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
+    if (recentMessage) {
+      setEncouragementMessage({
+        id: recentMessage.id,
+        content: recentMessage.content,
+        created_at: recentMessage.created_at
+      });
+    }
+
+    // Backend integration: Uncomment when restoring Supabase
+    /*
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     
     const { data, error } = await supabase
-      .from("encouragement_messages" as any)
+      .from("encouragement_messages")
       .select("*")
       .gte("created_at", twentyFourHoursAgo)
       .order("created_at", { ascending: false })
@@ -67,8 +105,9 @@ const Dashboard = () => {
       .maybeSingle();
 
     if (!error && data) {
-      setEncouragementMessage(data as unknown as EncouragementMessage);
+      setEncouragementMessage(data);
     }
+    */
   };
 
   const quickActions = [

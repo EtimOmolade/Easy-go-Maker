@@ -101,9 +101,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleSignOut = async () => {
     try {
-      // Clear localStorage
+      // Clear localStorage and sessionStorage
       localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
       localStorage.removeItem(STORAGE_KEYS.POPUP_SHOWN);
+      sessionStorage.removeItem('encouragement_popup_shown');
       
       setUser(null);
       setSession(null);
