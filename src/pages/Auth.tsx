@@ -18,7 +18,7 @@ const Auth = () => {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signIn } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -43,6 +43,9 @@ const Auth = () => {
         // Simulate admin check - if email ends with @admin.com, user is admin
         const mockUser = { id: existingUser.id, email: existingUser.email };
         setToStorage(STORAGE_KEYS.CURRENT_USER, mockUser);
+        
+        // Update auth context
+        signIn(mockUser);
         
         toast.success("Welcome back!");
         navigate("/dashboard");
@@ -78,7 +81,11 @@ const Auth = () => {
         localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(profiles));
         
         // Set current user
-        setToStorage(STORAGE_KEYS.CURRENT_USER, { id: newUser.id, email: newUser.email });
+        const mockUserObj = { id: newUser.id, email: newUser.email };
+        setToStorage(STORAGE_KEYS.CURRENT_USER, mockUserObj);
+        
+        // Update auth context
+        signIn(mockUserObj);
         
         toast.success("Account created! Welcome to Prayer Journal.");
         navigate("/dashboard");

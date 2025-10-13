@@ -336,7 +336,12 @@ const Journal = () => {
               <DialogTrigger asChild>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button onClick={() => { setEditingEntry(null); setTitle(""); setContent(""); }}>
+                    <Button onClick={() => { 
+                      setEditingEntry(null); 
+                      setTitle(""); 
+                      setContent(""); 
+                      setIsDialogOpen(true);
+                    }}>
                       <Plus className="mr-2 h-4 w-4" />
                       New Entry
                     </Button>
@@ -344,7 +349,7 @@ const Journal = () => {
                   <TooltipContent>Create a new journal entry</TooltipContent>
                 </Tooltip>
               </DialogTrigger>
-            <DialogContent>
+              <DialogContent>
               <DialogHeader>
                 <DialogTitle>{editingEntry ? "Edit Entry" : "New Journal Entry"}</DialogTitle>
               </DialogHeader>

@@ -16,6 +16,7 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   signOut: () => Promise<void>;
+  signIn: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -99,6 +100,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   */
 
+  const handleSignIn = (newUser: User) => {
+    setUser(newUser);
+    setSession({ user: newUser });
+    const isAdminUser = newUser.email.endsWith('@admin.com');
+    setIsAdmin(isAdminUser);
+  };
+
   const handleSignOut = async () => {
     try {
       // Clear localStorage and sessionStorage
@@ -119,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, signOut: handleSignOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, signOut: handleSignOut, signIn: handleSignIn }}>
       {children}
     </AuthContext.Provider>
   );

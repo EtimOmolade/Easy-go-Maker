@@ -224,7 +224,12 @@ const Admin = () => {
                     <DialogTrigger asChild>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button><Plus className="mr-2 h-4 w-4" />New Message</Button>
+                          <Button onClick={() => {
+                            setEncouragementContent("");
+                            setIsEncouragementDialogOpen(true);
+                          }}>
+                            <Plus className="mr-2 h-4 w-4" />New Message
+                          </Button>
                         </TooltipTrigger>
                         <TooltipContent>Post a new encouragement message</TooltipContent>
                       </Tooltip>
