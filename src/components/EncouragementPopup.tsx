@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { getBadgeForStreak } from "./StreakBadge";
 import { Sparkles } from "lucide-react";
+import { shouldShowEncouragementPopup } from "@/data/mockData";
 
 interface EncouragementPopupProps {
   streakCount: number;
@@ -34,11 +35,9 @@ const EncouragementPopup = ({ streakCount, previousStreak }: EncouragementPopupP
   const [message, setMessage] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
-    // Check if popup has been shown in this session
-    const popupShown = sessionStorage.getItem('encouragement_popup_shown');
-    
-    if (popupShown) {
-      // Already shown in this session, don't show again
+    // Only show popup once per day on first login for milestones
+    if (!shouldShowEncouragementPopup()) {
+      // Already shown today, don't show again
       return;
     }
 
@@ -53,8 +52,6 @@ const EncouragementPopup = ({ streakCount, previousStreak }: EncouragementPopupP
       if (encouragement) {
         setMessage(encouragement);
         setIsOpen(true);
-        // Mark popup as shown for this session
-        sessionStorage.setItem('encouragement_popup_shown', 'true');
       }
     }
   }, [streakCount, previousStreak]);

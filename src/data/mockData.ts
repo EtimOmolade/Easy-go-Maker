@@ -251,11 +251,17 @@ export const STORAGE_KEYS = {
   TESTIMONIES: 'prayerjournal_testimonies',
   GUIDELINES: 'prayerjournal_guidelines',
   ENCOURAGEMENT: 'prayerjournal_encouragement',
-  POPUP_SHOWN: 'prayerjournal_popup_shown'
+  POPUP_SHOWN: 'prayerjournal_popup_shown',
+  NOTIFICATIONS: 'prayerjournal_notifications',
+  LAST_POPUP_DATE: 'prayerjournal_last_popup_date',
+  USERS: 'prayerjournal_users'
 };
 
 // Initialize localStorage with mock data if empty
 export const initializeMockData = () => {
+  if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(mockUsers));
+  }
   if (!localStorage.getItem(STORAGE_KEYS.PROFILES)) {
     localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(mockProfiles));
   }
@@ -281,4 +287,97 @@ export const getFromStorage = <T>(key: string, defaultValue: T): T => {
 
 export const setToStorage = <T>(key: string, value: T): void => {
   localStorage.setItem(key, JSON.stringify(value));
+};
+
+// Notification utilities
+export interface Notification {
+  id: string;
+  type: 'encouragement' | 'journal';
+  messageId?: string;
+  userId: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export const createNotification = (type: 'encouragement' | 'journal', userId: string, messageId?: string): void => {
+  const notifications = getFromStorage<Notification[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+  const newNotification: Notification = {
+    id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    type,
+    messageId,
+    userId,
+    read: false,
+    createdAt: new Date().toISOString()
+  };
+  notifications.push(newNotification);
+  setToStorage(STORAGE_KEYS.NOTIFICATIONS, notifications);
+};
+
+export const hasUnreadEncouragementNotification = (userId: string): boolean => {
+  const notifications = getFromStorage<Notification[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+  const messages = getFromStorage<MockEncouragementMessage[]>(STORAGE_KEYS.ENCOURAGEMENT, []);
+  
+  // Get the most recent encouragement message from last 24 hours
+  const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+  const recentMessage = messages
+    .filter(msg => new Date(msg.created_at).getTime() > twentyFourHoursAgo)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+  
+  if (!recentMessage) return false;
+  
+  // Check if user has an unread notification for this message
+  return !notifications.some(n => 
+    n.userId === userId && 
+    n.type === 'encouragement' && 
+    n.messageId === recentMessage.id && 
+    n.read
+  );
+};
+
+export const markEncouragementAsRead = (userId: string): void => {
+  const notifications = getFromStorage<Notification[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+  const messages = getFromStorage<MockEncouragementMessage[]>(STORAGE_KEYS.ENCOURAGEMENT, []);
+  
+  // Get the most recent encouragement message
+  const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+  const recentMessage = messages
+    .filter(msg => new Date(msg.created_at).getTime() > twentyFourHoursAgo)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+  
+  if (!recentMessage) return;
+  
+  // Find and mark the notification as read
+  const notificationIndex = notifications.findIndex(n => 
+    n.userId === userId && 
+    n.type === 'encouragement' && 
+    n.messageId === recentMessage.id
+  );
+  
+  if (notificationIndex !== -1) {
+    notifications[notificationIndex].read = true;
+  } else {
+    // Create a read notification if it doesn't exist
+    notifications.push({
+      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'encouragement',
+      messageId: recentMessage.id,
+      userId,
+      read: true,
+      createdAt: new Date().toISOString()
+    });
+  }
+  
+  setToStorage(STORAGE_KEYS.NOTIFICATIONS, notifications);
+};
+
+export const shouldShowEncouragementPopup = (): boolean => {
+  const lastPopupDate = getFromStorage<string | null>(STORAGE_KEYS.LAST_POPUP_DATE, null);
+  const today = new Date().toDateString();
+  
+  if (!lastPopupDate || lastPopupDate !== today) {
+    setToStorage(STORAGE_KEYS.LAST_POPUP_DATE, today);
+    return true;
+  }
+  
+  return false;
 };

@@ -109,7 +109,7 @@ const Journal = () => {
         // Update streak
         updateStreak();
         
-        toast.success("Entry created successfully");
+        toast.success("📝 Your new journal entry has been saved!");
       }
 
       setTitle("");

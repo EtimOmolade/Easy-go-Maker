@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { STORAGE_KEYS, getFromStorage, setToStorage, MockTestimony, MockGuideline, MockEncouragementMessage } from "@/data/mockData";
+import { STORAGE_KEYS, getFromStorage, setToStorage, MockTestimony, MockGuideline, MockEncouragementMessage, MockUser, createNotification } from "@/data/mockData";
 
 interface Testimony {
   id: string;
@@ -95,8 +95,14 @@ const Admin = () => {
     };
     messages.push(newMessage);
     setToStorage(STORAGE_KEYS.ENCOURAGEMENT, messages);
+    
+    // Create notifications for all users
+    const users = getFromStorage<MockUser[]>(STORAGE_KEYS.USERS, []);
+    users.forEach(u => {
+      createNotification('encouragement', u.id, newMessage.id);
+    });
 
-    toast.success("Encouragement message posted! It will be visible for 24 hours.");
+    toast.success("✨ New daily encouragement posted! All users will be notified.");
     setEncouragementContent("");
     setIsEncouragementDialogOpen(false);
     fetchEncouragementMessages();

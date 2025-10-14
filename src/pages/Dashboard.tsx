@@ -5,12 +5,13 @@ import { useAuth } from "@/contexts/AuthContext";
 // import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone } from "lucide-react";
+import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import StreakBadge from "@/components/StreakBadge";
 import EncouragementPopup from "@/components/EncouragementPopup";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { STORAGE_KEYS, getFromStorage, MockProfile, MockEncouragementMessage } from "@/data/mockData";
+import { STORAGE_KEYS, getFromStorage, MockProfile, MockEncouragementMessage, hasUnreadEncouragementNotification, markEncouragementAsRead } from "@/data/mockData";
+import { toast } from "sonner";
 
 interface Profile {
   name: string;
@@ -30,13 +31,33 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [previousStreak, setPreviousStreak] = useState(0);
   const [encouragementMessage, setEncouragementMessage] = useState<EncouragementMessage | null>(null);
+  const [hasUnreadNotification, setHasUnreadNotification] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
       fetchEncouragementMessage();
+      checkForNotifications();
     }
   }, [user]);
+
+  const checkForNotifications = () => {
+    if (!user) return;
+    const hasUnread = hasUnreadEncouragementNotification(user.id);
+    setHasUnreadNotification(hasUnread);
+  };
+
+  const handleNotificationClick = () => {
+    if (!user) return;
+    markEncouragementAsRead(user.id);
+    setHasUnreadNotification(false);
+    
+    // Scroll to encouragement message if it exists
+    const encouragementCard = document.querySelector('[data-encouragement-card]');
+    if (encouragementCard) {
+      encouragementCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
 
   const fetchProfile = () => {
     if (!user) return;
@@ -154,20 +175,40 @@ const Dashboard = () => {
               </h1>
               <p className="text-muted-foreground mt-2">Continue your prayer journey today</p>
             </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" onClick={signOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Sign out of your account</TooltipContent>
-            </Tooltip>
+            <div className="flex items-center gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={handleNotificationClick}
+                    className="relative"
+                  >
+                    <Bell className="h-4 w-4" />
+                    {hasUnreadNotification && (
+                      <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full animate-pulse" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {hasUnreadNotification ? "New encouragement available!" : "No new notifications"}
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" onClick={signOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Sign out of your account</TooltipContent>
+              </Tooltip>
+            </div>
           </div>
 
           {/* Daily Encouragement Message */}
           {encouragementMessage && (
-            <Card className="mb-8 shadow-medium border-2 border-accent/20">
+            <Card className="mb-8 shadow-medium border-2 border-accent/20" data-encouragement-card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Megaphone className="h-6 w-6 text-accent" />
