@@ -110,6 +110,9 @@ const Journal = () => {
         updateStreak();
         
         toast.success("📝 Your new journal entry has been saved!");
+        
+        // Simulate push notification placeholder
+        console.log('(Push placeholder) New journal entry added. Streak updated!');
       }
 
       setTitle("");

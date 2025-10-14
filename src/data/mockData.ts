@@ -292,22 +292,35 @@ export const setToStorage = <T>(key: string, value: T): void => {
 // Notification utilities
 export interface Notification {
   id: string;
-  type: 'encouragement' | 'journal';
+  type: 'encouragement' | 'journal' | 'daily_reminder' | 'weekly_reminder' | 'testimony' | 'guideline' | 'streak';
+  title: string;
+  message: string;
   messageId?: string;
-  userId: string;
+  userId?: string; // undefined means it's for all users
   read: boolean;
   createdAt: string;
+  icon?: string;
 }
 
-export const createNotification = (type: 'encouragement' | 'journal', userId: string, messageId?: string): void => {
+export const createNotification = (
+  type: Notification['type'], 
+  title: string, 
+  message: string, 
+  userId?: string, 
+  messageId?: string,
+  icon?: string
+): void => {
   const notifications = getFromStorage<Notification[]>(STORAGE_KEYS.NOTIFICATIONS, []);
   const newNotification: Notification = {
     id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type,
+    title,
+    message,
     messageId,
     userId,
     read: false,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    icon
   };
   notifications.push(newNotification);
   setToStorage(STORAGE_KEYS.NOTIFICATIONS, notifications);
@@ -360,10 +373,13 @@ export const markEncouragementAsRead = (userId: string): void => {
     notifications.push({
       id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'encouragement',
+      title: 'Daily Encouragement',
+      message: 'New daily encouragement available',
       messageId: recentMessage.id,
       userId,
       read: true,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      icon: '💬'
     });
   }
   
@@ -376,6 +392,107 @@ export const shouldShowEncouragementPopup = (): boolean => {
   
   if (!lastPopupDate || lastPopupDate !== today) {
     setToStorage(STORAGE_KEYS.LAST_POPUP_DATE, today);
+    return true;
+  }
+  
+  return false;
+};
+
+export const getUnreadNotifications = (userId: string, isAdmin: boolean): Notification[] => {
+  const notifications = getFromStorage<Notification[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+  const now = Date.now();
+  
+  // Filter out notifications older than 24 hours and clean them up
+  const validNotifications = notifications.filter(n => {
+    const notifAge = now - new Date(n.createdAt).getTime();
+    const isValid = notifAge < 24 * 60 * 60 * 1000;
+    
+    // Keep encouragement notifications within 24 hours
+    if (n.type === 'encouragement' && !isValid) return false;
+    
+    return true;
+  });
+  
+  // Save cleaned notifications
+  if (validNotifications.length !== notifications.length) {
+    setToStorage(STORAGE_KEYS.NOTIFICATIONS, validNotifications);
+  }
+  
+  // Return unread notifications for this user (or all users if userId is undefined)
+  return validNotifications.filter(n => 
+    !n.read && (n.userId === undefined || n.userId === userId || (isAdmin && n.type === 'journal'))
+  ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+};
+
+export const markNotificationAsRead = (notificationId: string): void => {
+  const notifications = getFromStorage<Notification[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+  const notificationIndex = notifications.findIndex(n => n.id === notificationId);
+  
+  if (notificationIndex !== -1) {
+    notifications[notificationIndex].read = true;
+    setToStorage(STORAGE_KEYS.NOTIFICATIONS, notifications);
+  }
+};
+
+export const markAllNotificationsAsRead = (userId: string): void => {
+  const notifications = getFromStorage<Notification[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+  const updatedNotifications = notifications.map(n => {
+    if (n.userId === undefined || n.userId === userId) {
+      return { ...n, read: true };
+    }
+    return n;
+  });
+  setToStorage(STORAGE_KEYS.NOTIFICATIONS, updatedNotifications);
+};
+
+// Reminder system
+export const REMINDER_KEYS = {
+  LAST_DAILY_REMINDER: 'prayerjournal_last_daily_reminder',
+  LAST_WEEKLY_REMINDER: 'prayerjournal_last_weekly_reminder',
+};
+
+export const checkAndShowDailyReminder = (userId: string): boolean => {
+  const lastReminder = getFromStorage<string | null>(REMINDER_KEYS.LAST_DAILY_REMINDER, null);
+  const now = new Date();
+  const today = now.toDateString();
+  const currentHour = now.getHours();
+  
+  // Show reminder at 7 AM or later, once per day
+  if ((!lastReminder || lastReminder !== today) && currentHour >= 7) {
+    setToStorage(REMINDER_KEYS.LAST_DAILY_REMINDER, today);
+    
+    const messages = [
+      "🌅 Good morning! Take a moment to say a prayer and write in your journal.",
+      "🙏 Start your day with reflection — open your prayer journal now.",
+      "💭 God's waiting to hear from you today. Spend a few minutes in prayer."
+    ];
+    
+    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+    createNotification('daily_reminder', 'Daily Prayer Reminder', randomMessage, userId, undefined, '🌅');
+    return true;
+  }
+  
+  return false;
+};
+
+export const checkAndShowWeeklyReminder = (userId: string): boolean => {
+  const lastReminder = getFromStorage<string | null>(REMINDER_KEYS.LAST_WEEKLY_REMINDER, null);
+  const now = new Date();
+  const today = now.toDateString();
+  const currentHour = now.getHours();
+  const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday
+  
+  // Show reminder on Monday at 6 AM or later, once per week
+  if (dayOfWeek === 1 && (!lastReminder || lastReminder !== today) && currentHour >= 6) {
+    setToStorage(REMINDER_KEYS.LAST_WEEKLY_REMINDER, today);
+    
+    const messages = [
+      "📖 New weekly prayer guideline available — start your week strong in faith.",
+      "🕊️ Refresh your spirit — this week's prayer guide is ready."
+    ];
+    
+    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+    createNotification('weekly_reminder', 'Weekly Prayer Guide', randomMessage, userId, undefined, '📖');
     return true;
   }
   

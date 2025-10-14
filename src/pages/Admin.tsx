@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { STORAGE_KEYS, getFromStorage, setToStorage, MockTestimony, MockGuideline, MockEncouragementMessage, MockUser, createNotification } from "@/data/mockData";
+import { STORAGE_KEYS, getFromStorage, setToStorage, MockTestimony, MockGuideline, MockEncouragementMessage, MockUser, createNotification, mockUsers } from "@/data/mockData";
 
 interface Testimony {
   id: string;
@@ -97,12 +97,23 @@ const Admin = () => {
     setToStorage(STORAGE_KEYS.ENCOURAGEMENT, messages);
     
     // Create notifications for all users
-    const users = getFromStorage<MockUser[]>(STORAGE_KEYS.USERS, []);
+    const users = mockUsers.filter(u => !u.isAdmin);
     users.forEach(u => {
-      createNotification('encouragement', u.id, newMessage.id);
+      createNotification(
+        'encouragement',
+        'New Daily Encouragement',
+        '✨ New daily encouragement available! Check your dashboard.',
+        u.id,
+        newMessage.id,
+        '💬'
+      );
     });
-
-    toast.success("✨ New daily encouragement posted! All users will be notified.");
+    
+    toast.success("✨ New daily encouragement posted! All users have been notified.");
+    
+    // Simulate push notification placeholder
+    console.log('(Push placeholder) New encouragement message broadcast to all users');
+    
     setEncouragementContent("");
     setIsEncouragementDialogOpen(false);
     fetchEncouragementMessages();
