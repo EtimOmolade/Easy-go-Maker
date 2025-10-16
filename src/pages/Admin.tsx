@@ -12,8 +12,9 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { STORAGE_KEYS, getFromStorage, setToStorage, MockTestimony, MockGuideline, MockEncouragementMessage, MockUser, createNotification, mockUsers } from "@/data/mockData";
+import { STORAGE_KEYS, getFromStorage, setToStorage, MockTestimony, MockGuideline, MockEncouragementMessage, MockUser, createNotification, mockUsers, checkPendingTestimonies } from "@/data/mockData";
 
 interface Testimony {
   id: string;
@@ -41,13 +42,23 @@ const Admin = () => {
   const [title, setTitle] = useState("");
   const [weekNumber, setWeekNumber] = useState("");
   const [content, setContent] = useState("");
+  const [editingGuideline, setEditingGuideline] = useState<MockGuideline | null>(null);
+  const [guidelines, setGuidelines] = useState<MockGuideline[]>([]);
   const [encouragementContent, setEncouragementContent] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchTestimonies();
     fetchEncouragementMessages();
+    fetchGuidelines();
+    checkPendingTestimonies(); // Check for pending testimonies on load
   }, []);
+
+  const fetchGuidelines = () => {
+    const allGuidelines = getFromStorage<MockGuideline[]>(STORAGE_KEYS.GUIDELINES, []);
+    const sorted = [...allGuidelines].sort((a, b) => b.week_number - a.week_number);
+    setGuidelines(sorted);
+  };
 
   const fetchTestimonies = async () => {
     const allTestimonies = getFromStorage<MockTestimony[]>(STORAGE_KEYS.TESTIMONIES, []);
@@ -65,21 +76,70 @@ const Admin = () => {
     e.preventDefault();
 
     const guidelines = getFromStorage<MockGuideline[]>(STORAGE_KEYS.GUIDELINES, []);
-    const newGuideline: MockGuideline = {
-      id: String(Date.now()),
-      title,
-      week_number: parseInt(weekNumber),
-      content,
-      date_uploaded: new Date().toISOString()
-    };
-    guidelines.push(newGuideline);
-    setToStorage(STORAGE_KEYS.GUIDELINES, guidelines);
+    
+    if (editingGuideline) {
+      // Update existing guideline
+      const updated = guidelines.map(g => 
+        g.id === editingGuideline.id 
+          ? { ...g, title, week_number: parseInt(weekNumber), content }
+          : g
+      );
+      setToStorage(STORAGE_KEYS.GUIDELINES, updated);
+      toast.success("Guideline updated successfully");
+    } else {
+      // Create new guideline
+      const newGuideline: MockGuideline = {
+        id: String(Date.now()),
+        title,
+        week_number: parseInt(weekNumber),
+        content,
+        date_uploaded: new Date().toISOString()
+      };
+      guidelines.push(newGuideline);
+      setToStorage(STORAGE_KEYS.GUIDELINES, guidelines);
+      
+      // Notify all users about new guideline
+      const users = mockUsers.filter(u => !u.isAdmin);
+      users.forEach(u => {
+        createNotification(
+          'guideline',
+          'New Prayer Guideline',
+          '📖 A new prayer guideline has been added.',
+          u.id,
+          newGuideline.id,
+          '📋'
+        );
+      });
+      
+      toast.success("📖 Guideline created! All users have been notified.");
+      console.log('(Push placeholder) New guideline broadcast to all users');
+    }
 
-    toast.success("Guideline created successfully");
     setTitle("");
     setWeekNumber("");
     setContent("");
+    setEditingGuideline(null);
     setIsDialogOpen(false);
+    fetchGuidelines();
+  };
+
+  const handleEditGuideline = (guideline: MockGuideline) => {
+    setEditingGuideline(guideline);
+    setTitle(guideline.title);
+    setWeekNumber(String(guideline.week_number));
+    setContent(guideline.content);
+    setIsDialogOpen(true);
+  };
+
+  const handleDeleteGuideline = (id: string) => {
+    if (!confirm("Are you sure you want to delete this guideline?")) return;
+    
+    const guidelines = getFromStorage<MockGuideline[]>(STORAGE_KEYS.GUIDELINES, []);
+    const updated = guidelines.filter(g => g.id !== id);
+    setToStorage(STORAGE_KEYS.GUIDELINES, updated);
+    
+    toast.success("Guideline deleted");
+    fetchGuidelines();
   };
 
   const handleCreateEncouragement = async (e: React.FormEvent) => {
@@ -132,10 +192,40 @@ const Admin = () => {
 
   const handleApproveTestimony = async (id: string, approved: boolean) => {
     const testimonies = getFromStorage<MockTestimony[]>(STORAGE_KEYS.TESTIMONIES, []);
+    const testimony = testimonies.find(t => t.id === id);
     const updated = testimonies.map(t => t.id === id ? { ...t, approved } : t);
     setToStorage(STORAGE_KEYS.TESTIMONIES, updated);
 
-    toast.success(approved ? "Testimony approved" : "Testimony rejected");
+    if (approved && testimony) {
+      // Notify all users about new approved testimony
+      const users = mockUsers.filter(u => !u.isAdmin);
+      users.forEach(u => {
+        createNotification(
+          'testimony',
+          'New Testimony Shared',
+          '✨ A new testimony has just been shared.',
+          u.id,
+          testimony.id,
+          '✨'
+        );
+      });
+      
+      // Remove admin notification about pending testimony
+      const adminUsers = mockUsers.filter(u => u.isAdmin);
+      adminUsers.forEach(admin => {
+        const notifications = getFromStorage('notifications', []);
+        const filtered = notifications.filter(n => 
+          !(n.type === 'testimony' && n.relatedId === id && n.userId === admin.id && n.message.includes('pending'))
+        );
+        setToStorage('notifications', filtered);
+      });
+      
+      toast.success("✨ Testimony approved! All users have been notified.");
+      console.log('(Push placeholder) New testimony broadcast to all users');
+    } else {
+      toast.success("Testimony rejected");
+    }
+    
     fetchTestimonies();
   };
 
@@ -189,8 +279,16 @@ const Admin = () => {
             <Card className="shadow-medium">
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>Upload Prayer Guidelines</CardTitle>
-                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <CardTitle>Prayer Guidelines Management</CardTitle>
+                  <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                    setIsDialogOpen(open);
+                    if (!open) {
+                      setEditingGuideline(null);
+                      setTitle("");
+                      setWeekNumber("");
+                      setContent("");
+                    }
+                  }}>
                     <DialogTrigger asChild>
                       <Button>
                         <Plus className="mr-2 h-4 w-4" />
@@ -199,7 +297,7 @@ const Admin = () => {
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl">
                       <DialogHeader>
-                        <DialogTitle>Create Prayer Guideline</DialogTitle>
+                        <DialogTitle>{editingGuideline ? 'Edit' : 'Create'} Prayer Guideline</DialogTitle>
                       </DialogHeader>
                       <form onSubmit={handleCreateGuideline} className="space-y-4">
                         <div className="space-y-2">
@@ -214,14 +312,53 @@ const Admin = () => {
                           <Label htmlFor="content">Content</Label>
                           <Textarea id="content" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Enter the prayer guideline content..." rows={12} required />
                         </div>
-                        <Button type="submit" className="w-full">Create Guideline</Button>
+                        <Button type="submit" className="w-full">{editingGuideline ? 'Update' : 'Create'} Guideline</Button>
                       </form>
                     </DialogContent>
                   </Dialog>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Create and manage weekly prayer guidelines for the community.</p>
+              <CardContent className="space-y-4">
+                {guidelines.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No guidelines yet. Create one to get started!</p>
+                ) : (
+                  guidelines.map((guideline) => (
+                    <Card key={guideline.id} className="bg-accent/5">
+                      <CardContent className="pt-6">
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="secondary">Week {guideline.week_number}</Badge>
+                            </div>
+                            <h3 className="font-semibold text-lg mb-2">{guideline.title}</h3>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-3">{guideline.content}</p>
+                            <p className="text-xs text-muted-foreground mt-4">
+                              Uploaded {new Date(guideline.date_uploaded).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="outline" onClick={() => handleEditGuideline(guideline)}>
+                                  Edit
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit guideline</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" variant="ghost" onClick={() => handleDeleteGuideline(guideline.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Delete guideline</TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </CardContent>
             </Card>
           </TabsContent>

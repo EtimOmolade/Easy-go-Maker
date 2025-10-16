@@ -386,6 +386,39 @@ export const markEncouragementAsRead = (userId: string): void => {
   setToStorage(STORAGE_KEYS.NOTIFICATIONS, notifications);
 };
 
+// Check for pending testimonies and create admin notifications
+export const checkPendingTestimonies = (): void => {
+  const testimonies = getFromStorage<MockTestimony[]>(STORAGE_KEYS.TESTIMONIES, []);
+  const pending = testimonies.filter(t => !t.approved);
+  
+  // Create notifications for admins
+  const adminUsers = mockUsers.filter(u => u.isAdmin);
+  adminUsers.forEach(admin => {
+    const existingNotifications = getFromStorage<Notification[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+    
+    // Check which pending testimonies don't have notifications yet
+    pending.forEach(testimony => {
+      const hasNotification = existingNotifications.some(n => 
+        n.userId === admin.id && 
+        n.type === 'testimony' && 
+        n.messageId === testimony.id &&
+        n.message.includes('pending')
+      );
+      
+      if (!hasNotification) {
+        createNotification(
+          'testimony',
+          'Testimony Pending Approval',
+          '⚠️ A new testimony is pending approval.',
+          admin.id,
+          testimony.id,
+          '⚠️'
+        );
+      }
+    });
+  });
+};
+
 export const shouldShowEncouragementPopup = (): boolean => {
   const lastPopupDate = getFromStorage<string | null>(STORAGE_KEYS.LAST_POPUP_DATE, null);
   const today = new Date().toDateString();

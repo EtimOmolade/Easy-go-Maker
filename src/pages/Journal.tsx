@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { STORAGE_KEYS, getFromStorage, setToStorage, MockJournalEntry, MockTestimony } from "@/data/mockData";
+import { STORAGE_KEYS, getFromStorage, setToStorage, MockJournalEntry, MockTestimony, createNotification, checkPendingTestimonies } from "@/data/mockData";
 
 interface JournalEntry {
   id: string;
@@ -270,6 +270,9 @@ const Journal = () => {
       };
       testimonies.push(newTestimony);
       setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
+      
+      // Check and create admin notifications for pending testimonies
+      checkPendingTestimonies();
 
       // Update journal entry
       const allEntries = getFromStorage<MockJournalEntry[]>(STORAGE_KEYS.JOURNAL_ENTRIES, []);
