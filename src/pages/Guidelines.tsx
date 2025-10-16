@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { STORAGE_KEYS, getFromStorage, MockGuideline } from "@/data/mockData";
 
 interface Guideline {
@@ -19,6 +20,7 @@ interface Guideline {
 const Guidelines = () => {
   const [guidelines, setGuidelines] = useState<Guideline[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedGuideline, setSelectedGuideline] = useState<Guideline | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -96,14 +98,43 @@ const Guidelines = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="whitespace-pre-wrap text-foreground/90 leading-relaxed">
-                    {guideline.content}
+                  <p className="text-foreground/90 leading-relaxed mb-4">
+                    {guideline.content.substring(0, 150)}
+                    {guideline.content.length > 150 && '...'}
                   </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setSelectedGuideline(guideline)}
+                  >
+                    Read More
+                  </Button>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
+        
+        {/* Read More Modal */}
+        <Dialog open={!!selectedGuideline} onOpenChange={() => setSelectedGuideline(null)}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="secondary">
+                  Week {selectedGuideline?.week_number}
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  {selectedGuideline && new Date(selectedGuideline.date_uploaded).toLocaleDateString()}
+                </span>
+              </div>
+              <DialogTitle className="text-2xl">{selectedGuideline?.title}</DialogTitle>
+            </DialogHeader>
+            <div className="mt-4">
+              <p className="whitespace-pre-wrap text-foreground/90 leading-relaxed">
+                {selectedGuideline?.content}
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

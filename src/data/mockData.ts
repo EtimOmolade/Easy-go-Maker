@@ -300,6 +300,7 @@ export interface Notification {
   read: boolean;
   createdAt: string;
   icon?: string;
+  isAdminOnly?: boolean; // true for admin-only notifications like pending testimonies
 }
 
 export const createNotification = (
@@ -308,7 +309,8 @@ export const createNotification = (
   message: string, 
   userId?: string, 
   messageId?: string,
-  icon?: string
+  icon?: string,
+  isAdminOnly?: boolean
 ): void => {
   const notifications = getFromStorage<Notification[]>(STORAGE_KEYS.NOTIFICATIONS, []);
   const newNotification: Notification = {
@@ -320,7 +322,8 @@ export const createNotification = (
     userId,
     read: false,
     createdAt: new Date().toISOString(),
-    icon
+    icon,
+    isAdminOnly
   };
   notifications.push(newNotification);
   setToStorage(STORAGE_KEYS.NOTIFICATIONS, notifications);
@@ -412,7 +415,8 @@ export const checkPendingTestimonies = (): void => {
           '⚠️ A new testimony is pending approval.',
           admin.id,
           testimony.id,
-          '⚠️'
+          '⚠️',
+          true // Mark as admin-only notification
         );
       }
     });
@@ -451,10 +455,29 @@ export const getUnreadNotifications = (userId: string, isAdmin: boolean): Notifi
     setToStorage(STORAGE_KEYS.NOTIFICATIONS, validNotifications);
   }
   
-  // Return unread notifications for this user (or all users if userId is undefined)
-  return validNotifications.filter(n => 
-    !n.read && (n.userId === undefined || n.userId === userId || (isAdmin && n.type === 'journal'))
-  ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  // Filter notifications based on user role
+  return validNotifications.filter(n => {
+    // Skip if already read
+    if (n.read) return false;
+    
+    // Admin-only notifications
+    if (n.isAdminOnly) {
+      return isAdmin && (n.userId === undefined || n.userId === userId);
+    }
+    
+    // Regular notifications for all users
+    // Show if: notification is for all users (userId undefined) OR for this specific user
+    if (n.userId === undefined || n.userId === userId) {
+      return true;
+    }
+    
+    // Admins see all non-admin-only notifications too
+    if (isAdmin) {
+      return true;
+    }
+    
+    return false;
+  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 };
 
 export const markNotificationAsRead = (notificationId: string): void => {

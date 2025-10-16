@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Sparkles, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { STORAGE_KEYS, getFromStorage, MockTestimony } from "@/data/mockData";
 
 interface Testimony {
@@ -23,6 +24,7 @@ const Testimonies = () => {
   const [testimonies, setTestimonies] = useState<Testimony[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTestimony, setSelectedTestimony] = useState<Testimony | null>(null);
   const navigate = useNavigate();
 
   const filteredTestimonies = testimonies.filter(testimony =>
@@ -131,14 +133,40 @@ const Testimonies = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="whitespace-pre-wrap text-foreground/90 leading-relaxed">
-                    {testimony.content}
+                  <p className="text-foreground/90 leading-relaxed mb-4">
+                    {testimony.content.substring(0, 150)}
+                    {testimony.content.length > 150 && '...'}
                   </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setSelectedTestimony(testimony)}
+                  >
+                    Read More
+                  </Button>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
+        
+        {/* Read More Modal */}
+        <Dialog open={!!selectedTestimony} onOpenChange={() => setSelectedTestimony(null)}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">{selectedTestimony?.title}</DialogTitle>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground pt-2">
+                <span className="font-medium">{selectedTestimony?.profiles?.name}</span>
+                <span>•</span>
+                <span>{selectedTestimony && new Date(selectedTestimony.date).toLocaleDateString()}</span>
+              </div>
+            </DialogHeader>
+            <div className="mt-4">
+              <p className="whitespace-pre-wrap text-foreground/90 leading-relaxed">
+                {selectedTestimony?.content}
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
     </TooltipProvider>
