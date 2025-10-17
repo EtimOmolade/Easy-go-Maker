@@ -6,6 +6,7 @@ export interface MockUser {
   email: string;
   name: string;
   isAdmin: boolean;
+  adminSince?: string; // Timestamp when user became admin
 }
 
 export interface MockProfile {
@@ -41,12 +42,19 @@ export interface MockTestimony {
   };
 }
 
+export interface DailyPrayer {
+  day: string; // Monday-Sunday
+  completed: boolean;
+  completedAt?: string;
+}
+
 export interface MockGuideline {
   id: string;
   title: string;
   week_number: number;
   content: string;
   date_uploaded: string;
+  dailyPrayers?: DailyPrayer[]; // For weekly prayer tracking
 }
 
 export interface MockEncouragementMessage {
@@ -59,7 +67,7 @@ export interface MockEncouragementMessage {
 // Sample users
 export const mockUsers: MockUser[] = [
   { id: '1', email: 'user@example.com', name: 'John Doe', isAdmin: false },
-  { id: '2', email: 'admin@admin.com', name: 'Admin User', isAdmin: true },
+  { id: '2', email: 'admin@admin.com', name: 'Admin User', isAdmin: true, adminSince: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() },
   { id: '3', email: 'jane@example.com', name: 'Jane Smith', isAdmin: false },
 ];
 
@@ -254,7 +262,139 @@ export const STORAGE_KEYS = {
   POPUP_SHOWN: 'prayerjournal_popup_shown',
   NOTIFICATIONS: 'prayerjournal_notifications',
   LAST_POPUP_DATE: 'prayerjournal_last_popup_date',
-  USERS: 'prayerjournal_users'
+  USERS: 'prayerjournal_users',
+  USER_PROGRESS: 'prayerjournal_user_progress'
+};
+
+// User prayer progress tracking
+export interface UserProgress {
+  userId: string;
+  currentGuidelineId?: string;
+  dailyPrayers: { [guidelineId: string]: DailyPrayer[] };
+  streakCount: number;
+  lastPrayerDate?: string;
+  badges: string[]; // Array of badge ids earned
+}
+
+// Admin management helpers
+export const promoteToAdmin = (userId: string): void => {
+  const users = getFromStorage<MockUser[]>(STORAGE_KEYS.USERS, mockUsers);
+  const updated = users.map(u => 
+    u.id === userId 
+      ? { ...u, isAdmin: true, adminSince: new Date().toISOString() }
+      : u
+  );
+  setToStorage(STORAGE_KEYS.USERS, updated);
+};
+
+export const demoteFromAdmin = (userId: string, currentAdminId: string): boolean => {
+  const users = getFromStorage<MockUser[]>(STORAGE_KEYS.USERS, mockUsers);
+  const targetUser = users.find(u => u.id === userId);
+  const currentAdmin = users.find(u => u.id === currentAdminId);
+  
+  if (!targetUser?.isAdmin || !currentAdmin?.isAdmin) return false;
+  
+  // Check if current admin is older (has precedence)
+  if (targetUser.adminSince && currentAdmin.adminSince) {
+    if (new Date(targetUser.adminSince) < new Date(currentAdmin.adminSince)) {
+      return false; // Cannot demote older admin
+    }
+  }
+  
+  const updated = users.map(u => 
+    u.id === userId 
+      ? { ...u, isAdmin: false, adminSince: undefined }
+      : u
+  );
+  setToStorage(STORAGE_KEYS.USERS, updated);
+  return true;
+};
+
+// Prayer progress helpers
+export const getUserProgress = (userId: string): UserProgress => {
+  const allProgress = getFromStorage<UserProgress[]>(STORAGE_KEYS.USER_PROGRESS, []);
+  let userProgress = allProgress.find(p => p.userId === userId);
+  
+  if (!userProgress) {
+    userProgress = {
+      userId,
+      dailyPrayers: {},
+      streakCount: 0,
+      badges: []
+    };
+    allProgress.push(userProgress);
+    setToStorage(STORAGE_KEYS.USER_PROGRESS, allProgress);
+  }
+  
+  return userProgress;
+};
+
+export const markDayCompleted = (userId: string, guidelineId: string, day: string): void => {
+  const allProgress = getFromStorage<UserProgress[]>(STORAGE_KEYS.USER_PROGRESS, []);
+  let userProgress = allProgress.find(p => p.userId === userId);
+  
+  if (!userProgress) {
+    userProgress = getUserProgress(userId);
+  }
+  
+  if (!userProgress.dailyPrayers[guidelineId]) {
+    userProgress.dailyPrayers[guidelineId] = [
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ];
+  }
+  
+  const dayIndex = userProgress.dailyPrayers[guidelineId].findIndex(d => d.day === day);
+  if (dayIndex !== -1 && !userProgress.dailyPrayers[guidelineId][dayIndex].completed) {
+    userProgress.dailyPrayers[guidelineId][dayIndex].completed = true;
+    userProgress.dailyPrayers[guidelineId][dayIndex].completedAt = new Date().toISOString();
+    
+    // Update streak
+    const today = new Date().toISOString().split('T')[0];
+    const lastDate = userProgress.lastPrayerDate;
+    
+    if (!lastDate || lastDate < today) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      
+      if (lastDate === yesterdayStr) {
+        userProgress.streakCount += 1;
+      } else if (lastDate && lastDate < yesterdayStr) {
+        userProgress.streakCount = 1;
+      } else if (!lastDate) {
+        userProgress.streakCount = 1;
+      }
+      
+      userProgress.lastPrayerDate = today;
+    }
+    
+    // Check for new badges
+    checkAndAwardBadges(userProgress);
+    
+    const updated = allProgress.map(p => p.userId === userId ? userProgress! : p);
+    setToStorage(STORAGE_KEYS.USER_PROGRESS, updated);
+  }
+};
+
+const checkAndAwardBadges = (progress: UserProgress): void => {
+  const badgeThresholds = [
+    { id: 'starter', threshold: 1, name: 'Prayer Starter' },
+    { id: 'faithful', threshold: 10, name: 'Faithful Servant' },
+    { id: 'warrior', threshold: 20, name: 'Prayer Warrior' },
+    { id: 'champion', threshold: 50, name: 'Prayer Champion' }
+  ];
+  
+  badgeThresholds.forEach(badge => {
+    if (progress.streakCount >= badge.threshold && !progress.badges.includes(badge.id)) {
+      progress.badges.push(badge.id);
+    }
+  });
 };
 
 // Initialize localStorage with mock data if empty
@@ -313,6 +453,19 @@ export const createNotification = (
   isAdminOnly?: boolean
 ): void => {
   const notifications = getFromStorage<Notification[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+  
+  // Prevent duplicates: Check if identical notification already exists
+  const isDuplicate = notifications.some(n => 
+    n.type === type &&
+    n.title === title &&
+    n.message === message &&
+    n.userId === userId &&
+    n.messageId === messageId &&
+    !n.read
+  );
+  
+  if (isDuplicate) return;
+  
   const newNotification: Notification = {
     id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type,

@@ -186,19 +186,7 @@ const Profile = () => {
                 </p>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="reminders">Prayer Reminders</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive daily reminders to journal
-                  </p>
-                </div>
-                <Switch
-                  id="reminders"
-                  checked={reminders}
-                  onCheckedChange={setReminders}
-                />
-              </div>
+              {/* Notifications are always enabled - no toggle needed */}
 
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Saving..." : "Save Changes"}

@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Guidelines from "./pages/Guidelines";
+import GuidelineDetails from "./pages/GuidelineDetails";
 import Journal from "./pages/Journal";
 import Testimonies from "./pages/Testimonies";
 import Profile from "./pages/Profile";
@@ -42,6 +43,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Guidelines />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/guideline/:id"
+              element={
+                <ProtectedRoute>
+                  <GuidelineDetails />
                 </ProtectedRoute>
               }
             />

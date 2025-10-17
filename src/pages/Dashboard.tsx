@@ -7,11 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import StreakBadge from "@/components/StreakBadge";
+import StreakBadge, { getBadgeForStreak } from "@/components/StreakBadge";
 import EncouragementPopup from "@/components/EncouragementPopup";
 import NotificationDropdown from "@/components/NotificationDropdown";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { STORAGE_KEYS, getFromStorage, MockProfile, MockEncouragementMessage, checkAndShowDailyReminder, checkAndShowWeeklyReminder } from "@/data/mockData";
+import { Progress } from "@/components/ui/progress";
+import { STORAGE_KEYS, getFromStorage, MockProfile, MockEncouragementMessage, checkAndShowDailyReminder, checkAndShowWeeklyReminder, getUserProgress } from "@/data/mockData";
 import { toast } from "sonner";
 
 interface Profile {
@@ -58,14 +59,17 @@ const Dashboard = () => {
     // Mock data fetch
     const profiles = getFromStorage<MockProfile[]>(STORAGE_KEYS.PROFILES, []);
     const userProfile = profiles.find(p => p.id === user.id);
+    
+    // Get user progress for streak
+    const userProgress = getUserProgress(user.id);
 
     if (userProfile) {
       if (profile) {
-        setPreviousStreak(profile.streak_count);
+        setPreviousStreak(userProgress.streakCount);
       }
       setProfile({
         name: userProfile.name,
-        streak_count: userProfile.streak_count,
+        streak_count: userProgress.streakCount,
         reminders_enabled: userProfile.reminders_enabled
       });
     }
@@ -227,23 +231,30 @@ const Dashboard = () => {
               {/* Badge Progress */}
               <div className="pt-4 border-t">
                 <p className="text-sm font-medium mb-3">Badge Milestones</p>
-                <div className="space-y-2">
-                  <div className={`flex items-center justify-between p-2 rounded ${(profile?.streak_count || 0) >= 1 ? 'bg-green-500/10' : 'bg-muted'}`}>
-                    <span className="text-sm">Prayer Starter</span>
-                    <span className="text-xs font-medium">1 day</span>
-                  </div>
-                  <div className={`flex items-center justify-between p-2 rounded ${(profile?.streak_count || 0) >= 10 ? 'bg-blue-500/10' : 'bg-muted'}`}>
-                    <span className="text-sm">Faithful Servant</span>
-                    <span className="text-xs font-medium">10 days</span>
-                  </div>
-                  <div className={`flex items-center justify-between p-2 rounded ${(profile?.streak_count || 0) >= 20 ? 'bg-purple-500/10' : 'bg-muted'}`}>
-                    <span className="text-sm">Prayer Warrior</span>
-                    <span className="text-xs font-medium">20 days</span>
-                  </div>
-                  <div className={`flex items-center justify-between p-2 rounded ${(profile?.streak_count || 0) >= 50 ? 'bg-yellow-500/10' : 'bg-muted'}`}>
-                    <span className="text-sm">Prayer Champion</span>
-                    <span className="text-xs font-medium">50 days</span>
-                  </div>
+                <div className="space-y-3">
+                  {[
+                    { threshold: 1, label: 'Prayer Starter', color: 'bg-green-500/10' },
+                    { threshold: 10, label: 'Faithful Servant', color: 'bg-blue-500/10' },
+                    { threshold: 20, label: 'Prayer Warrior', color: 'bg-purple-500/10' },
+                    { threshold: 50, label: 'Prayer Champion', color: 'bg-yellow-500/10' }
+                  ].map((milestone) => {
+                    const currentStreak = profile?.streak_count || 0;
+                    const isEarned = currentStreak >= milestone.threshold;
+                    const isActive = !isEarned && currentStreak < milestone.threshold;
+                    const progress = isActive ? (currentStreak / milestone.threshold) * 100 : (isEarned ? 100 : 0);
+                    
+                    return (
+                      <div key={milestone.threshold} className={`p-3 rounded ${isEarned ? milestone.color : 'bg-muted'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">{milestone.label}</span>
+                          <span className="text-xs">{milestone.threshold} day{milestone.threshold > 1 ? 's' : ''}</span>
+                        </div>
+                        {isActive && (
+                          <Progress value={progress} className="h-1" />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

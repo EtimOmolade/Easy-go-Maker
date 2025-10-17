@@ -439,17 +439,17 @@ const Admin = () => {
                       <Card key={testimony.id} className="bg-muted/50">
                         <CardHeader>
                           <div className="flex justify-between items-start">
-                            <div>
+                            <div className="flex-1 overflow-hidden">
                               <CardTitle className="text-lg">{testimony.title}</CardTitle>
                               <p className="text-sm text-muted-foreground mt-1">By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}</p>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 flex-shrink-0">
                               <Button size="sm" onClick={() => handleApproveTestimony(testimony.id, true)}><Check className="h-4 w-4" /></Button>
                               <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}><X className="h-4 w-4" /></Button>
                             </div>
                           </div>
                         </CardHeader>
-                        <CardContent><p className="whitespace-pre-wrap text-sm">{testimony.content}</p></CardContent>
+                        <CardContent><p className="whitespace-pre-wrap text-sm break-words">{testimony.content}</p></CardContent>
                       </Card>
                     ))}
                   </CardContent>
@@ -466,14 +466,14 @@ const Admin = () => {
                       <Card key={testimony.id}>
                         <CardHeader>
                           <div className="flex justify-between items-start">
-                            <div>
+                            <div className="flex-1 overflow-hidden">
                               <CardTitle className="text-lg">{testimony.title}</CardTitle>
                               <p className="text-sm text-muted-foreground mt-1">By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}</p>
                             </div>
                             <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}><Trash2 className="h-4 w-4" /></Button>
                           </div>
                         </CardHeader>
-                        <CardContent><p className="whitespace-pre-wrap text-sm">{testimony.content}</p></CardContent>
+                        <CardContent><p className="whitespace-pre-wrap text-sm break-words">{testimony.content}</p></CardContent>
                       </Card>
                     ))
                   )}
