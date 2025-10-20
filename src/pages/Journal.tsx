@@ -494,7 +494,7 @@ const Journal = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="whitespace-pre-wrap text-foreground/90">
+                  <p className="whitespace-pre-wrap text-foreground/90 break-words overflow-wrap-anywhere max-h-[150px] overflow-y-auto">
                     {entry.content}
                   </p>
                   {entry.is_answered && (

@@ -262,18 +262,27 @@ const Admin = () => {
         </h1>
 
         <Tabs defaultValue="guidelines" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="guidelines">Prayer Guidelines</TabsTrigger>
-            <TabsTrigger value="encouragement">Daily Encouragement</TabsTrigger>
-            <TabsTrigger value="testimonies">
-              Testimonies
-              {pendingTestimonies.length > 0 && (
-                <span className="ml-2 bg-accent text-accent-foreground rounded-full px-2 py-0.5 text-xs">
-                  {pendingTestimonies.length}
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
+            <div className="w-full md:overflow-visible overflow-x-auto">
+              <TabsList className="inline-flex md:grid w-auto md:w-full min-w-full md:grid-cols-3">
+                <TabsTrigger value="guidelines" className="whitespace-nowrap flex-shrink-0">
+                  Prayer Guidelines
+                </TabsTrigger>
+                <TabsTrigger value="encouragement" className="whitespace-nowrap flex-shrink-0">
+                  Daily Encouragement
+                </TabsTrigger>
+                <TabsTrigger value="testimonies" className="whitespace-nowrap flex-shrink-0">
+                  Testimonies
+                  {pendingTestimonies.length > 0 && (
+                    <span className="ml-2 bg-accent text-accent-foreground rounded-full px-2 py-0.5 text-xs">
+                      {pendingTestimonies.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                {/* <TabsTrigger value="users" className="whitespace-nowrap flex-shrink-0">
+                  Users
+                </TabsTrigger> */}
+              </TabsList>
+            </div>
 
           <TabsContent value="guidelines">
             <Card className="shadow-medium">
@@ -291,8 +300,8 @@ const Admin = () => {
                   }}>
                     <DialogTrigger asChild>
                       <Button>
-                        <Plus className="mr-2 h-4 w-4" />
-                        New Guideline
+                        <Plus className="sm:mr-2 h-4 w-4" />
+                        <span className="hidden sm:inline">New Guideline</span>
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl">
@@ -382,7 +391,8 @@ const Admin = () => {
                             setEncouragementContent("");
                             setIsEncouragementDialogOpen(true);
                           }}>
-                            <Plus className="mr-2 h-4 w-4" />New Message
+                            <Plus className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">New Message</span>
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>Post a new encouragement message</TooltipContent>
@@ -449,7 +459,7 @@ const Admin = () => {
                             </div>
                           </div>
                         </CardHeader>
-                        <CardContent><p className="whitespace-pre-wrap text-sm break-words">{testimony.content}</p></CardContent>
+                        <CardContent><p className="whitespace-pre-wrap text-sm break-words overflow-y-auto max-h-[150px]">{testimony.content}</p></CardContent>
                       </Card>
                     ))}
                   </CardContent>
@@ -473,7 +483,7 @@ const Admin = () => {
                             <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}><Trash2 className="h-4 w-4" /></Button>
                           </div>
                         </CardHeader>
-                        <CardContent><p className="whitespace-pre-wrap text-sm break-words">{testimony.content}</p></CardContent>
+                        <CardContent><p className="whitespace-pre-wrap text-sm break-words overflow-y-auto max-h-[150px]">{testimony.content}</p></CardContent>
                       </Card>
                     ))
                   )}

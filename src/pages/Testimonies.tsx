@@ -134,8 +134,8 @@ const Testimonies = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-foreground/90 leading-relaxed mb-4">
-                    {testimony.content.substring(0, 150)}
-                    {testimony.content.length > 150 && '...'}
+                    {testimony.content.substring(0, 70)}
+                    {testimony.content.length > 70 && '...'}
                   </p>
                   <Button 
                     variant="outline" 
@@ -151,17 +151,17 @@ const Testimonies = () => {
         
         {/* Read More Modal */}
         <Dialog open={!!selectedTestimony} onOpenChange={() => setSelectedTestimony(null)}>
-          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto overflow-x-hidden">
             <DialogHeader>
-              <DialogTitle className="text-2xl">{selectedTestimony?.title}</DialogTitle>
+              <DialogTitle className="text-2xl pr-8">{selectedTestimony?.title}</DialogTitle>
               <div className="flex items-center gap-4 text-sm text-muted-foreground pt-2">
                 <span className="font-medium">{selectedTestimony?.profiles?.name}</span>
                 <span>•</span>
                 <span>{selectedTestimony && new Date(selectedTestimony.date).toLocaleDateString()}</span>
               </div>
             </DialogHeader>
-            <div className="mt-4">
-              <p className="whitespace-pre-wrap text-foreground/90 leading-relaxed">
+            <div className="mt-4 overflow-hidden">
+              <p className="whitespace-pre-wrap text-foreground/90 leading-relaxed break-words overflow-wrap-anywhere">
                 {selectedTestimony?.content}
               </p>
             </div>
