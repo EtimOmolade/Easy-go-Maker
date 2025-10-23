@@ -28,10 +28,14 @@ import {
 
 interface Testimony {
   id: string;
+  user_id: string;
   title: string;
   content: string;
   date: string;
   approved: boolean;
+  status: 'pending' | 'approved' | 'rejected';
+  rejection_reason?: string;
+  resubmitted_at?: string;
   profiles: {
     name: string;
   };
@@ -82,6 +86,9 @@ const Admin = () => {
   const [demoteTarget, setDemoteTarget] = useState<AdminUser | null>(null);
   const [showPromoteDialog, setShowPromoteDialog] = useState(false);
   const [searchEmail, setSearchEmail] = useState("");
+  const [rejectingTestimony, setRejectingTestimony] = useState<Testimony | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -339,35 +346,96 @@ const Admin = () => {
   };
 
   const handleApproveTestimony = async (id: string) => {
-    try {
-      // Get testimony details before approving
-      const { data: testimony } = await supabase
-        .from('testimonies')
-        .select('title, profiles(name)')
-        .eq('id', id)
-        .single();
-
-      const { error } = await supabase
-        .from('testimonies')
-        .update({ approved: true })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      // AUTO-NOTIFY all users via encouragement message
-      if (testimony) {
-        await supabase.from('encouragement_messages').insert({
-          content: `✨ New Testimony Shared!\n\n"${testimony.title}"\n\nA member of our community has shared an inspiring testimony. Visit the Testimonies page to read about how God is working in their life! 🙌`,
-          created_at: new Date().toISOString()
-        });
-      }
-
-      toast.success("✨ Testimony approved and community notified!");
+    // Prototype mode: Update in localStorage
+    const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
+    const testimonyIndex = testimonies.findIndex((t: any) => t.id === id);
+    
+    if (testimonyIndex !== -1) {
+      testimonies[testimonyIndex].approved = true;
+      testimonies[testimonyIndex].status = 'approved';
+      setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
+      toast.success("✨ Testimony approved!");
       await fetchTestimonies();
-    } catch (error: any) {
-      console.error('Error approving testimony:', error);
-      toast.error(error.message || 'Failed to approve testimony');
     }
+
+    // Backend integration - Supabase COMMENTED OUT
+    // try {
+    //   const { data: testimony } = await supabase
+    //     .from('testimonies')
+    //     .select('title, profiles(name)')
+    //     .eq('id', id)
+    //     .single();
+    //
+    //   const { error } = await supabase
+    //     .from('testimonies')
+    //     .update({ approved: true, status: 'approved' })
+    //     .eq('id', id);
+    //
+    //   if (error) throw error;
+    //
+    //   if (testimony) {
+    //     await supabase.from('encouragement_messages').insert({
+    //       content: `✨ New Testimony Shared!\n\n"${testimony.title}"\n\nA member of our community has shared an inspiring testimony. Visit the Testimonies page to read about how God is working in their life! 🙌`,
+    //       created_at: new Date().toISOString()
+    //     });
+    //   }
+    //
+    //   toast.success("✨ Testimony approved and community notified!");
+    //   await fetchTestimonies();
+    // } catch (error: any) {
+    //   console.error('Error approving testimony:', error);
+    //   toast.error(error.message || 'Failed to approve testimony');
+    // }
+  };
+
+  const handleRejectTestimony = async () => {
+    if (!rejectingTestimony) return;
+
+    const finalReason = rejectionReason === "Other (specify)" ? customReason : rejectionReason;
+    
+    if (!finalReason) {
+      toast.error("Please provide a rejection reason");
+      return;
+    }
+
+    // Prototype mode: Update in localStorage
+    const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
+    const testimonyIndex = testimonies.findIndex((t: any) => t.id === rejectingTestimony.id);
+    
+    if (testimonyIndex !== -1) {
+      testimonies[testimonyIndex].approved = false;
+      testimonies[testimonyIndex].status = 'rejected';
+      testimonies[testimonyIndex].rejection_reason = finalReason;
+      setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
+      toast.success("Testimony rejected");
+      setRejectingTestimony(null);
+      setRejectionReason("");
+      setCustomReason("");
+      await fetchTestimonies();
+    }
+
+    // Backend integration - Supabase COMMENTED OUT
+    // try {
+    //   const { error } = await supabase
+    //     .from('testimonies')
+    //     .update({ 
+    //       approved: false, 
+    //       status: 'rejected',
+    //       rejection_reason: finalReason
+    //     })
+    //     .eq('id', rejectingTestimony.id);
+    //
+    //   if (error) throw error;
+    //
+    //   toast.success("Testimony rejected");
+    //   setRejectingTestimony(null);
+    //   setRejectionReason("");
+    //   setCustomReason("");
+    //   await fetchTestimonies();
+    // } catch (error: any) {
+    //   console.error('Error rejecting testimony:', error);
+    //   toast.error(error.message || 'Failed to reject testimony');
+    // }
   };
 
   const handleDeleteTestimony = async (id: string) => {
@@ -707,8 +775,38 @@ const Admin = () => {
                               <p className="text-sm text-muted-foreground mt-1">By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}</p>
                             </div>
                             <div className="flex gap-2 flex-shrink-0">
-                              <Button size="sm" onClick={() => handleApproveTestimony(testimony.id)}><Check className="h-4 w-4" /></Button>
-                              <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}><X className="h-4 w-4" /></Button>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button size="sm" onClick={() => handleApproveTestimony(testimony.id)}>
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Approve testimony</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    size="sm" 
+                                    variant="destructive"
+                                    onClick={() => {
+                                      setRejectingTestimony(testimony);
+                                      setRejectionReason("");
+                                      setCustomReason("");
+                                    }}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Reject testimony</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Delete testimony</TooltipContent>
+                              </Tooltip>
                             </div>
                           </div>
                         </CardHeader>
@@ -930,6 +1028,76 @@ const Admin = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reject Testimony Dialog */}
+      <Dialog open={!!rejectingTestimony} onOpenChange={() => {
+        setRejectingTestimony(null);
+        setRejectionReason("");
+        setCustomReason("");
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reject Testimony</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Select a reason for rejecting "{rejectingTestimony?.title}"
+            </p>
+            <div className="space-y-3">
+              {[
+                "Content doesn't align with guidelines",
+                "Needs more detail",
+                "Inappropriate content",
+                "Duplicate",
+                "Other (specify)"
+              ].map((reason) => (
+                <label key={reason} className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="rejection-reason"
+                    value={reason}
+                    checked={rejectionReason === reason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    className="mt-1"
+                  />
+                  <span className="text-sm">{reason}</span>
+                </label>
+              ))}
+            </div>
+            {rejectionReason === "Other (specify)" && (
+              <div>
+                <Label htmlFor="custom-reason">Specify reason</Label>
+                <Textarea
+                  id="custom-reason"
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  placeholder="Enter custom reason..."
+                  rows={3}
+                />
+              </div>
+            )}
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setRejectingTestimony(null);
+                  setRejectionReason("");
+                  setCustomReason("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRejectTestimony}
+                disabled={!rejectionReason || (rejectionReason === "Other (specify)" && !customReason)}
+              >
+                Reject
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
     </TooltipProvider>
   );

@@ -37,6 +37,9 @@ export interface MockTestimony {
   content: string;
   date: string;
   approved: boolean;
+  status: 'pending' | 'approved' | 'rejected';
+  rejection_reason?: string;
+  resubmitted_at?: string;
   profiles: {
     name: string;
   };
@@ -122,6 +125,7 @@ export const mockTestimonies: MockTestimony[] = [
     content: 'God has answered my prayer! My family had a wonderful reconciliation. We spent time together and truly connected. Praise the Lord!',
     date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     approved: true,
+    status: 'approved',
     profiles: { name: 'John Doe' }
   },
   {
@@ -131,6 +135,7 @@ export const mockTestimonies: MockTestimony[] = [
     content: 'God has answered my prayer! After months of struggle, I received an unexpected blessing that covered all my needs. God is faithful!',
     date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     approved: true,
+    status: 'approved',
     profiles: { name: 'Jane Smith' }
   },
   {
@@ -140,6 +145,7 @@ export const mockTestimonies: MockTestimony[] = [
     content: 'This testimony is pending approval from admin.',
     date: new Date().toISOString().split('T')[0],
     approved: false,
+    status: 'pending',
     profiles: { name: 'John Doe' }
   }
 ];

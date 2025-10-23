@@ -7,12 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Edit, Trash2, CheckCircle, Share2, Search } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, CheckCircle, Share2, Search, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import jsPDF from 'jspdf';
 
 interface JournalEntry {
   id: string;
@@ -264,6 +265,88 @@ const Journal = () => {
     }
   };
 
+  const handleShareEntry = async (entry: JournalEntry) => {
+    const shareData = {
+      title: entry.title,
+      text: entry.content
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        toast.success("Shared successfully!");
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          console.error("Error sharing:", error);
+          // Fallback to clipboard
+          handleCopyToClipboard(entry);
+        }
+      }
+    } else {
+      // Fallback to clipboard
+      handleCopyToClipboard(entry);
+    }
+  };
+
+  const handleCopyToClipboard = (entry: JournalEntry) => {
+    const text = `${entry.title}\n\n${entry.content}`;
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success("Copied to clipboard!");
+    }).catch((error) => {
+      console.error("Error copying to clipboard:", error);
+      toast.error("Failed to copy to clipboard");
+    });
+  };
+
+  const handleDownloadEntry = (entry: JournalEntry) => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      const maxWidth = pageWidth - (margin * 2);
+      let yPos = 20;
+
+      // Add header
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("Spirit Scribe Path", margin, yPos);
+      yPos += 15;
+
+      // Add title
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      const titleLines = doc.splitTextToSize(entry.title, maxWidth);
+      doc.text(titleLines, margin, yPos);
+      yPos += titleLines.length * 7 + 5;
+
+      // Add date
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Date: ${new Date(entry.date).toLocaleDateString()}`, margin, yPos);
+      yPos += 10;
+
+      // Add content
+      doc.setFontSize(12);
+      const contentLines = doc.splitTextToSize(entry.content, maxWidth);
+      contentLines.forEach((line: string) => {
+        if (yPos > doc.internal.pageSize.getHeight() - margin) {
+          doc.addPage();
+          yPos = margin;
+        }
+        doc.text(line, margin, yPos);
+        yPos += 7;
+      });
+
+      // Save PDF
+      const filename = `journal-${entry.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${entry.date}.pdf`;
+      doc.save(filename);
+      toast.success("PDF downloaded successfully!");
+    } catch (error: any) {
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to generate PDF");
+    }
+  };
+
   return (
     <TooltipProvider>
       <div className="min-h-screen gradient-subtle">
@@ -382,6 +465,30 @@ const Journal = () => {
                       </p>
                     </div>
                     <div className="flex gap-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleShareEntry(entry)}
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Share entry</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDownloadEntry(entry)}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Download as PDF</TooltipContent>
+                      </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
