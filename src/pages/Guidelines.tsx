@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-// Backend integration placeholder - Supabase commented out for prototype
+// Backend integration - Supabase COMMENTED OUT (Prototype mode)
 // import { supabase } from "@/lib/supabase";
+import { STORAGE_KEYS, getFromStorage } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, BookMarked, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { STORAGE_KEYS, getFromStorage, MockGuideline } from "@/data/mockData";
+import { toast } from "sonner";
 
 interface Guideline {
   id: string;
@@ -26,26 +27,31 @@ const Guidelines = () => {
     fetchGuidelines();
   }, []);
 
+  const formatGuidelineDate = (dateUploaded: string) => {
+    const date = new Date(dateUploaded);
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
   const fetchGuidelines = async () => {
-    const guidelinesData = getFromStorage<MockGuideline[]>(STORAGE_KEYS.GUIDELINES, []);
-    const sorted = [...guidelinesData].sort((a, b) => b.week_number - a.week_number);
-    setGuidelines(sorted as Guideline[]);
+    // Prototype mode: Fetch from localStorage
+    const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
+    const sortedGuidelines = guidelines.sort((a: any, b: any) => b.week_number - a.week_number);
+    setGuidelines(sortedGuidelines);
     setLoading(false);
 
-    // Backend integration: Uncomment when restoring Supabase
-    /*
-    const { data, error } = await supabase
-      .from("guidelines")
-      .select("*")
-      .order("week_number", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching guidelines:", error);
-    } else {
-      setGuidelines(data || []);
-    }
-    setLoading(false);
-    */
+    // Backend integration - Supabase COMMENTED OUT
+    // const { data, error } = await supabase
+    //   .from("guidelines")
+    //   .select("*")
+    //   .order("week_number", { ascending: false });
+    //
+    // if (error) {
+    //   console.error("Error fetching guidelines:", error);
+    //   toast.error("Failed to load guidelines");
+    // } else {
+    //   setGuidelines(data || []);
+    // }
+    // setLoading(false);
   };
 
   return (
@@ -89,7 +95,9 @@ const Guidelines = () => {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <Badge variant="secondary" className="mb-2">Week {guideline.week_number}</Badge>
+                      <Badge variant="secondary" className="mb-2">
+                        Week {guideline.week_number} - {formatGuidelineDate(guideline.date_uploaded)}
+                      </Badge>
                       <CardTitle className="text-2xl">{guideline.title}</CardTitle>
                       <p className="text-sm text-muted-foreground mt-2">
                         Posted {new Date(guideline.date_uploaded).toLocaleDateString()}

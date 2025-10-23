@@ -1,13 +1,16 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-// Backend integration placeholder - Supabase imports commented out for prototype
+// Backend integration - Supabase COMMENTED OUT (Prototype mode)
 // import { User, Session, supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { mockUsers, STORAGE_KEYS, initializeMockData, getFromStorage, setToStorage } from "@/data/mockData";
 
-// Mock user type for prototype
+// Prototype mode: Using mock User interface
 interface User {
   id: string;
   email: string;
+  user_metadata?: {
+    name?: string;
+  };
 }
 
 interface AuthContextType {
@@ -29,98 +32,102 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Initialize mock data
+    // Initialize mock data for prototype
     initializeMockData();
 
-    // Check for existing session in localStorage
-    const currentUser = getFromStorage<User | null>(STORAGE_KEYS.CURRENT_USER, null);
-    
-    if (currentUser) {
-      setUser(currentUser);
-      setSession({ user: currentUser });
-      
-      // Check if admin based on email
-      const isAdminUser = currentUser.email.endsWith('@admin.com');
-      setIsAdmin(isAdminUser);
+    // Prototype mode: Check localStorage for current user
+    const currentUserStr = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+    if (currentUserStr) {
+      try {
+        const currentUser = JSON.parse(currentUserStr);
+        setUser(currentUser);
+        setSession({ user: currentUser });
+
+        // Check if user is admin (mock admin check)
+        const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES) || {};
+        setIsAdmin(userRoles[currentUser.id] === 'admin');
+      } catch (error) {
+        console.error('Error parsing stored user:', error);
+      }
     }
-    
     setLoading(false);
 
-    // Backend integration: Uncomment when restoring Supabase
-    /*
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          setTimeout(() => {
-            checkAdminStatus(session.user.id);
-          }, 0);
-        } else {
-          setIsAdmin(false);
-        }
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        checkAdminStatus(session.user.id);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-    */
+    // Backend integration - Supabase COMMENTED OUT
+    // const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    //   (event, session) => {
+    //     setSession(session);
+    //     setUser(session?.user ?? null);
+    //
+    //     if (session?.user) {
+    //       setTimeout(() => {
+    //         checkAdminStatus(session.user.id);
+    //       }, 0);
+    //     } else {
+    //       setIsAdmin(false);
+    //     }
+    //   }
+    // );
+    //
+    // supabase.auth.getSession().then(({ data: { session } }) => {
+    //   setSession(session);
+    //   setUser(session?.user ?? null);
+    //
+    //   if (session?.user) {
+    //     checkAdminStatus(session.user.id);
+    //   }
+    //   setLoading(false);
+    // });
+    //
+    // return () => subscription.unsubscribe();
   }, []);
 
-  // Backend integration placeholder - commented for prototype
-  /*
-  const checkAdminStatus = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .eq("role", "admin")
-        .maybeSingle();
-
-      if (!error && data) {
-        setIsAdmin(true);
-      } else {
-        setIsAdmin(false);
-      }
-    } catch (error) {
-      console.error("Error checking admin status:", error);
-      setIsAdmin(false);
-    }
-  };
-  */
+  // Backend integration - Supabase COMMENTED OUT
+  // const checkAdminStatus = async (userId: string) => {
+  //   try {
+  //     const { data, error } = await supabase
+  //       .from("user_roles")
+  //       .select("role")
+  //       .eq("user_id", userId)
+  //       .eq("role", "admin")
+  //       .maybeSingle();
+  //
+  //     if (!error && data) {
+  //       setIsAdmin(true);
+  //     } else {
+  //       setIsAdmin(false);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error checking admin status:", error);
+  //     setIsAdmin(false);
+  //   }
+  // };
 
   const handleSignIn = (newUser: User) => {
     setUser(newUser);
     setSession({ user: newUser });
-    const isAdminUser = newUser.email.endsWith('@admin.com');
-    setIsAdmin(isAdminUser);
+
+    // Prototype mode: Check admin from localStorage
+    const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES) || {};
+    setIsAdmin(userRoles[newUser.id] === 'admin');
+
+    // Backend integration - Supabase COMMENTED OUT
+    // checkAdminStatus(newUser.id);
   };
 
   const handleSignOut = async () => {
     try {
-      // Clear localStorage and sessionStorage
+      // Backend integration - Supabase COMMENTED OUT
+      // await supabase.auth.signOut();
+
+      // Prototype mode: Clear localStorage and sessionStorage
       localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
       localStorage.removeItem(STORAGE_KEYS.POPUP_SHOWN);
       sessionStorage.removeItem('encouragement_popup_shown');
-      
+
       setUser(null);
       setSession(null);
       setIsAdmin(false);
       navigate("/auth");
-
-      // Backend integration: Uncomment when restoring Supabase
-      // await supabase.auth.signOut();
     } catch (error) {
       console.error("Error signing out:", error);
     }

@@ -1,20 +1,30 @@
 import { useEffect, useState } from "react";
-// Backend integration placeholder - Supabase commented out for prototype
+// Backend integration - Supabase COMMENTED OUT (Prototype mode)
 // import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Plus, Check, X, Trash2, Megaphone } from "lucide-react";
+import { ArrowLeft, Plus, Check, X, Trash2, Megaphone, Shield, UserPlus, UserMinus, Clock, AlertTriangle, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { STORAGE_KEYS, getFromStorage, setToStorage, MockTestimony, MockGuideline, MockEncouragementMessage, MockUser, createNotification, mockUsers, checkPendingTestimonies } from "@/data/mockData";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Testimony {
   id: string;
@@ -33,6 +43,28 @@ interface EncouragementMessage {
   created_at: string;
 }
 
+interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  isAdmin: boolean;
+  adminSince?: string;
+}
+
+interface ProfileUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface Guideline {
+  id: string;
+  title: string;
+  week_number: number;
+  content: string;
+  date_uploaded: string;
+}
+
 const Admin = () => {
   const { user } = useAuth();
   const [testimonies, setTestimonies] = useState<Testimony[]>([]);
@@ -42,88 +74,201 @@ const Admin = () => {
   const [title, setTitle] = useState("");
   const [weekNumber, setWeekNumber] = useState("");
   const [content, setContent] = useState("");
-  const [editingGuideline, setEditingGuideline] = useState<MockGuideline | null>(null);
-  const [guidelines, setGuidelines] = useState<MockGuideline[]>([]);
+  const [editingGuideline, setEditingGuideline] = useState<Guideline | null>(null);
+  const [guidelines, setGuidelines] = useState<Guideline[]>([]);
   const [encouragementContent, setEncouragementContent] = useState("");
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [allUsers, setAllUsers] = useState<ProfileUser[]>([]);
+  const [demoteTarget, setDemoteTarget] = useState<AdminUser | null>(null);
+  const [showPromoteDialog, setShowPromoteDialog] = useState(false);
+  const [searchEmail, setSearchEmail] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchTestimonies();
     fetchEncouragementMessages();
     fetchGuidelines();
-    checkPendingTestimonies(); // Check for pending testimonies on load
+    fetchUsers();
   }, []);
 
-  const fetchGuidelines = () => {
-    const allGuidelines = getFromStorage<MockGuideline[]>(STORAGE_KEYS.GUIDELINES, []);
-    const sorted = [...allGuidelines].sort((a, b) => b.week_number - a.week_number);
-    setGuidelines(sorted);
+  const fetchGuidelines = async () => {
+    // Prototype mode: Fetch from localStorage
+    const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
+    const sortedGuidelines = guidelines.sort((a: any, b: any) => b.week_number - a.week_number);
+    setGuidelines(sortedGuidelines);
+
+    // Backend integration - Supabase COMMENTED OUT
+    // const { data, error } = await supabase
+    //   .from('guidelines')
+    //   .select('*')
+    //   .order('week_number', { ascending: false });
+    //
+    // if (error) {
+    //   console.error('Error fetching guidelines:', error);
+    //   toast.error('Failed to load guidelines');
+    // } else {
+    //   setGuidelines(data || []);
+    // }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      // Prototype mode: Fetch from localStorage
+      const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
+      const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {} as any);
+
+      // Convert profiles object to array
+      const allProfiles = Object.keys(profiles).map(id => ({
+        id,
+        name: profiles[id].name || 'Unknown',
+        email: profiles[id].email || ''
+      }));
+      setAllUsers(allProfiles);
+
+      // Get admins
+      const admins: AdminUser[] = Object.keys(userRoles)
+        .filter(userId => userRoles[userId] === 'admin')
+        .map(userId => ({
+          id: userId,
+          name: profiles[userId]?.name || 'Unknown',
+          email: profiles[userId]?.email || '',
+          isAdmin: true,
+          adminSince: new Date().toISOString() // Prototype doesn't track this
+        }));
+
+      setAdminUsers(admins);
+
+      // Backend integration - Supabase COMMENTED OUT
+      // const { data: profiles, error: profilesError } = await supabase
+      //   .from('profiles')
+      //   .select('id, name, email');
+      //
+      // if (profilesError) throw profilesError;
+      // setAllUsers(profiles || []);
+      //
+      // const { data: adminRoles, error: rolesError } = await supabase
+      //   .from('user_roles')
+      //   .select('user_id, created_at')
+      //   .eq('role', 'admin')
+      //   .order('created_at', { ascending: true });
+      //
+      // if (rolesError) throw rolesError;
+      //
+      // const admins: AdminUser[] = (adminRoles || []).map(role => {
+      //   const profile = profiles?.find(p => p.id === role.user_id);
+      //   return {
+      //     id: role.user_id,
+      //     name: profile?.name || 'Unknown',
+      //     email: profile?.email || '',
+      //     isAdmin: true,
+      //     adminSince: role.created_at
+      //   };
+      // });
+      //
+      // setAdminUsers(admins);
+    } catch (error: any) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to load users');
+    }
   };
 
   const fetchTestimonies = async () => {
-    const allTestimonies = getFromStorage<MockTestimony[]>(STORAGE_KEYS.TESTIMONIES, []);
-    const sorted = [...allTestimonies].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    setTestimonies(sorted as Testimony[]);
+    // Prototype mode: Fetch from localStorage
+    const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
+    const sortedTestimonies = testimonies.sort((a: any, b: any) =>
+      new Date(b.date || b.created_at).getTime() - new Date(a.date || a.created_at).getTime()
+    );
+    setTestimonies(sortedTestimonies);
+
+    // Backend integration - Supabase COMMENTED OUT
+    // const { data, error } = await supabase
+    //   .from('testimonies')
+    //   .select('id, title, content, date, approved, profiles(name)')
+    //   .order('date', { ascending: false });
+    //
+    // if (error) {
+    //   console.error('Error fetching testimonies:', error);
+    //   toast.error('Failed to load testimonies');
+    // } else {
+    //   setTestimonies(data || []);
+    // }
   };
 
   const fetchEncouragementMessages = async () => {
-    const messages = getFromStorage<MockEncouragementMessage[]>(STORAGE_KEYS.ENCOURAGEMENT, []);
-    const sorted = [...messages].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    setEncouragementMessages(sorted.slice(0, 10) as EncouragementMessage[]);
+    // Prototype mode: Fetch from localStorage
+    const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, [] as any[]);
+    const sortedMessages = messages
+      .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 10);
+    setEncouragementMessages(sortedMessages);
+
+    // Backend integration - Supabase COMMENTED OUT
+    // const { data, error } = await supabase
+    //   .from('encouragement_messages')
+    //   .select('*')
+    //   .order('created_at', { ascending: false })
+    //   .limit(10);
+    //
+    // if (error) {
+    //   console.error('Error fetching encouragement messages:', error);
+    //   toast.error('Failed to load encouragement messages');
+    // } else {
+    //   setEncouragementMessages(data || []);
+    // }
   };
 
   const handleCreateGuideline = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const guidelines = getFromStorage<MockGuideline[]>(STORAGE_KEYS.GUIDELINES, []);
-    
-    if (editingGuideline) {
-      // Update existing guideline
-      const updated = guidelines.map(g => 
-        g.id === editingGuideline.id 
-          ? { ...g, title, week_number: parseInt(weekNumber), content }
-          : g
-      );
-      setToStorage(STORAGE_KEYS.GUIDELINES, updated);
-      toast.success("Guideline updated successfully");
-    } else {
-      // Create new guideline
-      const newGuideline: MockGuideline = {
-        id: String(Date.now()),
-        title,
-        week_number: parseInt(weekNumber),
-        content,
-        date_uploaded: new Date().toISOString()
-      };
-      guidelines.push(newGuideline);
-      setToStorage(STORAGE_KEYS.GUIDELINES, guidelines);
-      
-      // Notify all users about new guideline
-      const users = mockUsers.filter(u => !u.isAdmin);
-      users.forEach(u => {
-        createNotification(
-          'guideline',
-          'New Prayer Guideline',
-          '📖 A new prayer guideline has been added.',
-          u.id,
-          newGuideline.id,
-          '📋'
-        );
-      });
-      
-      toast.success("📖 Guideline created! All users have been notified.");
-      console.log('(Push placeholder) New guideline broadcast to all users');
-    }
+    try {
+      if (editingGuideline) {
+        // Update existing guideline
+        const { error } = await supabase
+          .from('guidelines')
+          .update({
+            title,
+            week_number: parseInt(weekNumber),
+            content
+          })
+          .eq('id', editingGuideline.id);
 
-    setTitle("");
-    setWeekNumber("");
-    setContent("");
-    setEditingGuideline(null);
-    setIsDialogOpen(false);
-    fetchGuidelines();
+        if (error) throw error;
+        toast.success("Guideline updated successfully");
+      } else {
+        // Create new guideline
+        const { error } = await supabase
+          .from('guidelines')
+          .insert({
+            title,
+            week_number: parseInt(weekNumber),
+            content,
+            date_uploaded: new Date().toISOString()
+          });
+
+        if (error) throw error;
+
+        // AUTO-NOTIFY all users via encouragement message
+        await supabase.from('encouragement_messages').insert({
+          content: `📖 New Prayer Guideline Available!\n\nWeek ${weekNumber}: "${title}"\n\nStart your prayer journey for this week. Check the Guidelines page to see the full content and begin your daily prayers! 🙏`,
+          created_at: new Date().toISOString()
+        });
+
+        toast.success("📖 Guideline created and all users notified!");
+      }
+
+      setTitle("");
+      setWeekNumber("");
+      setContent("");
+      setEditingGuideline(null);
+      setIsDialogOpen(false);
+      await fetchGuidelines();
+    } catch (error: any) {
+      console.error('Error creating/updating guideline:', error);
+      toast.error(error.message || 'Failed to save guideline');
+    }
   };
 
-  const handleEditGuideline = (guideline: MockGuideline) => {
+  const handleEditGuideline = (guideline: Guideline) => {
     setEditingGuideline(guideline);
     setTitle(guideline.title);
     setWeekNumber(String(guideline.week_number));
@@ -131,114 +276,220 @@ const Admin = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDeleteGuideline = (id: string) => {
+  const handleDeleteGuideline = async (id: string) => {
     if (!confirm("Are you sure you want to delete this guideline?")) return;
-    
-    const guidelines = getFromStorage<MockGuideline[]>(STORAGE_KEYS.GUIDELINES, []);
-    const updated = guidelines.filter(g => g.id !== id);
-    setToStorage(STORAGE_KEYS.GUIDELINES, updated);
-    
-    toast.success("Guideline deleted");
-    fetchGuidelines();
+
+    try {
+      const { error } = await supabase
+        .from('guidelines')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success("Guideline deleted");
+      await fetchGuidelines();
+    } catch (error: any) {
+      console.error('Error deleting guideline:', error);
+      toast.error(error.message || 'Failed to delete guideline');
+    }
   };
 
   const handleCreateEncouragement = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
-    const messages = getFromStorage<MockEncouragementMessage[]>(STORAGE_KEYS.ENCOURAGEMENT, []);
-    const newMessage: MockEncouragementMessage = {
-      id: String(Date.now()),
-      content: encouragementContent,
-      created_at: new Date().toISOString(),
-      created_by: user.id
-    };
-    messages.push(newMessage);
-    setToStorage(STORAGE_KEYS.ENCOURAGEMENT, messages);
-    
-    // Create notifications for all users
-    const users = mockUsers.filter(u => !u.isAdmin);
-    users.forEach(u => {
-      createNotification(
-        'encouragement',
-        'New Daily Encouragement',
-        '✨ New daily encouragement available! Check your dashboard.',
-        u.id,
-        newMessage.id,
-        '💬'
-      );
-    });
-    
-    toast.success("✨ New daily encouragement posted! All users have been notified.");
-    
-    // Simulate push notification placeholder
-    console.log('(Push placeholder) New encouragement message broadcast to all users');
-    
-    setEncouragementContent("");
-    setIsEncouragementDialogOpen(false);
-    fetchEncouragementMessages();
+    try {
+      const { error } = await supabase
+        .from('encouragement_messages')
+        .insert({
+          content: encouragementContent,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      toast.success("✨ New daily encouragement posted!");
+      setEncouragementContent("");
+      setIsEncouragementDialogOpen(false);
+      await fetchEncouragementMessages();
+    } catch (error: any) {
+      console.error('Error posting encouragement:', error);
+      toast.error(error.message || 'Failed to post encouragement message');
+    }
   };
 
   const handleDeleteEncouragement = async (id: string) => {
     if (!confirm("Are you sure you want to delete this encouragement message?")) return;
 
-    const messages = getFromStorage<MockEncouragementMessage[]>(STORAGE_KEYS.ENCOURAGEMENT, []);
-    const updated = messages.filter(m => m.id !== id);
-    setToStorage(STORAGE_KEYS.ENCOURAGEMENT, updated);
+    try {
+      const { error } = await supabase
+        .from('encouragement_messages')
+        .delete()
+        .eq('id', id);
 
-    toast.success("Message deleted");
-    fetchEncouragementMessages();
+      if (error) throw error;
+
+      toast.success("Message deleted");
+      await fetchEncouragementMessages();
+    } catch (error: any) {
+      console.error('Error deleting encouragement:', error);
+      toast.error(error.message || 'Failed to delete message');
+    }
   };
 
-  const handleApproveTestimony = async (id: string, approved: boolean) => {
-    const testimonies = getFromStorage<MockTestimony[]>(STORAGE_KEYS.TESTIMONIES, []);
-    const testimony = testimonies.find(t => t.id === id);
-    const updated = testimonies.map(t => t.id === id ? { ...t, approved } : t);
-    setToStorage(STORAGE_KEYS.TESTIMONIES, updated);
+  const handleApproveTestimony = async (id: string) => {
+    try {
+      // Get testimony details before approving
+      const { data: testimony } = await supabase
+        .from('testimonies')
+        .select('title, profiles(name)')
+        .eq('id', id)
+        .single();
 
-    if (approved && testimony) {
-      // Notify all users about new approved testimony
-      const users = mockUsers.filter(u => !u.isAdmin);
-      users.forEach(u => {
-        createNotification(
-          'testimony',
-          'New Testimony Shared',
-          '✨ A new testimony has just been shared.',
-          u.id,
-          testimony.id,
-          '✨'
-        );
-      });
-      
-      // Remove admin notification about pending testimony
-      const adminUsers = mockUsers.filter(u => u.isAdmin);
-      adminUsers.forEach(admin => {
-        const notifications = getFromStorage('notifications', []);
-        const filtered = notifications.filter(n => 
-          !(n.type === 'testimony' && n.relatedId === id && n.userId === admin.id && n.message.includes('pending'))
-        );
-        setToStorage('notifications', filtered);
-      });
-      
-      toast.success("✨ Testimony approved! All users have been notified.");
-      console.log('(Push placeholder) New testimony broadcast to all users');
-    } else {
-      toast.success("Testimony rejected");
+      const { error } = await supabase
+        .from('testimonies')
+        .update({ approved: true })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // AUTO-NOTIFY all users via encouragement message
+      if (testimony) {
+        await supabase.from('encouragement_messages').insert({
+          content: `✨ New Testimony Shared!\n\n"${testimony.title}"\n\nA member of our community has shared an inspiring testimony. Visit the Testimonies page to read about how God is working in their life! 🙌`,
+          created_at: new Date().toISOString()
+        });
+      }
+
+      toast.success("✨ Testimony approved and community notified!");
+      await fetchTestimonies();
+    } catch (error: any) {
+      console.error('Error approving testimony:', error);
+      toast.error(error.message || 'Failed to approve testimony');
     }
-    
-    fetchTestimonies();
   };
 
   const handleDeleteTestimony = async (id: string) => {
     if (!confirm("Are you sure you want to delete this testimony?")) return;
 
-    const testimonies = getFromStorage<MockTestimony[]>(STORAGE_KEYS.TESTIMONIES, []);
-    const updated = testimonies.filter(t => t.id !== id);
-    setToStorage(STORAGE_KEYS.TESTIMONIES, updated);
+    try {
+      const { error } = await supabase
+        .from('testimonies')
+        .delete()
+        .eq('id', id);
 
-    toast.success("Testimony deleted");
-    fetchTestimonies();
+      if (error) throw error;
+
+      toast.success("Testimony deleted");
+      await fetchTestimonies();
+    } catch (error: any) {
+      console.error('Error deleting testimony:', error);
+      toast.error(error.message || 'Failed to delete testimony');
+    }
   };
+
+  const handlePromoteUser = async (userId: string) => {
+    try {
+      const targetUser = allUsers.find(u => u.id === userId);
+
+      // Check if user already has admin role
+      const { data: existingRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (existingRole) {
+        toast.error('User is already an admin');
+        return;
+      }
+
+      // Update the user's role from 'user' to 'admin'
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role: 'admin' })
+        .eq('user_id', userId)
+        .eq('role', 'user');
+
+      if (error) throw error;
+
+      toast.success(`${targetUser?.name || 'User'} has been promoted to admin`);
+      setShowPromoteDialog(false);
+      setSearchEmail("");
+      await fetchUsers();
+    } catch (error: any) {
+      console.error('Error promoting user:', error);
+      toast.error(error.message || 'Failed to promote user');
+    }
+  };
+
+  const handleDemoteAdmin = async () => {
+    if (!demoteTarget || !user) return;
+
+    try {
+      // Check precedence first
+      if (!canDemote(demoteTarget)) {
+        toast.error("Cannot demote this admin - they have precedence over you");
+        setDemoteTarget(null);
+        return;
+      }
+
+      // Update the role from 'admin' to 'user'
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role: 'user' })
+        .eq('user_id', demoteTarget.id)
+        .eq('role', 'admin');
+
+      if (error) throw error;
+
+      toast.success(`${demoteTarget.name} has been demoted to regular user`);
+      setDemoteTarget(null);
+      await fetchUsers();
+    } catch (error: any) {
+      console.error('Error demoting admin:', error);
+      toast.error(error.message || 'Failed to demote admin');
+      setDemoteTarget(null);
+    }
+  };
+
+  const canDemote = (targetAdmin: AdminUser): boolean => {
+    if (!user || !targetAdmin.adminSince) return false;
+    if (targetAdmin.id === user.id) return false; // Cannot demote yourself
+
+    const currentAdmin = adminUsers.find(a => a.id === user.id);
+    if (!currentAdmin?.adminSince) return false;
+
+    // Can only demote admins who became admin after you
+    return new Date(targetAdmin.adminSince) >= new Date(currentAdmin.adminSince);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const getDaysSince = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const filteredNonAdmins = allUsers.filter(u => {
+    // Filter out users who are already admins
+    const isAlreadyAdmin = adminUsers.some(admin => admin.id === u.id);
+    return !isAlreadyAdmin &&
+      (u.email.toLowerCase().includes(searchEmail.toLowerCase()) ||
+       u.name.toLowerCase().includes(searchEmail.toLowerCase()));
+  });
 
   const pendingTestimonies = testimonies.filter((t) => !t.approved);
   const approvedTestimonies = testimonies.filter((t) => t.approved);
@@ -263,12 +514,12 @@ const Admin = () => {
 
         <Tabs defaultValue="guidelines" className="space-y-6">
             <div className="w-full md:overflow-visible overflow-x-auto">
-              <TabsList className="inline-flex md:grid w-auto md:w-full min-w-full md:grid-cols-3">
+              <TabsList className="inline-flex md:grid w-auto md:w-full min-w-full md:grid-cols-4">
                 <TabsTrigger value="guidelines" className="whitespace-nowrap flex-shrink-0">
                   Prayer Guidelines
                 </TabsTrigger>
                 <TabsTrigger value="encouragement" className="whitespace-nowrap flex-shrink-0">
-                  Daily Encouragement
+                  Announcements
                 </TabsTrigger>
                 <TabsTrigger value="testimonies" className="whitespace-nowrap flex-shrink-0">
                   Testimonies
@@ -278,9 +529,9 @@ const Admin = () => {
                     </span>
                   )}
                 </TabsTrigger>
-                {/* <TabsTrigger value="users" className="whitespace-nowrap flex-shrink-0">
-                  Users
-                </TabsTrigger> */}
+                <TabsTrigger value="users" className="whitespace-nowrap flex-shrink-0">
+                  Admin Users
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -379,9 +630,11 @@ const Admin = () => {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Megaphone className="h-6 w-6 text-accent" />
-                      Daily Encouragement Messages
+                      Community Announcements
                     </CardTitle>
-                    <p className="text-sm text-muted-foreground mt-2">Post encouragement messages that will be visible to all users for 24 hours</p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Post announcements visible to all users on their dashboards. Announcements are also auto-posted when you create guidelines or approve testimonies. (Visible for 48 hours)
+                    </p>
                   </div>
                   <Dialog open={isEncouragementDialogOpen} onOpenChange={setIsEncouragementDialogOpen}>
                     <DialogTrigger asChild>
@@ -400,15 +653,15 @@ const Admin = () => {
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl">
                       <DialogHeader>
-                        <DialogTitle>Post Encouragement Message</DialogTitle>
+                        <DialogTitle>Post Community Announcement</DialogTitle>
                       </DialogHeader>
                       <form onSubmit={handleCreateEncouragement} className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="encouragement">Message</Label>
-                          <Textarea id="encouragement" value={encouragementContent} onChange={(e) => setEncouragementContent(e.target.value)} placeholder="Write an encouraging message or teaching for the community..." rows={8} required />
-                          <p className="text-xs text-muted-foreground">This message will be visible to all users for 24 hours from posting</p>
+                          <Label htmlFor="encouragement">Announcement</Label>
+                          <Textarea id="encouragement" value={encouragementContent} onChange={(e) => setEncouragementContent(e.target.value)} placeholder="Write an encouraging message, teaching, or important announcement for the community..." rows={8} required />
+                          <p className="text-xs text-muted-foreground">This announcement will appear on all user dashboards for 48 hours</p>
                         </div>
-                        <Button type="submit" className="w-full">Post Message</Button>
+                        <Button type="submit" className="w-full">Post Announcement</Button>
                       </form>
                     </DialogContent>
                   </Dialog>
@@ -454,7 +707,7 @@ const Admin = () => {
                               <p className="text-sm text-muted-foreground mt-1">By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}</p>
                             </div>
                             <div className="flex gap-2 flex-shrink-0">
-                              <Button size="sm" onClick={() => handleApproveTestimony(testimony.id, true)}><Check className="h-4 w-4" /></Button>
+                              <Button size="sm" onClick={() => handleApproveTestimony(testimony.id)}><Check className="h-4 w-4" /></Button>
                               <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}><X className="h-4 w-4" /></Button>
                             </div>
                           </div>
@@ -491,8 +744,192 @@ const Admin = () => {
               </Card>
             </div>
           </TabsContent>
+
+          <TabsContent value="users">
+            <Card className="shadow-medium">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-6 w-6 text-accent" />
+                      Admin User Management
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Manage admin users and their permissions. Newer admins cannot demote older admins.
+                    </p>
+                  </div>
+                  <Button onClick={() => setShowPromoteDialog(true)}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">Promote User</span>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {adminUsers.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No admins found.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {adminUsers.map((admin, index) => (
+                      <Card key={admin.id} className={index === 0 ? "border-2 border-accent/30" : ""}>
+                        <CardContent className="pt-6">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h4 className="font-semibold text-lg">{admin.name}</h4>
+                                {index === 0 && (
+                                  <Badge variant="default" className="bg-accent text-accent-foreground">
+                                    Senior Admin
+                                  </Badge>
+                                )}
+                                {admin.id === user?.id && (
+                                  <Badge variant="secondary">You</Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-3">{admin.email}</p>
+
+                              {admin.adminSince && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Clock className="h-4 w-4" />
+                                  <span>
+                                    Admin since {formatDate(admin.adminSince)}
+                                    <span className="ml-1">
+                                      ({getDaysSince(admin.adminSince)} days ago)
+                                    </span>
+                                  </span>
+                                </div>
+                              )}
+
+                              {!canDemote(admin) && admin.id !== user?.id && (
+                                <div className="flex items-center gap-2 mt-2 text-sm text-amber-600">
+                                  <AlertTriangle className="h-4 w-4" />
+                                  <span>Has precedence over you - cannot demote</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {canDemote(admin) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setDemoteTarget(admin)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <UserMinus className="mr-2 h-4 w-4" />
+                                Demote
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {/* Info Box */}
+                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h5 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Admin Precedence Rules
+                  </h5>
+                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>Admins are listed in order of seniority (oldest first)</li>
+                    <li>You can only demote admins who became admin after you</li>
+                    <li>You cannot demote yourself</li>
+                    <li>Senior admins have permanent status from junior admins</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
+
+      {/* Promote User Dialog */}
+      <Dialog open={showPromoteDialog} onOpenChange={setShowPromoteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Promote User to Admin</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="search-email">Search by Name or Email</Label>
+              <div className="relative mt-2">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="search-email"
+                  type="text"
+                  placeholder="Search users..."
+                  value={searchEmail}
+                  onChange={(e) => setSearchEmail(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {searchEmail && filteredNonAdmins.length > 0 && (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                <Label>Search Results ({filteredNonAdmins.length})</Label>
+                {filteredNonAdmins.map((user) => (
+                  <Card key={user.id} className="hover:bg-accent/5">
+                    <CardContent className="pt-4 flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{user.name}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => handlePromoteUser(user.id)}
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Promote
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {searchEmail && filteredNonAdmins.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No users found matching "{searchEmail}"
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Demote Confirmation Dialog */}
+      <AlertDialog open={!!demoteTarget} onOpenChange={() => setDemoteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Demote Admin?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to demote <strong>{demoteTarget?.name}</strong> from admin to regular user?
+              <br /><br />
+              They will lose access to:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Admin dashboard</li>
+                <li>Content moderation</li>
+                <li>User management</li>
+                <li>Guideline management</li>
+              </ul>
+              <br />
+              This action can be reversed by promoting them again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDemoteAdmin}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Demote Admin
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
     </TooltipProvider>
   );

@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-// Backend integration placeholder - Supabase commented out for prototype
+// Backend integration - Supabase COMMENTED OUT (Prototype mode)
 // import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { mockUsers, STORAGE_KEYS, setToStorage, getFromStorage } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, BookOpen } from "lucide-react";
-import { mockUsers, mockProfiles, STORAGE_KEYS, setToStorage } from "@/data/mockData";
+import { Loader2, BookOpen, Eye, EyeOff } from "lucide-react";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,6 +17,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { user, signIn } = useAuth();
 
@@ -26,97 +27,117 @@ const Auth = () => {
     }
   }, [user, navigate]);
 
+  const validatePassword = (password: string): { valid: boolean; message?: string } => {
+    if (password.length < 8) {
+      return { valid: false, message: "Password must be at least 8 characters" };
+    }
+
+    const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    if (!hasSymbol) {
+      return { valid: false, message: "Password must include at least one symbol (!@#$%^&*...)" };
+    }
+
+    return { valid: true };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Mock authentication - check if user exists or create new one
-      const existingUser = mockUsers.find(u => u.email === email);
-      
+      // Prototype mode: Mock authentication with localStorage
       if (isLogin) {
-        // Login: check if user exists
-        if (!existingUser) {
-          throw new Error("User not found. Please sign up first.");
+        const users = getFromStorage(STORAGE_KEYS.USERS) || mockUsers;
+        const foundUser = users.find((u: any) => u.email === email && u.password === password);
+
+        if (!foundUser) {
+          toast.error("Invalid email or password");
+          setLoading(false);
+          return;
         }
-        
-        // Simulate admin check - if email ends with @admin.com, user is admin
-        const mockUser = { id: existingUser.id, email: existingUser.email };
-        setToStorage(STORAGE_KEYS.CURRENT_USER, mockUser);
-        
-        // Update auth context
-        signIn(mockUser);
-        
+
+        const userForAuth = {
+          id: foundUser.id,
+          email: foundUser.email,
+          user_metadata: { name: foundUser.name }
+        };
+
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(userForAuth));
+        signIn(userForAuth);
         toast.success("Welcome back!");
         navigate("/dashboard");
       } else {
-        // Sign up: create new user
+        // Signup: validate password
+        const passwordValidation = validatePassword(password);
+        if (!passwordValidation.valid) {
+          toast.error(passwordValidation.message);
+          setLoading(false);
+          return;
+        }
+
+        const users = getFromStorage(STORAGE_KEYS.USERS) || mockUsers;
+        const existingUser = users.find((u: any) => u.email === email);
+
         if (existingUser) {
-          throw new Error("User already exists. Please login instead.");
+          toast.error("Email already registered");
+          setLoading(false);
+          return;
         }
-        
-        // Create new user
+
         const newUser = {
-          id: String(Date.now()),
+          id: `user-${Date.now()}`,
           email,
-          name: name || "User",
-          isAdmin: email.endsWith('@admin.com')
+          password,
+          name,
+          createdAt: new Date().toISOString()
         };
-        
-        // Add to mock users
-        mockUsers.push(newUser);
-        
-        // Create profile
-        const newProfile = {
+
+        users.push(newUser);
+        setToStorage(STORAGE_KEYS.USERS, users);
+
+        const userForAuth = {
           id: newUser.id,
-          name: newUser.name,
           email: newUser.email,
-          streak_count: 0,
-          reminders_enabled: true,
-          last_journal_date: null
+          user_metadata: { name: newUser.name }
         };
-        
-        const profiles = JSON.parse(localStorage.getItem(STORAGE_KEYS.PROFILES) || '[]');
-        profiles.push(newProfile);
-        localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(profiles));
-        
-        // Set current user
-        const mockUserObj = { id: newUser.id, email: newUser.email };
-        setToStorage(STORAGE_KEYS.CURRENT_USER, mockUserObj);
-        
-        // Update auth context
-        signIn(mockUserObj);
-        
+
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(userForAuth));
+        signIn(userForAuth);
         toast.success("Account created! Welcome to Prayer Journal.");
         navigate("/dashboard");
       }
-      
-      // Backend integration: Uncomment when restoring Supabase
-      /*
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
 
-        if (error) throw error;
-        toast.success("Welcome back!");
-        navigate("/dashboard");
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { name },
-            emailRedirectTo: `${window.location.origin}/dashboard`,
-          },
-        });
-
-        if (error) throw error;
-        toast.success("Account created! Welcome to Prayer Journal.");
-        navigate("/dashboard");
-      }
-      */
+      // Backend integration - Supabase COMMENTED OUT
+      // if (isLogin) {
+      //   const { error } = await supabase.auth.signInWithPassword({
+      //     email,
+      //     password,
+      //   });
+      //
+      //   if (error) throw error;
+      //   toast.success("Welcome back!");
+      //   navigate("/dashboard");
+      // } else {
+      //   const passwordValidation = validatePassword(password);
+      //   if (!passwordValidation.valid) {
+      //     toast.error(passwordValidation.message);
+      //     setLoading(false);
+      //     return;
+      //   }
+      //
+      //   const { error } = await supabase.auth.signUp({
+      //     email,
+      //     password,
+      //     options: {
+      //       data: { name },
+      //       emailRedirectTo: `${window.location.origin}/dashboard`,
+      //     },
+      //   });
+      //
+      //   if (error) throw error;
+      //   toast.success("Account created! Check your email to verify.");
+      //   navigate("/dashboard");
+      // }
     } catch (error: any) {
       toast.error(error.message || "An error occurred");
     } finally {
@@ -125,23 +146,22 @@ const Auth = () => {
   };
 
   const handleGoogleSignIn = async () => {
-    toast.info("Google sign-in is not available in prototype mode");
-    
-    // Backend integration: Uncomment when restoring Supabase
-    /*
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-        },
-      });
+    // Prototype mode: Google OAuth not available
+    toast.info("Google sign-in will be available in production version");
 
-      if (error) throw error;
-    } catch (error: any) {
-      toast.error(error.message || "An error occurred");
-    }
-    */
+    // Backend integration - Supabase COMMENTED OUT
+    // try {
+    //   const { error } = await supabase.auth.signInWithOAuth({
+    //     provider: "google",
+    //     options: {
+    //       redirectTo: `${window.location.origin}/dashboard`,
+    //     },
+    //   });
+    //
+    //   if (error) throw error;
+    // } catch (error: any) {
+    //   toast.error(error.message || "Google sign-in not configured yet");
+    // }
   };
 
   return (
@@ -178,26 +198,42 @@ const Auth = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="your@email.com (use @admin.com for admin access)"
+                placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
-              <p className="text-xs text-muted-foreground">
-                Tip: Use an email ending with @admin.com to access admin features
-              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={isLogin ? 1 : 8}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              {!isLogin && (
+                <p className="text-xs text-muted-foreground">
+                  Must be at least 8 characters and include a symbol (!@#$%^&*...)
+                </p>
+              )}
             </div>
             <Button type="submit" className="w-full text-primary-foreground" disabled={loading}>
               {loading ? (

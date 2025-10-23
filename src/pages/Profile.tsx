@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-// Backend integration placeholder - Supabase commented out for prototype
+// Backend integration - Supabase COMMENTED OUT (Prototype mode)
 // import { supabase } from "@/lib/supabase";
+import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,6 @@ import { ArrowLeft, Award } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
 
 interface ProfileData {
   name: string;
@@ -35,38 +35,48 @@ const Profile = () => {
   const fetchProfile = async () => {
     if (!user) return;
 
-    // Get profile from localStorage
-    const profiles = getFromStorage<any[]>(STORAGE_KEYS.PROFILES, []);
-    const userProfile = profiles.find(p => p.id === user.id);
-    
+    // Prototype mode: Fetch from localStorage
+    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
+    const userProfile = profiles[user.id];
+
     if (userProfile) {
-      const profileData: ProfileData = {
-        name: userProfile.name,
-        email: userProfile.email,
-        streak_count: userProfile.streak_count,
-        reminders_enabled: userProfile.reminders_enabled
+      const profileData = {
+        name: userProfile.name || user.user_metadata?.name || 'Friend',
+        email: user.email || '',
+        streak_count: userProfile.streak_count || 0,
+        reminders_enabled: userProfile.reminders_enabled || false
       };
       setProfile(profileData);
       setName(profileData.name);
       setReminders(profileData.reminders_enabled);
-    }
-
-    // Backend integration: Uncomment when restoring Supabase
-    /*
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("name, email, streak_count, reminders_enabled")
-      .eq("id", user.id)
-      .single();
-
-    if (error) {
-      console.error("Error fetching profile:", error);
     } else {
-      setProfile(data);
-      setName(data.name);
-      setReminders(data.reminders_enabled);
+      // Create default profile
+      const defaultProfile = {
+        name: user.user_metadata?.name || 'Friend',
+        email: user.email || '',
+        streak_count: 0,
+        reminders_enabled: false
+      };
+      setProfile(defaultProfile);
+      setName(defaultProfile.name);
+      setReminders(false);
     }
-    */
+
+    // Backend integration - Supabase COMMENTED OUT
+    // const { data, error } = await supabase
+    //   .from("profiles")
+    //   .select("name, email, streak_count, reminders_enabled")
+    //   .eq("id", user.id)
+    //   .single();
+    //
+    // if (error) {
+    //   console.error("Error fetching profile:", error);
+    //   toast.error("Failed to load profile");
+    // } else {
+    //   setProfile(data);
+    //   setName(data.name);
+    //   setReminders(data.reminders_enabled);
+    // }
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -74,35 +84,34 @@ const Profile = () => {
     if (!user) return;
 
     setLoading(true);
-    
-    // Update profile in localStorage
-    const profiles = getFromStorage<any[]>(STORAGE_KEYS.PROFILES, []);
-    const updatedProfiles = profiles.map(p =>
-      p.id === user.id
-        ? { ...p, name, reminders_enabled: reminders }
-        : p
-    );
-    setToStorage(STORAGE_KEYS.PROFILES, updatedProfiles);
-    
+
+    // Prototype mode: Update in localStorage
+    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
+    if (!profiles[user.id]) {
+      profiles[user.id] = {};
+    }
+    profiles[user.id].name = name;
+    profiles[user.id].reminders_enabled = reminders;
+    setToStorage(STORAGE_KEYS.PROFILES, profiles);
+
     toast.success("Profile updated successfully");
     fetchProfile();
     setLoading(false);
 
-    // Backend integration: Uncomment when restoring Supabase
-    /*
-    const { error } = await supabase
-      .from("profiles")
-      .update({ name, reminders_enabled: reminders })
-      .eq("id", user.id);
-
-    if (error) {
-      toast.error("Error updating profile");
-    } else {
-      toast.success("Profile updated successfully");
-      fetchProfile();
-    }
-    setLoading(false);
-    */
+    // Backend integration - Supabase COMMENTED OUT
+    // const { error } = await supabase
+    //   .from("profiles")
+    //   .update({ name, reminders_enabled: reminders })
+    //   .eq("id", user.id);
+    //
+    // if (error) {
+    //   console.error("Error updating profile:", error);
+    //   toast.error("Failed to update profile");
+    // } else {
+    //   toast.success("Profile updated successfully");
+    //   fetchProfile();
+    // }
+    // setLoading(false);
   };
 
   const getBadges = (streak: number) => {

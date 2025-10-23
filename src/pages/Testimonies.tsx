@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-// Backend integration placeholder - Supabase commented out for prototype
+// Backend integration - Supabase COMMENTED OUT (Prototype mode)
 // import { supabase } from "@/lib/supabase";
+import { STORAGE_KEYS, getFromStorage } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { ArrowLeft, Sparkles, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { STORAGE_KEYS, getFromStorage, MockTestimony } from "@/data/mockData";
+import { toast } from "sonner";
 
 interface Testimony {
   id: string;
@@ -37,30 +38,28 @@ const Testimonies = () => {
   }, []);
 
   const fetchTestimonies = async () => {
-    // Get approved testimonies from localStorage
-    const allTestimonies = getFromStorage<MockTestimony[]>(STORAGE_KEYS.TESTIMONIES, []);
-    const approved = allTestimonies
-      .filter(t => t.approved)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
-    setTestimonies(approved as Testimony[]);
+    // Prototype mode: Fetch from localStorage
+    const allTestimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
+    const approvedTestimonies = allTestimonies
+      .filter((t: any) => t.approved === true)
+      .sort((a: any, b: any) => new Date(b.date || b.created_at).getTime() - new Date(a.date || a.created_at).getTime());
+    setTestimonies(approvedTestimonies);
     setLoading(false);
 
-    // Backend integration: Uncomment when restoring Supabase
-    /*
-    const { data, error } = await supabase
-      .from("testimonies")
-      .select("id, title, content, date, profiles(name)")
-      .eq("approved", true)
-      .order("date", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching testimonies:", error);
-    } else {
-      setTestimonies(data || []);
-    }
-    setLoading(false);
-    */
+    // Backend integration - Supabase COMMENTED OUT
+    // const { data, error } = await supabase
+    //   .from("testimonies")
+    //   .select("id, title, content, date, profiles(name)")
+    //   .eq("approved", true)
+    //   .order("date", { ascending: false });
+    //
+    // if (error) {
+    //   console.error("Error fetching testimonies:", error);
+    //   toast.error("Failed to load testimonies");
+    // } else {
+    //   setTestimonies(data || []);
+    // }
+    // setLoading(false);
   };
 
   return (

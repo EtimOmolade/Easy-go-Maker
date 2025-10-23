@@ -1,18 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-// Backend integration placeholder - Supabase commented out for prototype
+// Backend integration - Supabase COMMENTED OUT (Prototype mode)
 // import { supabase } from "@/lib/supabase";
+import { STORAGE_KEYS, getFromStorage } from "@/data/mockData";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import StreakBadge, { getBadgeForStreak } from "@/components/StreakBadge";
+import StreakBadge from "@/components/StreakBadge";
 import EncouragementPopup from "@/components/EncouragementPopup";
-import NotificationDropdown from "@/components/NotificationDropdown";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { STORAGE_KEYS, getFromStorage, MockProfile, MockEncouragementMessage, checkAndShowDailyReminder, checkAndShowWeeklyReminder, getUserProgress } from "@/data/mockData";
 import { toast } from "sonner";
 
 interface Profile {
@@ -32,100 +31,153 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [previousStreak, setPreviousStreak] = useState(0);
-  const [encouragementMessage, setEncouragementMessage] = useState<EncouragementMessage | null>(null);
+  const [encouragementMessages, setEncouragementMessages] = useState<EncouragementMessage[]>([]);
+  const [showAllAnnouncements, setShowAllAnnouncements] = useState(false);
+  const [pendingTestimonyCount, setPendingTestimonyCount] = useState(0);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
       fetchEncouragementMessage();
       checkReminders();
+
+      // Fetch pending testimony count for admins
+      if (isAdmin) {
+        fetchPendingTestimonies();
+      }
+
+      // Backend integration - Supabase real-time COMMENTED OUT (Prototype mode)
+      // const channel = supabase
+      //   .channel('dashboard_updates')
+      //   .on(
+      //     'postgres_changes',
+      //     {
+      //       event: 'INSERT',
+      //       schema: 'public',
+      //       table: 'encouragement_messages'
+      //     },
+      //     (payload) => {
+      //       setEncouragementMessages((prev) => [payload.new as EncouragementMessage, ...prev].slice(0, 3));
+      //       toast.info('📢 New community announcement!', {
+      //         duration: 5000,
+      //       });
+      //     }
+      //   );
+      //
+      // if (isAdmin) {
+      //   channel.on(
+      //     'postgres_changes',
+      //     {
+      //       event: '*',
+      //       schema: 'public',
+      //       table: 'testimonies'
+      //     },
+      //     () => {
+      //       fetchPendingTestimonies();
+      //     }
+      //   );
+      // }
+      //
+      // channel.subscribe();
+      //
+      // return () => {
+      //   supabase.removeChannel(channel);
+      // };
     }
-  }, [user]);
+  }, [user, isAdmin]);
 
   const checkReminders = () => {
     if (!user) return;
-    
-    // Check and show reminders
-    checkAndShowDailyReminder(user.id);
-    checkAndShowWeeklyReminder(user.id);
-    
-    // Show push notification placeholders in console
+
+    // TODO: Implement push notification reminders in Phase 4
     console.log('(Push placeholder) Checking for new updates...');
   };
 
-  const fetchProfile = () => {
+  const fetchProfile = async () => {
     if (!user) return;
 
-    // Mock data fetch
-    const profiles = getFromStorage<MockProfile[]>(STORAGE_KEYS.PROFILES, []);
-    const userProfile = profiles.find(p => p.id === user.id);
-    
-    // Get user progress for streak
-    const userProgress = getUserProgress(user.id);
+    // Prototype mode: Fetch from localStorage
+    const profiles = getFromStorage(STORAGE_KEYS.PROFILES) || {};
+    const userProfile = profiles[user.id];
 
     if (userProfile) {
       if (profile) {
-        setPreviousStreak(userProgress.streakCount);
-      }
-      setProfile({
-        name: userProfile.name,
-        streak_count: userProgress.streakCount,
-        reminders_enabled: userProfile.reminders_enabled
-      });
-    }
-
-    // Backend integration: Uncomment when restoring Supabase
-    /*
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("name, streak_count, reminders_enabled")
-      .eq("id", user.id)
-      .single();
-
-    if (error) {
-      console.error("Error fetching profile:", error);
-    } else {
-      if (profile) {
         setPreviousStreak(profile.streak_count);
       }
-      setProfile(data);
+      setProfile(userProfile);
+    } else {
+      // Create default profile
+      const defaultProfile: Profile = {
+        name: user.user_metadata?.name || 'Friend',
+        streak_count: 0,
+        reminders_enabled: false
+      };
+      setProfile(defaultProfile);
     }
-    */
+
+    // Backend integration - Supabase COMMENTED OUT
+    // const { data, error } = await supabase
+    //   .from("profiles")
+    //   .select("name, streak_count, reminders_enabled")
+    //   .eq("id", user.id)
+    //   .single();
+    //
+    // if (error) {
+    //   console.error("Error fetching profile:", error);
+    //   toast.error("Failed to load profile data");
+    // } else {
+    //   if (profile) {
+    //     setPreviousStreak(profile.streak_count);
+    //   }
+    //   setProfile(data);
+    // }
   };
 
-  const fetchEncouragementMessage = () => {
-    // Mock data fetch - get most recent message from last 24 hours
-    const messages = getFromStorage<MockEncouragementMessage[]>(STORAGE_KEYS.ENCOURAGEMENT, []);
-    const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
-    
-    const recentMessage = messages
-      .filter(msg => new Date(msg.created_at).getTime() > twentyFourHoursAgo)
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+  const fetchEncouragementMessage = async () => {
+    // Prototype mode: Fetch from localStorage
+    const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT) || [];
 
-    if (recentMessage) {
-      setEncouragementMessage({
-        id: recentMessage.id,
-        content: recentMessage.content,
-        created_at: recentMessage.created_at
-      });
-    }
+    // Filter messages from last 48 hours
+    const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
+    const recentMessages = messages
+      .filter((msg: any) => new Date(msg.created_at).getTime() > twoDaysAgo)
+      .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 3);
 
-    // Backend integration: Uncomment when restoring Supabase
-    /*
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    
-    const { data, error } = await supabase
-      .from("encouragement_messages")
-      .select("*")
-      .gte("created_at", twentyFourHoursAgo)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    setEncouragementMessages(recentMessages);
 
-    if (!error && data) {
-      setEncouragementMessage(data);
-    }
-    */
+    // Backend integration - Supabase COMMENTED OUT
+    // const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    //
+    // const { data, error } = await supabase
+    //   .from("encouragement_messages")
+    //   .select("*")
+    //   .gte("created_at", twoDaysAgo)
+    //   .order("created_at", { ascending: false })
+    //   .limit(3);
+    //
+    // if (error) {
+    //   console.error("Error fetching encouragement:", error);
+    // } else if (data) {
+    //   setEncouragementMessages(data);
+    // }
+  };
+
+  const fetchPendingTestimonies = async () => {
+    // Prototype mode: Count pending testimonies from localStorage
+    const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES) || [];
+    const pendingCount = testimonies.filter((t: any) => !t.approved).length;
+    setPendingTestimonyCount(pendingCount);
+
+    // Backend integration - Supabase COMMENTED OUT
+    // const { count, error } = await supabase
+    //   .from("testimonies")
+    //   .select("*", { count: 'exact', head: true })
+    //   .eq("approved", false);
+    //
+    // if (!error && count !== null) {
+    //   setPendingTestimonyCount(count);
+    // }
   };
 
   const quickActions = [
@@ -173,7 +225,6 @@ const Dashboard = () => {
               <p className="text-muted-foreground mt-2">Continue your prayer journey today</p>
             </div>
             <div className="flex items-center gap-2">
-              <NotificationDropdown userId={user.id} isAdmin={isAdmin} />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button variant="outline" onClick={signOut}>
@@ -186,17 +237,49 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Daily Encouragement Message */}
-          {encouragementMessage && (
+          {/* Community Announcements */}
+          {encouragementMessages.length > 0 && (
             <Card className="mb-8 shadow-medium border-2 border-accent/20" data-encouragement-card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Megaphone className="h-6 w-6 text-accent" />
-                  Today's Encouragement
+                  Community Announcements
                 </CardTitle>
+                <CardDescription>Important updates from our community</CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-foreground/90 whitespace-pre-wrap">{encouragementMessage.content}</p>
+              <CardContent className="space-y-4">
+                {/* Show first announcement always, others collapsible */}
+                {(showAllAnnouncements ? encouragementMessages : encouragementMessages.slice(0, 1)).map((message, index) => (
+                  <div
+                    key={message.id}
+                    className={`p-4 rounded-lg ${index === 0 ? 'bg-accent/10 border-l-4 border-accent' : 'bg-muted/50'}`}
+                  >
+                    <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                    <p className="text-xs text-muted-foreground mt-3">
+                      {new Date(message.created_at).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                ))}
+
+                {/* Show More / Show Less button */}
+                {encouragementMessages.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowAllAnnouncements(!showAllAnnouncements)}
+                    className="w-full"
+                  >
+                    {showAllAnnouncements
+                      ? 'Show Less'
+                      : `Show ${encouragementMessages.length - 1} More ${encouragementMessages.length - 1 === 1 ? 'Update' : 'Updates'}`
+                    }
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}
@@ -289,6 +372,11 @@ const Dashboard = () => {
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-6 w-6 text-accent" />
                 Admin Access
+                {pendingTestimonyCount > 0 && (
+                  <Badge variant="destructive" className="ml-2">
+                    {pendingTestimonyCount} pending
+                  </Badge>
+                )}
               </CardTitle>
               <CardDescription>Manage content and moderate the community</CardDescription>
             </CardHeader>
@@ -299,6 +387,11 @@ const Dashboard = () => {
                 variant="default"
               >
                 Go to Admin Dashboard
+                {pendingTestimonyCount > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {pendingTestimonyCount}
+                  </Badge>
+                )}
               </Button>
             </CardContent>
           </Card>
