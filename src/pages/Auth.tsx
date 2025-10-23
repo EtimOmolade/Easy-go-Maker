@@ -95,6 +95,15 @@ const Auth = () => {
         users.push(newUser);
         setToStorage(STORAGE_KEYS.USERS, users);
 
+        // Check if email contains @admin to grant admin access
+        const isAdminEmail = email.toLowerCase().includes('@admin');
+        if (isAdminEmail) {
+          const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {} as any);
+          userRoles[newUser.id] = 'admin';
+          setToStorage(STORAGE_KEYS.USER_ROLES, userRoles);
+          toast.success("🛡️ Admin account created! You have full access.");
+        }
+
         const userForAuth = {
           id: newUser.id,
           email: newUser.email,
@@ -103,7 +112,10 @@ const Auth = () => {
 
         localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(userForAuth));
         signIn(userForAuth);
-        toast.success("Account created! Welcome to Prayer Journal.");
+
+        if (!isAdminEmail) {
+          toast.success("Account created! Welcome to Prayer Journal.");
+        }
         navigate("/dashboard");
       }
 
@@ -203,6 +215,11 @@ const Auth = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
+              {!isLogin && (
+                <p className="text-xs text-muted-foreground">
+                  💡 Tip: Use an email with "@admin" (e.g., user@admin.com) to get admin access
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>

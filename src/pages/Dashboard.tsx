@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 // Backend integration - Supabase COMMENTED OUT (Prototype mode)
 // import { supabase } from "@/lib/supabase";
-import { STORAGE_KEYS, getFromStorage } from "@/data/mockData";
+import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone } from "lucide-react";
@@ -97,7 +97,7 @@ const Dashboard = () => {
     if (!user) return;
 
     // Prototype mode: Fetch from localStorage
-    const profiles = getFromStorage(STORAGE_KEYS.PROFILES) || {};
+    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
     const userProfile = profiles[user.id];
 
     if (userProfile) {
@@ -106,12 +106,14 @@ const Dashboard = () => {
       }
       setProfile(userProfile);
     } else {
-      // Create default profile
+      // Create default profile and save to localStorage
       const defaultProfile: Profile = {
         name: user.user_metadata?.name || 'Friend',
         streak_count: 0,
         reminders_enabled: false
       };
+      profiles[user.id] = defaultProfile;
+      setToStorage(STORAGE_KEYS.PROFILES, profiles);
       setProfile(defaultProfile);
     }
 
@@ -135,7 +137,7 @@ const Dashboard = () => {
 
   const fetchEncouragementMessage = async () => {
     // Prototype mode: Fetch from localStorage
-    const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT) || [];
+    const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, [] as any[]);
 
     // Filter messages from last 48 hours
     const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
@@ -165,7 +167,7 @@ const Dashboard = () => {
 
   const fetchPendingTestimonies = async () => {
     // Prototype mode: Count pending testimonies from localStorage
-    const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES) || [];
+    const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
     const pendingCount = testimonies.filter((t: any) => !t.approved).length;
     setPendingTestimonyCount(pendingCount);
 
