@@ -91,17 +91,17 @@ const Journal = () => {
     setLoading(false);
   };
 
-  const checkAndUpdateMilestone = (totalPrayers: number) => {
+  const checkAndUpdateMilestone = (currentStreak: number) => {
     const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
     const userProfile = profiles[user!.id] || {};
     const currentMilestone = userProfile.current_milestone || 0;
     const shownCelebrations = getFromStorage(STORAGE_KEYS.SHOWN_CELEBRATIONS, {} as any);
     const userCelebrations = shownCelebrations[user!.id] || [];
 
-    // Find the highest milestone achieved
+    // Find the highest milestone achieved based on streak
     let newMilestone = currentMilestone;
     for (let i = MILESTONES.length - 1; i >= 0; i--) {
-      if (totalPrayers >= MILESTONES[i].prayers_needed) {
+      if (currentStreak >= MILESTONES[i].streak_needed) {
         newMilestone = MILESTONES[i].level;
         break;
       }
@@ -175,17 +175,17 @@ const Journal = () => {
         setToStorage(STORAGE_KEYS.JOURNAL_ENTRIES, allEntries);
         toast.success("📝 Your new journal entry has been saved!");
 
-        // Update milestone tracking
+        // Update streak tracking and check milestones
         const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
         if (profiles[user.id]) {
-          const currentTotal = profiles[user.id].total_prayers_completed || 0;
-          const newTotal = currentTotal + 1;
-          profiles[user.id].total_prayers_completed = newTotal;
-          profiles[user.id].streak_count = (profiles[user.id].streak_count || 0) + 1;
+          const currentStreak = profiles[user.id].streak_count || 0;
+          const newStreak = currentStreak + 1;
+          profiles[user.id].streak_count = newStreak;
+          profiles[user.id].last_journal_date = new Date().toISOString().split('T')[0];
           setToStorage(STORAGE_KEYS.PROFILES, profiles);
 
-          // Check for milestone achievement
-          checkAndUpdateMilestone(newTotal);
+          // Check for milestone achievement based on streak
+          checkAndUpdateMilestone(newStreak);
         }
       }
 

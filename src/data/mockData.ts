@@ -281,63 +281,70 @@ export const STORAGE_KEYS = {
   SHOWN_CELEBRATIONS: 'prayerjournal_shown_celebrations',
 };
 
-// Milestone achievement system
+// Milestone achievement system - Streak-based
 export const MILESTONES = [
   {
     level: 1,
-    name: "Prayer Beginner",
-    prayers_needed: 7,
-    scripture: "Ask and it will be given",
-    scripture_ref: "Matthew 7:7",
-    emoji: "🌱"
+    name: "First Seek",
+    streak_needed: 1,
+    scripture: "Draw near to God, and He will draw near to you.",
+    scripture_ref: "James 4:8",
+    emoji: "🟢",
+    message: "You've begun your Seek First journey. Welcome to a life that starts with the Kingdom."
   },
   {
     level: 2,
-    name: "Faithful Servant",
-    prayers_needed: 21,
-    scripture: "Pray without ceasing",
-    scripture_ref: "1 Thessalonians 5:17",
-    emoji: "⭐"
+    name: "Rooted 7",
+    streak_needed: 7,
+    scripture: "He will be like a tree planted by streams of water.",
+    scripture_ref: "Psalm 1:3",
+    emoji: "🌿",
+    message: "Seven days of seeking first! You're growing roots in His presence."
   },
   {
     level: 3,
-    name: "Prayer Warrior",
-    prayers_needed: 50,
-    scripture: "The prayer of the righteous is powerful",
-    scripture_ref: "James 5:16",
-    emoji: "⚔️"
+    name: "Firm 21",
+    streak_needed: 21,
+    scripture: "Those who trust in the Lord will renew their strength.",
+    scripture_ref: "Isaiah 40:31",
+    emoji: "🌾",
+    message: "Three weeks of faithfulness. The rhythm of prayer is taking root."
   },
   {
     level: 4,
-    name: "Devoted Disciple",
-    prayers_needed: 100,
-    scripture: "Continue steadfastly in prayer",
-    scripture_ref: "Colossians 4:2",
-    emoji: "🛡️"
+    name: "Kingdom 50",
+    streak_needed: 50,
+    scripture: "Your kingdom come, Your will be done.",
+    scripture_ref: "Matthew 6:10",
+    emoji: "🔥",
+    message: "Fifty days of Kingdom focus — your prayers are shaping lives."
   },
   {
     level: 5,
-    name: "Prayer Champion",
-    prayers_needed: 200,
-    scripture: "Rejoice always, pray continually",
-    scripture_ref: "1 Thessalonians 5:16-17",
-    emoji: "🏆"
+    name: "Steadfast 100",
+    streak_needed: 100,
+    scripture: "Be steadfast, immovable, always abounding in the work of the Lord.",
+    scripture_ref: "1 Corinthians 15:58",
+    emoji: "💎",
+    message: "One hundred days of seeking. Faithfulness is becoming your habit."
   },
   {
     level: 6,
-    name: "Intercessor",
-    prayers_needed: 365,
-    scripture: "He always lives to intercession",
-    scripture_ref: "Hebrews 7:25",
-    emoji: "👑"
+    name: "Kingdom Pillar 365",
+    streak_needed: 365,
+    scripture: "Seek first His kingdom and His righteousness.",
+    scripture_ref: "Matthew 6:33",
+    emoji: "👑",
+    message: "A full year of daily seeking. You've built a lasting altar of prayer."
   },
   {
     level: 7,
-    name: "Prayer Master",
-    prayers_needed: 500,
-    scripture: "Prayer accomplishes much",
-    scripture_ref: "James 5:16",
-    emoji: "💎"
+    name: "Global Intercessor",
+    streak_needed: 545, // 365 + 180 (6 months)
+    scripture: "The earth will be filled with the knowledge of the Lord.",
+    scripture_ref: "Habakkuk 2:14",
+    emoji: "🌍",
+    message: "You're part of a global wave of prayer. Thank you for carrying the Kingdom."
   }
 ];
 

@@ -119,23 +119,23 @@ const Profile = () => {
     
     const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
     const userProfile = profiles[user.id];
-    const totalPrayers = userProfile?.total_prayers_completed || 0;
+    const currentStreak = userProfile?.streak_count || 0;
     const unlockedDates = userProfile?.milestone_unlocked_dates || {};
     
-    const unlocked = MILESTONES.filter(m => totalPrayers >= m.prayers_needed).map(m => ({
+    const unlocked = MILESTONES.filter(m => currentStreak >= m.streak_needed).map(m => ({
       ...m,
       unlockedDate: unlockedDates[m.level] || 'Recently unlocked'
     }));
     
-    const locked = MILESTONES.filter(m => totalPrayers < m.prayers_needed).map(m => ({
+    const locked = MILESTONES.filter(m => currentStreak < m.streak_needed).map(m => ({
       ...m,
-      prayersNeeded: m.prayers_needed - totalPrayers
+      streakNeeded: m.streak_needed - currentStreak
     }));
     
-    return { unlocked, locked, totalPrayers };
+    return { unlocked, locked, currentStreak };
   };
 
-  const { unlocked, locked, totalPrayers } = getAchievementStatus();
+  const { unlocked, locked, currentStreak } = getAchievementStatus();
 
   return (
     <div className="min-h-screen gradient-subtle">
@@ -163,8 +163,8 @@ const Profile = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="text-center p-4 bg-accent/10 rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Total Prayers Completed</p>
-              <p className="text-3xl font-bold text-accent">{totalPrayers}</p>
+              <p className="text-sm text-muted-foreground mb-1">Current Prayer Streak</p>
+              <p className="text-3xl font-bold text-accent">{currentStreak} Days</p>
             </div>
 
             {/* Unlocked Achievements */}
@@ -178,16 +178,14 @@ const Profile = () => {
                       <div className="flex-1">
                         <h4 className="font-semibold text-foreground">{milestone.name}</h4>
                         <p className="text-sm text-muted-foreground mb-2">
-                          {milestone.prayers_needed} prayers completed
+                          {milestone.message}
                         </p>
-                        <p className="text-sm italic text-foreground/80">
+                        <p className="text-xs italic text-foreground/70">
                           "{milestone.scripture}" - {milestone.scripture_ref}
                         </p>
-                        {milestone.unlockedDate && (
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Unlocked: {new Date(milestone.unlockedDate).toLocaleDateString()}
-                          </p>
-                        )}
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Unlocked: {new Date(milestone.unlockedDate).toLocaleDateString()}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -198,18 +196,18 @@ const Profile = () => {
             {/* Locked Achievements */}
             {locked.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-muted-foreground">Locked</h3>
+                <h3 className="text-sm font-semibold text-foreground">Locked</h3>
                 {locked.map((milestone) => (
                   <div key={milestone.level} className="p-4 rounded-lg bg-muted/50 border-2 border-muted opacity-60">
                     <div className="flex items-start gap-3">
-                      <span className="text-4xl grayscale">🔒</span>
+                      <span className="text-4xl grayscale">{milestone.emoji}</span>
                       <div className="flex-1">
-                        <h4 className="font-semibold text-muted-foreground">???</h4>
+                        <h4 className="font-semibold text-muted-foreground">{milestone.name}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {milestone.prayersNeeded} more prayers needed
+                          {milestone.streakNeeded} more day{milestone.streakNeeded !== 1 ? 's' : ''} to unlock
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Unlock at {milestone.prayers_needed} prayers
+                        <p className="text-xs italic text-muted-foreground mt-1">
+                          Requires {milestone.streak_needed}-day streak
                         </p>
                       </div>
                     </div>

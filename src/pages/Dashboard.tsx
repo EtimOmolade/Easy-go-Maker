@@ -183,19 +183,19 @@ const Dashboard = () => {
   };
 
   const getMilestoneProgress = () => {
-    if (!user) return { current: MILESTONES[0], progress: 0, totalPrayers: 0, nextMilestone: MILESTONES[1] };
+    if (!user) return { current: MILESTONES[0], progress: 0, currentStreak: 0, nextMilestone: MILESTONES[1] };
     
     const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
     const userProfile = profiles[user.id];
-    const totalPrayers = userProfile?.total_prayers_completed || 0;
+    const currentStreak = userProfile?.streak_count || 0;
     const currentMilestoneLevel = userProfile?.current_milestone || 0;
     
-    // Find current and next milestone
+    // Find current and next milestone based on streak
     let current = MILESTONES[0];
     let nextMilestone = MILESTONES[1];
     
     for (let i = MILESTONES.length - 1; i >= 0; i--) {
-      if (totalPrayers >= MILESTONES[i].prayers_needed) {
+      if (currentStreak >= MILESTONES[i].streak_needed) {
         current = MILESTONES[i];
         nextMilestone = MILESTONES[i + 1] || MILESTONES[i]; // Stay at max if completed all
         break;
@@ -203,13 +203,13 @@ const Dashboard = () => {
     }
     
     // Calculate progress to next milestone
-    const prayersToNext = nextMilestone.prayers_needed - totalPrayers;
-    const previousMilestonePrayers = current.prayers_needed;
-    const milestoneRange = nextMilestone.prayers_needed - previousMilestonePrayers;
-    const progressInRange = totalPrayers - previousMilestonePrayers;
+    const streakToNext = nextMilestone.streak_needed - currentStreak;
+    const previousMilestoneStreak = current.streak_needed;
+    const milestoneRange = nextMilestone.streak_needed - previousMilestoneStreak;
+    const progressInRange = currentStreak - previousMilestoneStreak;
     const progress = milestoneRange > 0 ? (progressInRange / milestoneRange) * 100 : 100;
     
-    return { current, progress: Math.min(progress, 100), totalPrayers, nextMilestone, prayersToNext };
+    return { current, progress: Math.min(progress, 100), currentStreak, nextMilestone, streakToNext };
   };
 
   const milestoneData = getMilestoneProgress();
@@ -335,7 +335,7 @@ const Dashboard = () => {
                   {milestoneData.current.name}
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {milestoneData.totalPrayers} prayer{milestoneData.totalPrayers !== 1 ? 's' : ''} completed
+                  {milestoneData.currentStreak} day{milestoneData.currentStreak !== 1 ? 's' : ''} streak
                 </p>
                 <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
                   <p className="text-sm italic text-foreground/90">
@@ -353,12 +353,12 @@ const Dashboard = () => {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Next: {milestoneData.nextMilestone.name}</span>
                     <span className="text-sm text-muted-foreground">
-                      {milestoneData.prayersToNext} more prayer{milestoneData.prayersToNext !== 1 ? 's' : ''}
+                      {milestoneData.streakToNext} more day{milestoneData.streakToNext !== 1 ? 's' : ''}
                     </span>
                   </div>
                   <Progress value={milestoneData.progress} className="h-2" />
                   <p className="text-xs text-muted-foreground mt-2 text-center">
-                    {milestoneData.totalPrayers} / {milestoneData.nextMilestone.prayers_needed} prayers
+                    {milestoneData.currentStreak} / {milestoneData.nextMilestone.streak_needed} days
                   </p>
                 </div>
               )}

@@ -109,7 +109,7 @@ export const MilestoneAchievementModal = ({
 
             {/* Progress Count */}
             <p className="text-lg text-muted-foreground">
-              You've completed <span className="font-bold text-primary">{milestone.prayers_needed}</span> prayers!
+              You've completed <span className="font-bold text-primary">{milestone.streak_needed}</span> days of prayer!
             </p>
 
             {/* Close Button */}
