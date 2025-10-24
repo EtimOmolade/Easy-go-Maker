@@ -478,7 +478,7 @@ const Admin = () => {
       user?.user_metadata?.name || 'Admin'
     );
     
-    toast.success("Testimony rejected and removed from pending list");
+    toast.success(`Testimony rejected. User has been notified about the rejection.`);
     setRejectingTestimony(null);
     setRejectionReason("");
     setCustomReason("");

@@ -11,6 +11,8 @@ import { ArrowLeft, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { TextToSpeech } from "@/components/TextToSpeech";
+import { MilestoneAchievementModal } from "@/components/MilestoneAchievementModal";
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -30,6 +32,8 @@ const GuidelineDetails = () => {
   const [completedDays, setCompletedDays] = useState<string[]>([]);
   const [streakCount, setStreakCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+  const [achievedMilestoneLevel, setAchievedMilestoneLevel] = useState(0);
 
   useEffect(() => {
     if (id && user) {
@@ -166,9 +170,8 @@ const GuidelineDetails = () => {
 
       // Show milestone achievement if unlocked
       if (milestone) {
-        const { MilestoneAchievementModal } = await import('@/components/MilestoneAchievementModal');
-        // Since we're in GuidelineDetails and don't have modal state, we'll show toast instead
-        toast.success(`🎉 ${day} Complete! Milestone Unlocked: ${milestone.name}!`, { duration: 5000 });
+        setAchievedMilestoneLevel(milestone.level);
+        setShowMilestoneModal(true);
       } else {
         toast.success(`🎉 ${day} Complete! ${newStreak}-day streak! Keep the fire burning!`);
       }
@@ -232,6 +235,12 @@ const GuidelineDetails = () => {
   return (
     <div className="min-h-screen gradient-subtle">
       <div className="max-w-4xl mx-auto p-4 md:p-8">
+        <MilestoneAchievementModal 
+          milestoneLevel={achievedMilestoneLevel}
+          isOpen={showMilestoneModal}
+          onClose={() => setShowMilestoneModal(false)}
+        />
+        
         <Button
           variant="ghost"
           className="mb-6"
@@ -263,6 +272,10 @@ const GuidelineDetails = () => {
                 <p className="text-sm text-muted-foreground">{completedCount}/7 days</p>
               </div>
               <Progress value={progressPercent} className="h-2" />
+            </div>
+
+            <div className="mb-6">
+              <TextToSpeech text={guideline.content} />
             </div>
 
             <div className="prose prose-sm max-w-none mb-8">

@@ -21,6 +21,15 @@ export const MilestoneAchievementModal = ({
 
   useEffect(() => {
     if (isOpen && milestone) {
+      // Play achievement sound
+      try {
+        const audio = new Audio('/achievement.mp3');
+        audio.volume = 0.5;
+        audio.play().catch(err => console.log('Audio play failed:', err));
+      } catch (err) {
+        console.log('Audio creation failed:', err);
+      }
+
       // Fire confetti
       const duration = 3000;
       const end = Date.now() + duration;

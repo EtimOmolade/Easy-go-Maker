@@ -184,12 +184,12 @@ const createAnnouncementForTestimony = (testimony: any) => {
 };
 
 const markAdminNotificationAsHandled = (testimonyId: string) => {
-  const { markNotificationAsRead, getFromStorage, STORAGE_KEYS } = require('@/data/mockData');
   const notifications = getFromStorage(STORAGE_KEYS.NOTIFICATIONS, [] as any[]);
   
   notifications.forEach((n: any) => {
     if (n.messageId === testimonyId && n.type === 'testimony') {
-      markNotificationAsRead(n.id);
+      n.read = true;
     }
   });
+  setToStorage(STORAGE_KEYS.NOTIFICATIONS, notifications);
 };

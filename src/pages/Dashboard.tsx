@@ -10,9 +10,11 @@ import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megap
 import { Badge } from "@/components/ui/badge";
 import StreakBadge from "@/components/StreakBadge";
 import EncouragementPopup from "@/components/EncouragementPopup";
+import { MilestoneAchievementModal } from "@/components/MilestoneAchievementModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { checkMilestoneAchievement } from "@/utils/prayerHelpers";
 
 interface Profile {
   name: string;
@@ -34,12 +36,15 @@ const Dashboard = () => {
   const [encouragementMessages, setEncouragementMessages] = useState<EncouragementMessage[]>([]);
   const [showAllAnnouncements, setShowAllAnnouncements] = useState(false);
   const [pendingTestimonyCount, setPendingTestimonyCount] = useState(0);
+  const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+  const [achievedMilestoneLevel, setAchievedMilestoneLevel] = useState(0);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
       fetchEncouragementMessage();
       checkReminders();
+      checkForNewMilestones();
 
       // Fetch pending testimony count for admins
       if (isAdmin) {
@@ -91,6 +96,21 @@ const Dashboard = () => {
 
     // TODO: Implement push notification reminders in Phase 4
     console.log('(Push placeholder) Checking for new updates...');
+  };
+
+  const checkForNewMilestones = () => {
+    if (!user) return;
+
+    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
+    const userProfile = profiles[user.id];
+    const currentStreak = userProfile?.streak_count || 0;
+
+    // Check if there's a new milestone to celebrate
+    const milestone = checkMilestoneAchievement(user.id, currentStreak);
+    if (milestone) {
+      setAchievedMilestoneLevel(milestone.level);
+      setShowMilestoneModal(true);
+    }
   };
 
   const fetchProfile = async () => {
@@ -250,6 +270,11 @@ const Dashboard = () => {
       <div className="min-h-screen gradient-subtle">
         <div className="max-w-7xl mx-auto p-4 md:p-8">
           <EncouragementPopup streakCount={profile?.streak_count || 0} previousStreak={previousStreak} />
+          <MilestoneAchievementModal 
+            milestoneLevel={achievedMilestoneLevel}
+            isOpen={showMilestoneModal}
+            onClose={() => setShowMilestoneModal(false)}
+          />
           
           <div className="flex justify-between items-center mb-8">
             <div>
