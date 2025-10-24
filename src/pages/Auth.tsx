@@ -47,7 +47,7 @@ const Auth = () => {
     try {
       // Prototype mode: Mock authentication with localStorage
       if (isLogin) {
-        const users = getFromStorage(STORAGE_KEYS.USERS) || mockUsers;
+        const users = getFromStorage(STORAGE_KEYS.USERS, mockUsers);
         const foundUser = users.find((u: any) => u.email === email && u.password === password);
 
         if (!foundUser) {
@@ -75,7 +75,7 @@ const Auth = () => {
           return;
         }
 
-        const users = getFromStorage(STORAGE_KEYS.USERS) || mockUsers;
+        const users = getFromStorage(STORAGE_KEYS.USERS, mockUsers);
         const existingUser = users.find((u: any) => u.email === email);
 
         if (existingUser) {
@@ -89,6 +89,7 @@ const Auth = () => {
           email,
           password,
           name,
+          isAdmin: false,
           createdAt: new Date().toISOString()
         };
 
@@ -98,7 +99,7 @@ const Auth = () => {
         // Check if email contains @admin to grant admin access
         const isAdminEmail = email.toLowerCase().includes('@admin');
         if (isAdminEmail) {
-          const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {} as any);
+          const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
           userRoles[newUser.id] = 'admin';
           setToStorage(STORAGE_KEYS.USER_ROLES, userRoles);
           toast.success("🛡️ Admin account created! You have full access.");

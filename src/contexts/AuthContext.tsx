@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession({ user: currentUser });
 
         // Check if user is admin (mock admin check)
-        const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES) || {};
+        const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
         setIsAdmin(userRoles[currentUser.id] === 'admin');
       } catch (error) {
         console.error('Error parsing stored user:', error);
@@ -107,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession({ user: newUser });
 
     // Prototype mode: Check admin from localStorage
-    const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES) || {};
+    const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
     setIsAdmin(userRoles[newUser.id] === 'admin');
 
     // Backend integration - Supabase COMMENTED OUT

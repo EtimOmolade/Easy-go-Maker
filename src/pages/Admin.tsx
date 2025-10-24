@@ -121,8 +121,8 @@ const Admin = () => {
   const fetchUsers = async () => {
     try {
       // Prototype mode: Fetch from localStorage
-      const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
-      const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {} as any);
+      const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {});
+      const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
 
       // Convert profiles object to array
       const allProfiles = Object.keys(profiles).map(id => ({
@@ -228,40 +228,68 @@ const Admin = () => {
     e.preventDefault();
 
     try {
+      // Prototype mode: Update in localStorage
+      const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, []);
+      
       if (editingGuideline) {
         // Update existing guideline
-        const { error } = await supabase
-          .from('guidelines')
-          .update({
+        const guidelineIndex = guidelines.findIndex((g: any) => g.id === editingGuideline.id);
+        if (guidelineIndex !== -1) {
+          guidelines[guidelineIndex] = {
+            ...guidelines[guidelineIndex],
             title,
             week_number: parseInt(weekNumber),
             content
-          })
-          .eq('id', editingGuideline.id);
-
-        if (error) throw error;
+          };
+        }
         toast.success("Guideline updated successfully");
       } else {
         // Create new guideline
-        const { error } = await supabase
-          .from('guidelines')
-          .insert({
-            title,
-            week_number: parseInt(weekNumber),
-            content,
-            date_uploaded: new Date().toISOString()
-          });
-
-        if (error) throw error;
-
-        // AUTO-NOTIFY all users via encouragement message
-        await supabase.from('encouragement_messages').insert({
-          content: `📖 New Prayer Guideline Available!\n\nWeek ${weekNumber}: "${title}"\n\nStart your prayer journey for this week. Check the Guidelines page to see the full content and begin your daily prayers! 🙏`,
-          created_at: new Date().toISOString()
-        });
-
-        toast.success("📖 Guideline created and all users notified!");
+        const newGuideline = {
+          id: `guideline-${Date.now()}`,
+          title,
+          week_number: parseInt(weekNumber),
+          content,
+          date_uploaded: new Date().toISOString()
+        };
+        guidelines.push(newGuideline);
+        toast.success("📖 Guideline created!");
       }
+      
+      setToStorage(STORAGE_KEYS.GUIDELINES, guidelines);
+
+      // Backend integration - Supabase COMMENTED OUT
+      // if (editingGuideline) {
+      //   const { error } = await supabase
+      //     .from('guidelines')
+      //     .update({
+      //       title,
+      //       week_number: parseInt(weekNumber),
+      //       content
+      //     })
+      //     .eq('id', editingGuideline.id);
+      //
+      //   if (error) throw error;
+      //   toast.success("Guideline updated successfully");
+      // } else {
+      //   const { error } = await supabase
+      //     .from('guidelines')
+      //     .insert({
+      //       title,
+      //       week_number: parseInt(weekNumber),
+      //       content,
+      //       date_uploaded: new Date().toISOString()
+      //     });
+      //
+      //   if (error) throw error;
+      //
+      //   await supabase.from('encouragement_messages').insert({
+      //     content: `📖 New Prayer Guideline Available!\n\nWeek ${weekNumber}: "${title}"\n\nStart your prayer journey for this week. Check the Guidelines page to see the full content and begin your daily prayers! 🙏`,
+      //     created_at: new Date().toISOString()
+      //   });
+      //
+      //   toast.success("📖 Guideline created and all users notified!");
+      // }
 
       setTitle("");
       setWeekNumber("");
@@ -287,15 +315,22 @@ const Admin = () => {
     if (!confirm("Are you sure you want to delete this guideline?")) return;
 
     try {
-      const { error } = await supabase
-        .from('guidelines')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
+      // Prototype mode: Delete from localStorage
+      const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, []);
+      const filtered = guidelines.filter((g: any) => g.id !== id);
+      setToStorage(STORAGE_KEYS.GUIDELINES, filtered);
       toast.success("Guideline deleted");
       await fetchGuidelines();
+
+      // Backend integration - Supabase COMMENTED OUT
+      // const { error } = await supabase
+      //   .from('guidelines')
+      //   .delete()
+      //   .eq('id', id);
+      //
+      // if (error) throw error;
+      // toast.success("Guideline deleted");
+      // await fetchGuidelines();
     } catch (error: any) {
       console.error('Error deleting guideline:', error);
       toast.error(error.message || 'Failed to delete guideline');
@@ -307,19 +342,35 @@ const Admin = () => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('encouragement_messages')
-        .insert({
-          content: encouragementContent,
-          created_at: new Date().toISOString()
-        });
-
-      if (error) throw error;
-
+      // Prototype mode: Save to localStorage
+      const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, []);
+      const newMessage = {
+        id: `encourage-${Date.now()}`,
+        content: encouragementContent,
+        created_at: new Date().toISOString(),
+        created_by: user.id
+      };
+      messages.push(newMessage);
+      setToStorage(STORAGE_KEYS.ENCOURAGEMENT, messages);
+      
       toast.success("✨ New daily encouragement posted!");
       setEncouragementContent("");
       setIsEncouragementDialogOpen(false);
       await fetchEncouragementMessages();
+
+      // Backend integration - Supabase COMMENTED OUT
+      // const { error } = await supabase
+      //   .from('encouragement_messages')
+      //   .insert({
+      //     content: encouragementContent,
+      //     created_at: new Date().toISOString()
+      //   });
+      //
+      // if (error) throw error;
+      // toast.success("✨ New daily encouragement posted!");
+      // setEncouragementContent("");
+      // setIsEncouragementDialogOpen(false);
+      // await fetchEncouragementMessages();
     } catch (error: any) {
       console.error('Error posting encouragement:', error);
       toast.error(error.message || 'Failed to post encouragement message');
@@ -330,15 +381,22 @@ const Admin = () => {
     if (!confirm("Are you sure you want to delete this encouragement message?")) return;
 
     try {
-      const { error } = await supabase
-        .from('encouragement_messages')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
+      // Prototype mode: Delete from localStorage
+      const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, []);
+      const filtered = messages.filter((m: any) => m.id !== id);
+      setToStorage(STORAGE_KEYS.ENCOURAGEMENT, filtered);
       toast.success("Message deleted");
       await fetchEncouragementMessages();
+
+      // Backend integration - Supabase COMMENTED OUT
+      // const { error } = await supabase
+      //   .from('encouragement_messages')
+      //   .delete()
+      //   .eq('id', id);
+      //
+      // if (error) throw error;
+      // toast.success("Message deleted");
+      // await fetchEncouragementMessages();
     } catch (error: any) {
       console.error('Error deleting encouragement:', error);
       toast.error(error.message || 'Failed to delete message');
@@ -442,15 +500,22 @@ const Admin = () => {
     if (!confirm("Are you sure you want to delete this testimony?")) return;
 
     try {
-      const { error } = await supabase
-        .from('testimonies')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
+      // Prototype mode: Delete from localStorage
+      const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, []);
+      const filtered = testimonies.filter((t: any) => t.id !== id);
+      setToStorage(STORAGE_KEYS.TESTIMONIES, filtered);
       toast.success("Testimony deleted");
       await fetchTestimonies();
+
+      // Backend integration - Supabase COMMENTED OUT
+      // const { error } = await supabase
+      //   .from('testimonies')
+      //   .delete()
+      //   .eq('id', id);
+      //
+      // if (error) throw error;
+      // toast.success("Testimony deleted");
+      // await fetchTestimonies();
     } catch (error: any) {
       console.error('Error deleting testimony:', error);
       toast.error(error.message || 'Failed to delete testimony');
@@ -461,32 +526,46 @@ const Admin = () => {
     try {
       const targetUser = allUsers.find(u => u.id === userId);
 
-      // Check if user already has admin role
-      const { data: existingRole } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      if (existingRole) {
+      // Prototype mode: Update in localStorage
+      const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
+      
+      if (userRoles[userId] === 'admin') {
         toast.error('User is already an admin');
         return;
       }
 
-      // Update the user's role from 'user' to 'admin'
-      const { error } = await supabase
-        .from('user_roles')
-        .update({ role: 'admin' })
-        .eq('user_id', userId)
-        .eq('role', 'user');
-
-      if (error) throw error;
+      userRoles[userId] = 'admin';
+      setToStorage(STORAGE_KEYS.USER_ROLES, userRoles);
 
       toast.success(`${targetUser?.name || 'User'} has been promoted to admin`);
       setShowPromoteDialog(false);
       setSearchEmail("");
       await fetchUsers();
+
+      // Backend integration - Supabase COMMENTED OUT
+      // const { data: existingRole } = await supabase
+      //   .from('user_roles')
+      //   .select('role')
+      //   .eq('user_id', userId)
+      //   .eq('role', 'admin')
+      //   .maybeSingle();
+      //
+      // if (existingRole) {
+      //   toast.error('User is already an admin');
+      //   return;
+      // }
+      //
+      // const { error } = await supabase
+      //   .from('user_roles')
+      //   .update({ role: 'admin' })
+      //   .eq('user_id', userId)
+      //   .eq('role', 'user');
+      //
+      // if (error) throw error;
+      // toast.success(`${targetUser?.name || 'User'} has been promoted to admin`);
+      // setShowPromoteDialog(false);
+      // setSearchEmail("");
+      // await fetchUsers();
     } catch (error: any) {
       console.error('Error promoting user:', error);
       toast.error(error.message || 'Failed to promote user');
@@ -504,18 +583,26 @@ const Admin = () => {
         return;
       }
 
-      // Update the role from 'admin' to 'user'
-      const { error } = await supabase
-        .from('user_roles')
-        .update({ role: 'user' })
-        .eq('user_id', demoteTarget.id)
-        .eq('role', 'admin');
-
-      if (error) throw error;
+      // Prototype mode: Update in localStorage
+      const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
+      delete userRoles[demoteTarget.id];
+      setToStorage(STORAGE_KEYS.USER_ROLES, userRoles);
 
       toast.success(`${demoteTarget.name} has been demoted to regular user`);
       setDemoteTarget(null);
       await fetchUsers();
+
+      // Backend integration - Supabase COMMENTED OUT
+      // const { error } = await supabase
+      //   .from('user_roles')
+      //   .update({ role: 'user' })
+      //   .eq('user_id', demoteTarget.id)
+      //   .eq('role', 'admin');
+      //
+      // if (error) throw error;
+      // toast.success(`${demoteTarget.name} has been demoted to regular user`);
+      // setDemoteTarget(null);
+      // await fetchUsers();
     } catch (error: any) {
       console.error('Error demoting admin:', error);
       toast.error(error.message || 'Failed to demote admin');

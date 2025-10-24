@@ -269,7 +269,8 @@ export const STORAGE_KEYS = {
   NOTIFICATIONS: 'prayerjournal_notifications',
   LAST_POPUP_DATE: 'prayerjournal_last_popup_date',
   USERS: 'prayerjournal_users',
-  USER_PROGRESS: 'prayerjournal_user_progress'
+  USER_PROGRESS: 'prayerjournal_user_progress',
+  USER_ROLES: 'prayerjournal_user_roles'
 };
 
 // User prayer progress tracking
