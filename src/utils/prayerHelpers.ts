@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, MILESTONES, getFromStorage, setToStorage } from "@/data/mockData";
+import { STORAGE_KEYS, MILESTONES, getFromStorage, setToStorage, createNotification } from "@/data/mockData";
 
 export const markPrayerCompleted = (userId: string): { newStreak: number; milestone?: any } => {
   const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
@@ -6,14 +6,14 @@ export const markPrayerCompleted = (userId: string): { newStreak: number; milest
   if (!profiles[userId]) {
     profiles[userId] = {
       streak_count: 0,
-      last_journal_date: null,
+      last_prayer_date: null,
       current_milestone: 0,
       milestone_unlocked_dates: {}
     };
   }
   
   const today = new Date().toISOString().split('T')[0];
-  const lastPrayerDate = profiles[userId].last_journal_date;
+  const lastPrayerDate = profiles[userId].last_prayer_date || profiles[userId].last_journal_date;
   let currentStreak = profiles[userId].streak_count || 0;
   
   // Check if already prayed today
@@ -36,11 +36,24 @@ export const markPrayerCompleted = (userId: string): { newStreak: number; milest
   
   // Update profile
   profiles[userId].streak_count = currentStreak;
-  profiles[userId].last_journal_date = today;
+  profiles[userId].last_prayer_date = today;
+  profiles[userId].last_journal_date = today; // Keep for backwards compatibility
   setToStorage(STORAGE_KEYS.PROFILES, profiles);
   
   // Check for milestone achievement
   const milestone = checkMilestoneAchievement(userId, currentStreak);
+  
+  // Create streak notification if multiple of 7
+  if (currentStreak > 0 && currentStreak % 7 === 0) {
+    createNotification(
+      'streak',
+      `${currentStreak}-Day Streak! 🔥`,
+      `Amazing! You've prayed ${currentStreak} days in a row. Keep seeking Him first!`,
+      userId,
+      undefined,
+      '🔥'
+    );
+  }
   
   return { newStreak: currentStreak, milestone };
 };

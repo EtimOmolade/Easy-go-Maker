@@ -253,6 +253,17 @@ const Admin = () => {
           date_uploaded: new Date().toISOString()
         };
         guidelines.push(newGuideline);
+        
+        // Create announcement for new guideline
+        const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, []);
+        messages.push({
+          id: `announce-guideline-${Date.now()}`,
+          content: `📖 New prayer guideline: Week ${weekNumber} - ${title}`,
+          created_at: new Date().toISOString(),
+          created_by: user?.id || 'admin'
+        });
+        setToStorage(STORAGE_KEYS.ENCOURAGEMENT, messages);
+        
         toast.success("📖 Guideline created!");
       }
       

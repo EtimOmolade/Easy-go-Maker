@@ -78,6 +78,9 @@ export const approveTestimony = (testimonyId: string, adminName: string) => {
     
     // Create announcement for approved testimony
     createAnnouncementForTestimony(testimony);
+    
+    // Mark related admin notification as read
+    markAdminNotificationAsHandled(testimony.id);
   }
 };
 
@@ -98,6 +101,9 @@ export const rejectTestimony = (
     testimonies[testimonyIndex].rejected_by = adminName;
     testimonies[testimonyIndex].rejected_at = new Date().toISOString();
     setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
+    
+    // Mark related admin notification as handled
+    markAdminNotificationAsHandled(testimonyId);
   }
 };
 
@@ -143,10 +149,21 @@ const createAnnouncementForTestimony = (testimony: any) => {
   const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, [] as any[]);
   const announcement = {
     id: `announce-testimony-${Date.now()}`,
-    content: `✨ New Testimony: ${testimony.title.substring(0, 50)}${testimony.title.length > 50 ? '...' : ''}\n\nA member has shared an inspiring testimony! Visit the Testimonies page to read their story.`,
+    content: `✨ New testimony: ${testimony.title.substring(0, 40)}${testimony.title.length > 40 ? '...' : ''}\n\nA member has shared an inspiring testimony!`,
     created_at: new Date().toISOString(),
     created_by: 'system'
   };
   messages.push(announcement);
   setToStorage(STORAGE_KEYS.ENCOURAGEMENT, messages);
+};
+
+const markAdminNotificationAsHandled = (testimonyId: string) => {
+  const { markNotificationAsRead, getFromStorage, STORAGE_KEYS } = require('@/data/mockData');
+  const notifications = getFromStorage(STORAGE_KEYS.NOTIFICATIONS, [] as any[]);
+  
+  notifications.forEach((n: any) => {
+    if (n.messageId === testimonyId && n.type === 'testimony') {
+      markNotificationAsRead(n.id);
+    }
+  });
 };
