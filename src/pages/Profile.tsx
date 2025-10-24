@@ -218,7 +218,7 @@ const Profile = () => {
 
             {unlocked.length === 0 && (
               <p className="text-center text-muted-foreground py-4">
-                Start journaling to unlock achievements!
+                Start praying to unlock achievements!
               </p>
             )}
           </CardContent>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 // Backend integration - Supabase COMMENTED OUT (Prototype mode)
 // import { supabase } from "@/lib/supabase";
 import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
@@ -15,6 +15,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { submitTestimony, resubmitTestimony } from "@/utils/testimonyHelpers";
+import { Mic, Square, Upload, Headphones, X as XIcon } from "lucide-react";
+import { AudioPlayer } from "@/components/AudioPlayer";
 
 interface Testimony {
   id: string;
@@ -24,7 +27,10 @@ interface Testimony {
   date: string;
   status: 'pending' | 'approved' | 'rejected';
   rejection_reason?: string;
+  admin_note?: string;
   resubmitted_at?: string;
+  audio_note?: string;
+  audio_duration?: number;
   profiles: {
     name: string;
   };
@@ -40,6 +46,18 @@ const Testimonies = () => {
   const [editingTestimony, setEditingTestimony] = useState<Testimony | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [audioPreview, setAudioPreview] = useState<string>("");
+  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
+  const [submitTitle, setSubmitTitle] = useState("");
+  const [submitContent, setSubmitContent] = useState("");
+  
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const navigate = useNavigate();
 
   const filteredTestimonies = testimonies.filter(testimony =>
