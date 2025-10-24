@@ -170,17 +170,17 @@ const Profile = () => {
             {/* Unlocked Achievements */}
             {unlocked.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">Unlocked</h3>
+                <h3 className="text-sm font-semibold text-foreground">Unlocked Achievements</h3>
                 {unlocked.map((milestone) => (
-                  <div key={milestone.level} className="p-4 rounded-lg bg-primary/10 border-2 border-primary/20">
+                  <div key={milestone.level} className="p-4 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-primary shadow-medium">
                     <div className="flex items-start gap-3">
-                      <span className="text-4xl">{milestone.emoji}</span>
+                      <span className="text-4xl drop-shadow-lg">{milestone.emoji}</span>
                       <div className="flex-1">
-                        <h4 className="font-semibold text-foreground">{milestone.name}</h4>
-                        <p className="text-sm text-muted-foreground mb-2">
+                        <h4 className="font-semibold text-foreground text-lg">{milestone.name}</h4>
+                        <p className="text-sm text-foreground/80 mb-2">
                           {milestone.message}
                         </p>
-                        <p className="text-xs italic text-foreground/70">
+                        <p className="text-xs italic text-foreground/70 bg-background/50 p-2 rounded">
                           "{milestone.scripture}" - {milestone.scripture_ref}
                         </p>
                         <p className="text-xs text-muted-foreground mt-2">
