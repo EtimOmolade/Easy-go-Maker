@@ -412,6 +412,10 @@ const Journal = () => {
     try {
       const fullTestimonyContent = `${testimonyText}\n\n${sharingEntry.content}`;
 
+      // Include audio note if present
+      const audioNote = sharingEntry.audio_note;
+      const audioDuration = sharingEntry.audio_duration;
+
       const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
       const newTestimony = {
         id: `testimony-${Date.now()}`,
@@ -421,6 +425,8 @@ const Journal = () => {
         date: new Date().toISOString().split('T')[0],
         approved: false,
         status: 'pending',
+        audio_note: audioNote,
+        audio_duration: audioDuration,
         profiles: { name: user.user_metadata?.name || 'Anonymous' }
       };
       testimonies.push(newTestimony);
@@ -436,7 +442,23 @@ const Journal = () => {
         setToStorage(STORAGE_KEYS.JOURNAL_ENTRIES, allEntries);
       }
 
-      toast.success("Shared as testimony! Awaiting admin approval.");
+      // Create admin notification
+      const { createNotification } = require('@/data/mockData');
+      const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
+      const adminUserIds = Object.keys(userRoles).filter(userId => userRoles[userId] === 'admin');
+      adminUserIds.forEach(adminId => {
+        createNotification(
+          'testimony',
+          'New Testimony Pending',
+          `📝 New testimony: "${sharingEntry.title}"`,
+          adminId,
+          newTestimony.id,
+          '📝',
+          true
+        );
+      });
+
+      toast.success("Testimony shared to admin");
       setIsTestimonyDialogOpen(false);
       setSharingEntry(null);
       setTestimonyText("God has answered my prayer");

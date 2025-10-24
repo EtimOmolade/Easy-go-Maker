@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AudioPlayer } from "@/components/AudioPlayer";
 
 interface Testimony {
   id: string;
@@ -39,6 +40,8 @@ interface Testimony {
   rejected_by?: string;
   rejected_at?: string;
   resubmitted_at?: string;
+  audio_note?: string;
+  audio_duration?: number;
   profiles: {
     name: string;
   };
@@ -183,8 +186,9 @@ const Admin = () => {
   };
 
   const fetchTestimonies = async () => {
-    // Prototype mode: Fetch from localStorage
-    const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
+    // Prototype mode: Fetch from localStorage - exclude rejected testimonies
+    const allTestimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
+    const testimonies = allTestimonies.filter((t: any) => t.status !== 'rejected');
     const sortedTestimonies = testimonies.sort((a: any, b: any) =>
       new Date(b.date || b.created_at).getTime() - new Date(a.date || a.created_at).getTime()
     );
@@ -418,31 +422,12 @@ const Admin = () => {
   };
 
   const handleApproveTestimony = async (id: string) => {
-    // Prototype mode: Update in localStorage
-    const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
-    const testimonyIndex = testimonies.findIndex((t: any) => t.id === id);
+    // Use testimonyHelpers to handle approval properly
+    const { approveTestimony } = await import('@/utils/testimonyHelpers');
+    approveTestimony(id, user?.user_metadata?.name || 'Admin');
     
-    if (testimonyIndex !== -1) {
-      const testimony = testimonies[testimonyIndex];
-      testimonies[testimonyIndex].approved = true;
-      testimonies[testimonyIndex].status = 'approved';
-      testimonies[testimonyIndex].approved_at = new Date().toISOString();
-      testimonies[testimonyIndex].approved_by = user?.user_metadata?.name || 'Admin';
-      setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
-      
-      // Create announcement for approved testimony
-      const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, []);
-      messages.push({
-        id: `announce-testimony-${Date.now()}`,
-        content: `✨ New testimony: ${testimony.title.substring(0, 40)}${testimony.title.length > 40 ? '...' : ''}`,
-        created_at: new Date().toISOString(),
-        created_by: 'system'
-      });
-      setToStorage(STORAGE_KEYS.ENCOURAGEMENT, messages);
-      
-      toast.success("✨ Testimony approved!");
-      await fetchTestimonies();
-    }
+    toast.success("✨ Testimony approved!");
+    await fetchTestimonies();
 
     // Backend integration - Supabase COMMENTED OUT
     // try {
@@ -484,36 +469,20 @@ const Admin = () => {
       return;
     }
 
-    // Prototype mode: Update in localStorage
-    const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
-    const testimonyIndex = testimonies.findIndex((t: any) => t.id === rejectingTestimony.id);
+    // Use testimonyHelpers to handle rejection properly
+    const { rejectTestimony } = await import('@/utils/testimonyHelpers');
+    rejectTestimony(
+      rejectingTestimony.id,
+      finalReason,
+      undefined,
+      user?.user_metadata?.name || 'Admin'
+    );
     
-    if (testimonyIndex !== -1) {
-      const testimony = testimonies[testimonyIndex];
-      testimonies[testimonyIndex].approved = false;
-      testimonies[testimonyIndex].status = 'rejected';
-      testimonies[testimonyIndex].rejection_reason = finalReason;
-      testimonies[testimonyIndex].rejected_by = user?.user_metadata?.name || 'Admin';
-      testimonies[testimonyIndex].rejected_at = new Date().toISOString();
-      setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
-      
-      // Notify user about rejection
-      const { createNotification } = require('@/data/mockData');
-      createNotification(
-        'testimony',
-        'Testimony Rejected',
-        `Your testimony "${testimony.title}" was rejected. Reason: ${finalReason}`,
-        testimony.user_id,
-        testimony.id,
-        '❌'
-      );
-      
-      toast.success("Testimony rejected");
-      setRejectingTestimony(null);
-      setRejectionReason("");
-      setCustomReason("");
-      await fetchTestimonies();
-    }
+    toast.success("Testimony rejected and removed from pending list");
+    setRejectingTestimony(null);
+    setRejectionReason("");
+    setCustomReason("");
+    await fetchTestimonies();
 
     // Backend integration - Supabase COMMENTED OUT
     // try {
@@ -689,7 +658,8 @@ const Admin = () => {
        u.name.toLowerCase().includes(searchEmail.toLowerCase()));
   });
 
-  const pendingTestimonies = testimonies.filter((t) => !t.approved);
+  // Filter: Only show pending testimonies (hide rejected ones from admin view)
+  const pendingTestimonies = testimonies.filter((t) => t.status === 'pending');
   const approvedTestimonies = testimonies.filter((t) => t.approved);
 
   return (
@@ -943,46 +913,12 @@ const Admin = () => {
                             </div>
                           </div>
                         </CardHeader>
-                        <CardContent><p className="whitespace-pre-wrap text-sm break-words overflow-y-auto max-h-[150px]">{testimony.content}</p></CardContent>
-                      </Card>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Rejected Testimonies Section */}
-              {testimonies.filter(t => t.status === 'rejected').length > 0 && (
-                <Card className="shadow-medium border-2 border-destructive/20">
-                  <CardHeader><CardTitle>Rejected Testimonies ({testimonies.filter(t => t.status === 'rejected').length})</CardTitle></CardHeader>
-                  <CardContent className="space-y-4">
-                    {testimonies.filter(t => t.status === 'rejected').map((testimony) => (
-                      <Card key={testimony.id} className="bg-destructive/5">
-                        <CardHeader>
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1 overflow-hidden">
-                              <CardTitle className="text-lg">{testimony.title}</CardTitle>
-                              <p className="text-sm text-muted-foreground mt-1">By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}</p>
-                              <div className="mt-2 space-y-1">
-                                <Badge variant="destructive">Rejected</Badge>
-                                {testimony.rejection_reason && (
-                                  <p className="text-sm text-destructive font-medium">Reason: {testimony.rejection_reason}</p>
-                                )}
-                                {testimony.admin_note && (
-                                  <p className="text-sm text-muted-foreground">Note: {testimony.admin_note}</p>
-                                )}
-                                {testimony.rejected_by && (
-                                  <p className="text-xs text-muted-foreground">
-                                    Rejected by {testimony.rejected_by} • {new Date(testimony.rejected_at || '').toLocaleString()}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent><p className="whitespace-pre-wrap text-sm break-words overflow-y-auto max-h-[150px]">{testimony.content}</p></CardContent>
+                        <CardContent className="space-y-3">
+                          {testimony.audio_note && (
+                            <AudioPlayer audioBase64={testimony.audio_note} duration={testimony.audio_duration || 0} />
+                          )}
+                          <p className="whitespace-pre-wrap text-sm break-words overflow-y-auto max-h-[150px]">{testimony.content}</p>
+                        </CardContent>
                       </Card>
                     ))}
                   </CardContent>
@@ -1006,7 +942,12 @@ const Admin = () => {
                             <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}><Trash2 className="h-4 w-4" /></Button>
                           </div>
                         </CardHeader>
-                        <CardContent><p className="whitespace-pre-wrap text-sm break-words overflow-y-auto max-h-[150px]">{testimony.content}</p></CardContent>
+                        <CardContent className="space-y-3">
+                          {testimony.audio_note && (
+                            <AudioPlayer audioBase64={testimony.audio_note} duration={testimony.audio_duration || 0} />
+                          )}
+                          <p className="whitespace-pre-wrap text-sm break-words overflow-y-auto max-h-[150px]">{testimony.content}</p>
+                        </CardContent>
                       </Card>
                     ))
                   )}

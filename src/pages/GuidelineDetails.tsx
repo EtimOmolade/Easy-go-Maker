@@ -139,6 +139,9 @@ const GuidelineDetails = () => {
     if (!user || !guideline) return;
 
     try {
+      // Import prayer helper
+      const { markPrayerCompleted } = await import('@/utils/prayerHelpers');
+
       // Prototype mode: Create hidden journal entry in localStorage
       const allEntries = getFromStorage(STORAGE_KEYS.JOURNAL_ENTRIES, [] as any[]);
       const newEntry = {
@@ -154,18 +157,21 @@ const GuidelineDetails = () => {
       allEntries.push(newEntry);
       setToStorage(STORAGE_KEYS.JOURNAL_ENTRIES, allEntries);
 
-      // Update streak
-      const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
-      if (profiles[user.id]) {
-        profiles[user.id].streak_count = (profiles[user.id].streak_count || 0) + 1;
-        setToStorage(STORAGE_KEYS.PROFILES, profiles);
-      }
+      // Use prayer helper to update streak and check milestones
+      const { newStreak, milestone } = markPrayerCompleted(user.id);
 
       // Update local state
       setCompletedDays([...completedDays, day]);
-      await fetchUserStreak();
+      setStreakCount(newStreak);
 
-      toast.success(`🎉 ${day} Complete! Keep the fire burning! +1 to your streak!`);
+      // Show milestone achievement if unlocked
+      if (milestone) {
+        const { MilestoneAchievementModal } = await import('@/components/MilestoneAchievementModal');
+        // Since we're in GuidelineDetails and don't have modal state, we'll show toast instead
+        toast.success(`🎉 ${day} Complete! Milestone Unlocked: ${milestone.name}!`, { duration: 5000 });
+      } else {
+        toast.success(`🎉 ${day} Complete! ${newStreak}-day streak! Keep the fire burning!`);
+      }
 
       // Backend integration - Supabase COMMENTED OUT
       // const { error } = await supabase
