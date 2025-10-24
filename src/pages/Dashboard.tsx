@@ -50,6 +50,20 @@ const Dashboard = () => {
       if (isAdmin) {
         fetchPendingTestimonies();
       }
+      
+      // Refresh data when returning to dashboard
+      const handleVisibilityChange = () => {
+        if (!document.hidden) {
+          fetchProfile();
+          checkForNewMilestones();
+        }
+      };
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
 
       // Backend integration - Supabase real-time COMMENTED OUT (Prototype mode)
       // const channel = supabase

@@ -29,8 +29,7 @@ export const submitTestimony = (
   // Create admin notification for new testimony
   createAdminNotificationForTestimony(newTestimony);
   
-  // Create announcement for new testimony submission
-  createAnnouncementForNewTestimony(newTestimony);
+  // Note: Announcement only created after admin approval (see approveTestimony)
   
   return newTestimony;
 };
@@ -159,17 +158,9 @@ const createAdminNotificationForResubmission = (testimony: any) => {
   });
 };
 
-const createAnnouncementForNewTestimony = (testimony: any) => {
-  const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, [] as any[]);
-  const announcement = {
-    id: `announce-testimony-new-${Date.now()}`,
-    content: `📝 New testimony shared: ${testimony.title.substring(0, 50)}${testimony.title.length > 50 ? '...' : ''}`,
-    created_at: new Date().toISOString(),
-    created_by: 'system'
-  };
-  messages.push(announcement);
-  setToStorage(STORAGE_KEYS.ENCOURAGEMENT, messages);
-};
+// Removed: Announcements should only be created after admin approval
+// const createAnnouncementForNewTestimony was here but removed to prevent
+// premature announcements before admin approval
 
 const createAnnouncementForTestimony = (testimony: any) => {
   const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, [] as any[]);

@@ -443,7 +443,7 @@ const Journal = () => {
       }
 
       // Create admin notification
-      const { createNotification } = require('@/data/mockData');
+      const { createNotification } = await import('@/data/mockData');
       const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
       const adminUserIds = Object.keys(userRoles).filter(userId => userRoles[userId] === 'admin');
       adminUserIds.forEach(adminId => {
@@ -773,7 +773,7 @@ const Journal = () => {
                       <Alert className="bg-yellow-500/10 border-yellow-500">
                         <AlertCircle className="h-4 w-4 text-yellow-500" />
                         <AlertDescription className="text-yellow-700 dark:text-yellow-300">
-                          Testimony pending admin approval
+                          Testimony sent to admin for approval
                         </AlertDescription>
                       </Alert>
                     )}
