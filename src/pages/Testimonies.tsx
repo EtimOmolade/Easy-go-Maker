@@ -333,9 +333,8 @@ const Testimonies = () => {
                 {filteredTestimonies.map((testimony) => (
                   <Card key={testimony.id} className="shadow-medium hover:shadow-glow transition-shadow">
                     <CardHeader>
-                      <CardTitle className="text-2xl flex items-center gap-2">
+                      <CardTitle className="text-2xl">
                         {testimony.title}
-                        <Badge className="bg-green-500 ml-auto">Approved</Badge>
                       </CardTitle>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span className="font-medium">{testimony.profiles?.name}</span>

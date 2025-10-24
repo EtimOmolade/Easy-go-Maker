@@ -35,6 +35,9 @@ interface Testimony {
   approved: boolean;
   status: 'pending' | 'approved' | 'rejected';
   rejection_reason?: string;
+  admin_note?: string;
+  rejected_by?: string;
+  rejected_at?: string;
   resubmitted_at?: string;
   profiles: {
     name: string;
@@ -420,9 +423,23 @@ const Admin = () => {
     const testimonyIndex = testimonies.findIndex((t: any) => t.id === id);
     
     if (testimonyIndex !== -1) {
+      const testimony = testimonies[testimonyIndex];
       testimonies[testimonyIndex].approved = true;
       testimonies[testimonyIndex].status = 'approved';
+      testimonies[testimonyIndex].approved_at = new Date().toISOString();
+      testimonies[testimonyIndex].approved_by = user?.user_metadata?.name || 'Admin';
       setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
+      
+      // Create announcement for approved testimony
+      const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, []);
+      messages.push({
+        id: `announce-testimony-${Date.now()}`,
+        content: `✨ New testimony: ${testimony.title.substring(0, 40)}${testimony.title.length > 40 ? '...' : ''}`,
+        created_at: new Date().toISOString(),
+        created_by: 'system'
+      });
+      setToStorage(STORAGE_KEYS.ENCOURAGEMENT, messages);
+      
       toast.success("✨ Testimony approved!");
       await fetchTestimonies();
     }
@@ -472,10 +489,25 @@ const Admin = () => {
     const testimonyIndex = testimonies.findIndex((t: any) => t.id === rejectingTestimony.id);
     
     if (testimonyIndex !== -1) {
+      const testimony = testimonies[testimonyIndex];
       testimonies[testimonyIndex].approved = false;
       testimonies[testimonyIndex].status = 'rejected';
       testimonies[testimonyIndex].rejection_reason = finalReason;
+      testimonies[testimonyIndex].rejected_by = user?.user_metadata?.name || 'Admin';
+      testimonies[testimonyIndex].rejected_at = new Date().toISOString();
       setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
+      
+      // Notify user about rejection
+      const { createNotification } = require('@/data/mockData');
+      createNotification(
+        'testimony',
+        'Testimony Rejected',
+        `Your testimony "${testimony.title}" was rejected. Reason: ${finalReason}`,
+        testimony.user_id,
+        testimony.id,
+        '❌'
+      );
+      
       toast.success("Testimony rejected");
       setRejectingTestimony(null);
       setRejectionReason("");
@@ -871,6 +903,9 @@ const Admin = () => {
                             <div className="flex-1 overflow-hidden">
                               <CardTitle className="text-lg">{testimony.title}</CardTitle>
                               <p className="text-sm text-muted-foreground mt-1">By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}</p>
+                              {testimony.resubmitted_at && (
+                                <Badge variant="outline" className="mt-2">Resubmitted</Badge>
+                              )}
                             </div>
                             <div className="flex gap-2 flex-shrink-0">
                               <Tooltip>
@@ -906,6 +941,45 @@ const Admin = () => {
                                 <TooltipContent>Delete testimony</TooltipContent>
                               </Tooltip>
                             </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent><p className="whitespace-pre-wrap text-sm break-words overflow-y-auto max-h-[150px]">{testimony.content}</p></CardContent>
+                      </Card>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Rejected Testimonies Section */}
+              {testimonies.filter(t => t.status === 'rejected').length > 0 && (
+                <Card className="shadow-medium border-2 border-destructive/20">
+                  <CardHeader><CardTitle>Rejected Testimonies ({testimonies.filter(t => t.status === 'rejected').length})</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                    {testimonies.filter(t => t.status === 'rejected').map((testimony) => (
+                      <Card key={testimony.id} className="bg-destructive/5">
+                        <CardHeader>
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 overflow-hidden">
+                              <CardTitle className="text-lg">{testimony.title}</CardTitle>
+                              <p className="text-sm text-muted-foreground mt-1">By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}</p>
+                              <div className="mt-2 space-y-1">
+                                <Badge variant="destructive">Rejected</Badge>
+                                {testimony.rejection_reason && (
+                                  <p className="text-sm text-destructive font-medium">Reason: {testimony.rejection_reason}</p>
+                                )}
+                                {testimony.admin_note && (
+                                  <p className="text-sm text-muted-foreground">Note: {testimony.admin_note}</p>
+                                )}
+                                {testimony.rejected_by && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Rejected by {testimony.rejected_by} • {new Date(testimony.rejected_at || '').toLocaleString()}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </CardHeader>
                         <CardContent><p className="whitespace-pre-wrap text-sm break-words overflow-y-auto max-h-[150px]">{testimony.content}</p></CardContent>

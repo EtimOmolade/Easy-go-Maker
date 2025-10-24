@@ -34,14 +34,13 @@ export const markPrayerCompleted = (userId: string): { newStreak: number; milest
     currentStreak = 1;
   }
   
-  // Update profile
+  // Update profile - CRITICAL: Update both milestone and streak before saving
+  const milestone = updateMilestoneForProfile(userId, currentStreak, profiles);
+  
   profiles[userId].streak_count = currentStreak;
   profiles[userId].last_prayer_date = today;
   profiles[userId].last_journal_date = today; // Keep for backwards compatibility
   setToStorage(STORAGE_KEYS.PROFILES, profiles);
-  
-  // Check for milestone achievement
-  const milestone = checkMilestoneAchievement(userId, currentStreak);
   
   // Create streak notification if multiple of 7
   if (currentStreak > 0 && currentStreak % 7 === 0) {
@@ -56,6 +55,43 @@ export const markPrayerCompleted = (userId: string): { newStreak: number; milest
   }
   
   return { newStreak: currentStreak, milestone };
+};
+
+const updateMilestoneForProfile = (userId: string, currentStreak: number, profiles: any): any | undefined => {
+  const userProfile = profiles[userId] || {};
+  const currentMilestone = userProfile.current_milestone || 0;
+  const shownCelebrations = getFromStorage(STORAGE_KEYS.SHOWN_CELEBRATIONS, {} as any);
+  const userCelebrations = shownCelebrations[userId] || [];
+  
+  // Find the highest milestone achieved based on streak
+  let newMilestone = currentMilestone;
+  let achievedMilestoneData;
+  
+  for (let i = MILESTONES.length - 1; i >= 0; i--) {
+    if (currentStreak >= MILESTONES[i].streak_needed) {
+      newMilestone = MILESTONES[i].level;
+      achievedMilestoneData = MILESTONES[i];
+      break;
+    }
+  }
+  
+  // If new milestone and not shown before
+  if (newMilestone > currentMilestone && !userCelebrations.includes(newMilestone)) {
+    profiles[userId].current_milestone = newMilestone;
+    if (!profiles[userId].milestone_unlocked_dates) {
+      profiles[userId].milestone_unlocked_dates = {};
+    }
+    profiles[userId].milestone_unlocked_dates[newMilestone] = new Date().toISOString();
+    
+    // Mark celebration as shown
+    userCelebrations.push(newMilestone);
+    shownCelebrations[userId] = userCelebrations;
+    setToStorage(STORAGE_KEYS.SHOWN_CELEBRATIONS, shownCelebrations);
+    
+    return achievedMilestoneData;
+  }
+  
+  return undefined;
 };
 
 export const checkMilestoneAchievement = (userId: string, currentStreak: number): any | undefined => {

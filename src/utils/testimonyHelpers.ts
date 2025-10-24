@@ -29,6 +29,9 @@ export const submitTestimony = (
   // Create admin notification for new testimony
   createAdminNotificationForTestimony(newTestimony);
   
+  // Create announcement for new testimony submission
+  createAnnouncementForNewTestimony(newTestimony);
+  
   return newTestimony;
 };
 
@@ -94,6 +97,7 @@ export const rejectTestimony = (
   const testimonyIndex = testimonies.findIndex((t: any) => t.id === testimonyId);
   
   if (testimonyIndex !== -1) {
+    const testimony = testimonies[testimonyIndex];
     testimonies[testimonyIndex].approved = false;
     testimonies[testimonyIndex].status = 'rejected';
     testimonies[testimonyIndex].rejection_reason = reason;
@@ -101,6 +105,16 @@ export const rejectTestimony = (
     testimonies[testimonyIndex].rejected_by = adminName;
     testimonies[testimonyIndex].rejected_at = new Date().toISOString();
     setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
+    
+    // Notify user about rejection
+    createNotification(
+      'testimony',
+      'Testimony Rejected',
+      `Your testimony "${testimony.title}" was rejected. Reason: ${reason}`,
+      testimony.user_id,
+      testimony.id,
+      '❌'
+    );
     
     // Mark related admin notification as handled
     markAdminNotificationAsHandled(testimonyId);
@@ -145,11 +159,23 @@ const createAdminNotificationForResubmission = (testimony: any) => {
   });
 };
 
+const createAnnouncementForNewTestimony = (testimony: any) => {
+  const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, [] as any[]);
+  const announcement = {
+    id: `announce-testimony-new-${Date.now()}`,
+    content: `📝 New testimony shared: ${testimony.title.substring(0, 50)}${testimony.title.length > 50 ? '...' : ''}`,
+    created_at: new Date().toISOString(),
+    created_by: 'system'
+  };
+  messages.push(announcement);
+  setToStorage(STORAGE_KEYS.ENCOURAGEMENT, messages);
+};
+
 const createAnnouncementForTestimony = (testimony: any) => {
   const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, [] as any[]);
   const announcement = {
     id: `announce-testimony-${Date.now()}`,
-    content: `✨ New testimony: ${testimony.title.substring(0, 40)}${testimony.title.length > 40 ? '...' : ''}\n\nA member has shared an inspiring testimony!`,
+    content: `✨ New testimony: ${testimony.title.substring(0, 40)}${testimony.title.length > 40 ? '...' : ''}`,
     created_at: new Date().toISOString(),
     created_by: 'system'
   };

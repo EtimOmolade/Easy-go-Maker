@@ -16,6 +16,7 @@ export interface MockProfile {
   streak_count: number;
   reminders_enabled: boolean;
   last_journal_date: string | null;
+  last_prayer_date?: string | null;
   current_milestone?: number;
   total_prayers_completed?: number;
   milestone_unlocked_dates?: { [key: number]: string };
