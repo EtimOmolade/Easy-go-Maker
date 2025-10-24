@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 // Backend integration - Supabase COMMENTED OUT (Prototype mode)
 // import { supabase } from "@/lib/supabase";
-import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
+import { STORAGE_KEYS, MILESTONES, getFromStorage, setToStorage } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -114,22 +114,28 @@ const Profile = () => {
     // setLoading(false);
   };
 
-  const { MILESTONES } = await import("@/data/mockData");
-  
-  const getUnlockedMilestones = () => {
-    if (!profile) return [];
+  const getAchievementStatus = () => {
+    if (!user) return { unlocked: [], locked: MILESTONES, totalPrayers: 0 };
+    
     const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
-    const userProfile = profiles[user?.id || ''];
+    const userProfile = profiles[user.id];
     const totalPrayers = userProfile?.total_prayers_completed || 0;
     const unlockedDates = userProfile?.milestone_unlocked_dates || {};
     
-    return MILESTONES.filter(m => totalPrayers >= m.prayers_needed).map(m => ({
+    const unlocked = MILESTONES.filter(m => totalPrayers >= m.prayers_needed).map(m => ({
       ...m,
-      unlockedDate: unlockedDates[m.level]
+      unlockedDate: unlockedDates[m.level] || 'Recently unlocked'
     }));
+    
+    const locked = MILESTONES.filter(m => totalPrayers < m.prayers_needed).map(m => ({
+      ...m,
+      prayersNeeded: m.prayers_needed - totalPrayers
+    }));
+    
+    return { unlocked, locked, totalPrayers };
   };
 
-  const milestones = getUnlockedMilestones();
+  const { unlocked, locked, totalPrayers } = getAchievementStatus();
 
   return (
     <div className="min-h-screen gradient-subtle">
@@ -147,25 +153,75 @@ const Profile = () => {
           Profile Settings
         </h1>
 
-        {/* Badges Card */}
+        {/* Achievements Card */}
         <Card className="mb-6 shadow-medium">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Award className="h-6 w-6 text-accent" />
-              Your Badges
+              Prayer Achievements
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            {badges.length === 0 ? (
-              <p className="text-muted-foreground">Keep journaling to earn badges!</p>
-            ) : (
-              <div className="flex flex-wrap gap-3">
-                {badges.map((badge) => (
-                  <Badge key={badge.name} variant="secondary" className="text-base py-2 px-4">
-                    {badge.icon} {badge.name}
-                  </Badge>
+          <CardContent className="space-y-6">
+            <div className="text-center p-4 bg-accent/10 rounded-lg">
+              <p className="text-sm text-muted-foreground mb-1">Total Prayers Completed</p>
+              <p className="text-3xl font-bold text-accent">{totalPrayers}</p>
+            </div>
+
+            {/* Unlocked Achievements */}
+            {unlocked.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">Unlocked</h3>
+                {unlocked.map((milestone) => (
+                  <div key={milestone.level} className="p-4 rounded-lg bg-primary/10 border-2 border-primary/20">
+                    <div className="flex items-start gap-3">
+                      <span className="text-4xl">{milestone.emoji}</span>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground">{milestone.name}</h4>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {milestone.prayers_needed} prayers completed
+                        </p>
+                        <p className="text-sm italic text-foreground/80">
+                          "{milestone.scripture}" - {milestone.scripture_ref}
+                        </p>
+                        {milestone.unlockedDate && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Unlocked: {new Date(milestone.unlockedDate).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
+            )}
+
+            {/* Locked Achievements */}
+            {locked.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-muted-foreground">Locked</h3>
+                {locked.map((milestone) => (
+                  <div key={milestone.level} className="p-4 rounded-lg bg-muted/50 border-2 border-muted opacity-60">
+                    <div className="flex items-start gap-3">
+                      <span className="text-4xl grayscale">🔒</span>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-muted-foreground">???</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {milestone.prayersNeeded} more prayers needed
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Unlock at {milestone.prayers_needed} prayers
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {unlocked.length === 0 && (
+              <p className="text-center text-muted-foreground py-4">
+                Start journaling to unlock achievements!
+              </p>
             )}
           </CardContent>
         </Card>

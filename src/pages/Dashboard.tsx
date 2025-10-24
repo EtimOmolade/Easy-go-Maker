@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 // Backend integration - Supabase COMMENTED OUT (Prototype mode)
 // import { supabase } from "@/lib/supabase";
-import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
+import { STORAGE_KEYS, MILESTONES, getFromStorage, setToStorage } from "@/data/mockData";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone } from "lucide-react";
@@ -182,6 +182,38 @@ const Dashboard = () => {
     // }
   };
 
+  const getMilestoneProgress = () => {
+    if (!user) return { current: MILESTONES[0], progress: 0, totalPrayers: 0, nextMilestone: MILESTONES[1] };
+    
+    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
+    const userProfile = profiles[user.id];
+    const totalPrayers = userProfile?.total_prayers_completed || 0;
+    const currentMilestoneLevel = userProfile?.current_milestone || 0;
+    
+    // Find current and next milestone
+    let current = MILESTONES[0];
+    let nextMilestone = MILESTONES[1];
+    
+    for (let i = MILESTONES.length - 1; i >= 0; i--) {
+      if (totalPrayers >= MILESTONES[i].prayers_needed) {
+        current = MILESTONES[i];
+        nextMilestone = MILESTONES[i + 1] || MILESTONES[i]; // Stay at max if completed all
+        break;
+      }
+    }
+    
+    // Calculate progress to next milestone
+    const prayersToNext = nextMilestone.prayers_needed - totalPrayers;
+    const previousMilestonePrayers = current.prayers_needed;
+    const milestoneRange = nextMilestone.prayers_needed - previousMilestonePrayers;
+    const progressInRange = totalPrayers - previousMilestonePrayers;
+    const progress = milestoneRange > 0 ? (progressInRange / milestoneRange) * 100 : 100;
+    
+    return { current, progress: Math.min(progress, 100), totalPrayers, nextMilestone, prayersToNext };
+  };
+
+  const milestoneData = getMilestoneProgress();
+
   const quickActions = [
     {
       title: "Prayer Guidelines",
@@ -296,7 +328,49 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              <StreakBadge streakCount={profile?.streak_count || 0} size="lg" />
+              {/* Current Milestone */}
+              <div className="text-center">
+                <div className="text-6xl mb-3">{milestoneData.current.emoji}</div>
+                <h3 className="text-2xl font-bold text-foreground mb-2">
+                  {milestoneData.current.name}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {milestoneData.totalPrayers} prayer{milestoneData.totalPrayers !== 1 ? 's' : ''} completed
+                </p>
+                <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
+                  <p className="text-sm italic text-foreground/90">
+                    "{milestoneData.current.scripture}"
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    - {milestoneData.current.scripture_ref}
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress to Next */}
+              {milestoneData.current.level < MILESTONES[MILESTONES.length - 1].level && (
+                <div className="pt-4 border-t">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Next: {milestoneData.nextMilestone.name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {milestoneData.prayersToNext} more prayer{milestoneData.prayersToNext !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <Progress value={milestoneData.progress} className="h-2" />
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    {milestoneData.totalPrayers} / {milestoneData.nextMilestone.prayers_needed} prayers
+                  </p>
+                </div>
+              )}
+
+              {/* Max Level Achieved */}
+              {milestoneData.current.level === MILESTONES[MILESTONES.length - 1].level && (
+                <div className="pt-4 border-t text-center">
+                  <p className="text-sm font-medium text-accent">
+                    🎉 Maximum level achieved! Keep praying!
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
