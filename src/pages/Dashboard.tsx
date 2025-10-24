@@ -217,47 +217,33 @@ const Dashboard = () => {
   };
 
   const getMilestoneProgress = () => {
-    if (!user) return { nextToAchieve: MILESTONES[0], progress: 0, currentStreak: 0, streakToNext: 1, lastAchieved: null };
+    if (!user) return { current: MILESTONES[0], progress: 0, currentStreak: 0, nextMilestone: MILESTONES[1] };
     
     const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
     const userProfile = profiles[user.id];
     const currentStreak = userProfile?.streak_count || 0;
+    const currentMilestoneLevel = userProfile?.current_milestone || 0;
     
-    // Find the next milestone to achieve based on current streak
-    let nextToAchieve = MILESTONES[0];
-    let lastAchieved = null;
-    let previousMilestoneStreak = 0;
+    // Find current and next milestone based on streak
+    let current = MILESTONES[0];
+    let nextMilestone = MILESTONES[1];
     
-    for (let i = 0; i < MILESTONES.length; i++) {
-      if (currentStreak < MILESTONES[i].streak_needed) {
-        nextToAchieve = MILESTONES[i];
-        previousMilestoneStreak = i > 0 ? MILESTONES[i - 1].streak_needed : 0;
-        if (i > 0) {
-          lastAchieved = MILESTONES[i - 1];
-        }
+    for (let i = MILESTONES.length - 1; i >= 0; i--) {
+      if (currentStreak >= MILESTONES[i].streak_needed) {
+        current = MILESTONES[i];
+        nextMilestone = MILESTONES[i + 1] || MILESTONES[i]; // Stay at max if completed all
         break;
-      }
-      // If we've completed all milestones
-      if (i === MILESTONES.length - 1 && currentStreak >= MILESTONES[i].streak_needed) {
-        lastAchieved = MILESTONES[i];
-        nextToAchieve = MILESTONES[i]; // Stay at max
-        previousMilestoneStreak = MILESTONES[i].streak_needed;
       }
     }
     
-    // Calculate progress towards next milestone
-    const streakToNext = nextToAchieve.streak_needed - currentStreak;
-    const milestoneRange = nextToAchieve.streak_needed - previousMilestoneStreak;
+    // Calculate progress to next milestone
+    const streakToNext = nextMilestone.streak_needed - currentStreak;
+    const previousMilestoneStreak = current.streak_needed;
+    const milestoneRange = nextMilestone.streak_needed - previousMilestoneStreak;
     const progressInRange = currentStreak - previousMilestoneStreak;
     const progress = milestoneRange > 0 ? (progressInRange / milestoneRange) * 100 : 100;
     
-    return { 
-      nextToAchieve, 
-      progress: Math.max(0, Math.min(progress, 100)), 
-      currentStreak, 
-      streakToNext: Math.max(0, streakToNext),
-      lastAchieved
-    };
+    return { current, progress: Math.min(progress, 100), currentStreak, nextMilestone, streakToNext };
   };
 
   const milestoneData = getMilestoneProgress();
@@ -381,53 +367,46 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {/* Next Milestone to Achieve */}
+              {/* Current Milestone */}
               <div className="text-center">
-                <div className="text-6xl mb-3">{milestoneData.nextToAchieve.emoji}</div>
+                <div className="text-6xl mb-3">{milestoneData.current.emoji}</div>
                 <h3 className="text-2xl font-bold text-foreground mb-2">
-                  {milestoneData.currentStreak === 0 ? milestoneData.nextToAchieve.name : `Next: ${milestoneData.nextToAchieve.name}`}
+                  {milestoneData.current.name}
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {milestoneData.currentStreak > 0 
-                    ? `${milestoneData.streakToNext} day${milestoneData.streakToNext !== 1 ? 's' : ''} to go`
-                    : 'Start your prayer journey today'}
+                  {milestoneData.currentStreak} day{milestoneData.currentStreak !== 1 ? 's' : ''} streak
                 </p>
                 <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
                   <p className="text-sm italic text-foreground/90">
-                    "{milestoneData.nextToAchieve.scripture}"
+                    "{milestoneData.current.scripture}"
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    - {milestoneData.nextToAchieve.scripture_ref}
+                    - {milestoneData.current.scripture_ref}
                   </p>
                 </div>
               </div>
 
-              {/* Progress Bar */}
-              {milestoneData.lastAchieved && milestoneData.nextToAchieve.level < MILESTONES[MILESTONES.length - 1].level && (
+              {/* Progress to Next */}
+              {milestoneData.current.level < MILESTONES[MILESTONES.length - 1].level && (
                 <div className="pt-4 border-t">
                   <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Next: {milestoneData.nextMilestone.name}</span>
                     <span className="text-sm text-muted-foreground">
-                      Current Streak: {milestoneData.currentStreak} day{milestoneData.currentStreak !== 1 ? 's' : ''}
-                    </span>
-                    <span className="text-sm font-medium text-accent">
-                      {milestoneData.streakToNext} more day{milestoneData.streakToNext !== 1 ? 's' : ''}!
+                      {milestoneData.streakToNext} more day{milestoneData.streakToNext !== 1 ? 's' : ''}
                     </span>
                   </div>
                   <Progress value={milestoneData.progress} className="h-2" />
                   <p className="text-xs text-muted-foreground mt-2 text-center">
-                    {milestoneData.currentStreak} / {milestoneData.nextToAchieve.streak_needed} days
+                    {milestoneData.currentStreak} / {milestoneData.nextMilestone.streak_needed} days
                   </p>
                 </div>
               )}
 
               {/* Max Level Achieved */}
-              {milestoneData.lastAchieved?.level === MILESTONES[MILESTONES.length - 1].level && (
+              {milestoneData.current.level === MILESTONES[MILESTONES.length - 1].level && (
                 <div className="pt-4 border-t text-center">
                   <p className="text-sm font-medium text-accent">
-                    🎉 Maximum level achieved! Keep praying to maintain your streak!
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Current streak: {milestoneData.currentStreak} days
+                    🎉 Maximum level achieved! Keep praying!
                   </p>
                 </div>
               )}
