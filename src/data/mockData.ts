@@ -16,6 +16,9 @@ export interface MockProfile {
   streak_count: number;
   reminders_enabled: boolean;
   last_journal_date: string | null;
+  current_milestone?: number;
+  total_prayers_completed?: number;
+  milestone_unlocked_dates?: { [key: number]: string };
 }
 
 export interface MockJournalEntry {
@@ -28,6 +31,10 @@ export interface MockJournalEntry {
   is_answered: boolean;
   is_shared: boolean;
   testimony_text?: string;
+  audio_note?: string;
+  audio_duration?: number;
+  testimony_status?: 'pending' | 'approved' | 'rejected';
+  rejection_reason?: string;
 }
 
 export interface MockTestimony {
@@ -270,8 +277,69 @@ export const STORAGE_KEYS = {
   LAST_POPUP_DATE: 'prayerjournal_last_popup_date',
   USERS: 'prayerjournal_users',
   USER_PROGRESS: 'prayerjournal_user_progress',
-  USER_ROLES: 'prayerjournal_user_roles'
+  USER_ROLES: 'prayerjournal_user_roles',
+  SHOWN_CELEBRATIONS: 'prayerjournal_shown_celebrations',
 };
+
+// Milestone achievement system
+export const MILESTONES = [
+  {
+    level: 1,
+    name: "Prayer Beginner",
+    prayers_needed: 7,
+    scripture: "Ask and it will be given",
+    scripture_ref: "Matthew 7:7",
+    emoji: "🌱"
+  },
+  {
+    level: 2,
+    name: "Faithful Servant",
+    prayers_needed: 21,
+    scripture: "Pray without ceasing",
+    scripture_ref: "1 Thessalonians 5:17",
+    emoji: "⭐"
+  },
+  {
+    level: 3,
+    name: "Prayer Warrior",
+    prayers_needed: 50,
+    scripture: "The prayer of the righteous is powerful",
+    scripture_ref: "James 5:16",
+    emoji: "⚔️"
+  },
+  {
+    level: 4,
+    name: "Devoted Disciple",
+    prayers_needed: 100,
+    scripture: "Continue steadfastly in prayer",
+    scripture_ref: "Colossians 4:2",
+    emoji: "🛡️"
+  },
+  {
+    level: 5,
+    name: "Prayer Champion",
+    prayers_needed: 200,
+    scripture: "Rejoice always, pray continually",
+    scripture_ref: "1 Thessalonians 5:16-17",
+    emoji: "🏆"
+  },
+  {
+    level: 6,
+    name: "Intercessor",
+    prayers_needed: 365,
+    scripture: "He always lives to intercession",
+    scripture_ref: "Hebrews 7:25",
+    emoji: "👑"
+  },
+  {
+    level: 7,
+    name: "Prayer Master",
+    prayers_needed: 500,
+    scripture: "Prayer accomplishes much",
+    scripture_ref: "James 5:16",
+    emoji: "💎"
+  }
+];
 
 // User prayer progress tracking
 export interface UserProgress {

@@ -286,62 +286,17 @@ const Dashboard = () => {
             </Card>
           )}
 
-        {/* Streak & Badge Card */}
+        {/* Milestone & Badge Card */}
         <Card className="mb-8 shadow-medium border-2 border-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Flame className="h-6 w-6 text-accent" />
-              Prayer Streak & Achievements
+              Prayer Milestones
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              <div className="text-center">
-                <div className="text-6xl font-bold text-accent mb-2">
-                  {profile?.streak_count || 0}
-                </div>
-                <p className="text-muted-foreground mb-4">
-                  {profile?.streak_count === 1 ? "day" : "days"} in a row
-                </p>
-              </div>
-              
-              {/* Current Badge */}
-              <div>
-                <p className="text-sm font-medium mb-3 text-center">Current Achievement</p>
-                <div className="flex justify-center">
-                  <StreakBadge streakCount={profile?.streak_count || 0} size="lg" />
-                </div>
-              </div>
-
-              {/* Badge Progress */}
-              <div className="pt-4 border-t">
-                <p className="text-sm font-medium mb-3">Badge Milestones</p>
-                <div className="space-y-3">
-                  {[
-                    { threshold: 1, label: 'Prayer Starter', color: 'bg-green-500/10' },
-                    { threshold: 10, label: 'Faithful Servant', color: 'bg-blue-500/10' },
-                    { threshold: 20, label: 'Prayer Warrior', color: 'bg-purple-500/10' },
-                    { threshold: 50, label: 'Prayer Champion', color: 'bg-yellow-500/10' }
-                  ].map((milestone) => {
-                    const currentStreak = profile?.streak_count || 0;
-                    const isEarned = currentStreak >= milestone.threshold;
-                    const isActive = !isEarned && currentStreak < milestone.threshold;
-                    const progress = isActive ? (currentStreak / milestone.threshold) * 100 : (isEarned ? 100 : 0);
-                    
-                    return (
-                      <div key={milestone.threshold} className={`p-3 rounded ${isEarned ? milestone.color : 'bg-muted'}`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">{milestone.label}</span>
-                          <span className="text-xs">{milestone.threshold} day{milestone.threshold > 1 ? 's' : ''}</span>
-                        </div>
-                        {isActive && (
-                          <Progress value={progress} className="h-1" />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <StreakBadge streakCount={profile?.streak_count || 0} size="lg" />
             </div>
           </CardContent>
         </Card>

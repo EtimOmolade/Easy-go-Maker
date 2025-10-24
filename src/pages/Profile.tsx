@@ -114,16 +114,22 @@ const Profile = () => {
     // setLoading(false);
   };
 
-  const getBadges = (streak: number) => {
-    const badges = [];
-    if (streak >= 3) badges.push({ name: "3-Day Starter", icon: "🌱" });
-    if (streak >= 7) badges.push({ name: "Week Warrior", icon: "⭐" });
-    if (streak >= 14) badges.push({ name: "Fortnight Faithful", icon: "🔥" });
-    if (streak >= 30) badges.push({ name: "Monthly Champion", icon: "🏆" });
-    return badges;
+  const { MILESTONES } = await import("@/data/mockData");
+  
+  const getUnlockedMilestones = () => {
+    if (!profile) return [];
+    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
+    const userProfile = profiles[user?.id || ''];
+    const totalPrayers = userProfile?.total_prayers_completed || 0;
+    const unlockedDates = userProfile?.milestone_unlocked_dates || {};
+    
+    return MILESTONES.filter(m => totalPrayers >= m.prayers_needed).map(m => ({
+      ...m,
+      unlockedDate: unlockedDates[m.level]
+    }));
   };
 
-  const badges = profile ? getBadges(profile.streak_count) : [];
+  const milestones = getUnlockedMilestones();
 
   return (
     <div className="min-h-screen gradient-subtle">
