@@ -95,6 +95,9 @@ const Admin = () => {
   const [rejectingTestimony, setRejectingTestimony] = useState<Testimony | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [customReason, setCustomReason] = useState("");
+  const [editingTestimony, setEditingTestimony] = useState<Testimony | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -508,6 +511,42 @@ const Admin = () => {
     // }
   };
 
+  const handleEditTestimony = (testimony: Testimony) => {
+    setEditingTestimony(testimony);
+    setEditTitle(testimony.title);
+    setEditContent(testimony.content);
+  };
+
+  const handleSaveTestimonyEdit = async () => {
+    if (!editingTestimony) return;
+
+    try {
+      const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, []);
+      const testimonyIndex = testimonies.findIndex((t: any) => t.id === editingTestimony.id);
+      
+      if (testimonyIndex !== -1) {
+        testimonies[testimonyIndex] = {
+          ...testimonies[testimonyIndex],
+          title: editTitle,
+          content: editContent,
+          admin_edited: true,
+          admin_edited_by: user?.user_metadata?.name || 'Admin',
+          admin_edited_at: new Date().toISOString()
+        };
+        setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
+        toast.success("Testimony edited successfully");
+      }
+
+      setEditingTestimony(null);
+      setEditTitle("");
+      setEditContent("");
+      await fetchTestimonies();
+    } catch (error: any) {
+      console.error('Error editing testimony:', error);
+      toast.error('Failed to edit testimony');
+    }
+  };
+
   const handleDeleteTestimony = async (id: string) => {
     if (!confirm("Are you sure you want to delete this testimony?")) return;
 
@@ -888,6 +927,14 @@ const Admin = () => {
                               </Tooltip>
                               <Tooltip>
                                 <TooltipTrigger asChild>
+                                  <Button size="sm" variant="outline" onClick={() => handleEditTestimony(testimony)}>
+                                    ✏️
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Edit testimony</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
                                   <Button 
                                     size="sm" 
                                     variant="destructive"
@@ -1141,6 +1188,55 @@ const Admin = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Testimony Dialog */}
+      <Dialog open={!!editingTestimony} onOpenChange={() => {
+        setEditingTestimony(null);
+        setEditTitle("");
+        setEditContent("");
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Testimony (Admin)</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="admin-edit-title">Title</Label>
+              <Input
+                id="admin-edit-title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Testimony title"
+              />
+            </div>
+            <div>
+              <Label htmlFor="admin-edit-content">Content</Label>
+              <Textarea
+                id="admin-edit-content"
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                placeholder="Edit testimony content for clarity..."
+                rows={12}
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEditingTestimony(null);
+                  setEditTitle("");
+                  setEditContent("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSaveTestimonyEdit}>
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Reject Testimony Dialog */}
       <Dialog open={!!rejectingTestimony} onOpenChange={() => {

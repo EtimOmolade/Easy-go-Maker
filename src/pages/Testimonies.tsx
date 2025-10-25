@@ -53,6 +53,8 @@ const Testimonies = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [guidelines, setGuidelines] = useState<Guideline[]>([]);
   const [activeTab, setActiveTab] = useState<'feed' | 'my-testimonies'>('feed');
+  const [editingTestimony, setEditingTestimony] = useState<Testimony | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchTestimonies();
@@ -102,8 +104,8 @@ const Testimonies = () => {
       return;
     }
 
-    if (wordCount < 100 || wordCount > 200) {
-      toast.error("Testimony must be between 100-200 words");
+    if (wordCount > 200) {
+      toast.error("Testimony must be 200 words or less");
       return;
     }
 
@@ -204,6 +206,103 @@ const Testimonies = () => {
   const truncateText = (text: string, maxLength: number = 100) => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
+  };
+
+  const handleEditTestimony = (testimony: Testimony) => {
+    setEditingTestimony(testimony);
+    setAlias(testimony.alias);
+    setLocation(testimony.location || "");
+    setContent(testimony.content);
+    setRelatedSeries(testimony.related_series || "");
+    setConsentChecked(true);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateTestimony = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!user || !editingTestimony) return;
+
+    if (!consentChecked) {
+      toast.error("Please agree to the consent statement");
+      return;
+    }
+
+    if (wordCount > 200) {
+      toast.error("Testimony must be 200 words or less");
+      return;
+    }
+
+    try {
+      const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
+      const testimonyIndex = testimonies.findIndex((t: any) => t.id === editingTestimony.id);
+      
+      if (testimonyIndex !== -1) {
+        // Update testimony and set to pending approval
+        testimonies[testimonyIndex] = {
+          ...testimonies[testimonyIndex],
+          alias,
+          location: location || undefined,
+          content,
+          related_series: relatedSeries || undefined,
+          status: 'pending',
+          approved: false,
+          rejection_reason: undefined,
+          updated_at: new Date().toISOString()
+        };
+        setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
+
+        // Create admin notification
+        const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
+        const adminUserIds = Object.keys(userRoles).filter(userId => userRoles[userId] === 'admin');
+        
+        const notifications = getFromStorage(STORAGE_KEYS.NOTIFICATIONS, [] as any[]);
+        adminUserIds.forEach(adminId => {
+          notifications.push({
+            id: `notif-${Date.now()}-${adminId}`,
+            userId: adminId,
+            type: 'testimony',
+            title: 'Testimony Updated - Pending Review',
+            message: `🔄 Updated testimony from ${alias}`,
+            messageId: editingTestimony.id,
+            icon: '🔄',
+            read: false,
+            created_at: new Date().toISOString(),
+            isAdminOnly: true
+          });
+        });
+        setToStorage(STORAGE_KEYS.NOTIFICATIONS, notifications);
+
+        toast.success("Testimony updated and sent for approval");
+      }
+
+      setIsEditDialogOpen(false);
+      setEditingTestimony(null);
+      setAlias("Anonymous Seeker");
+      setLocation("");
+      setContent("");
+      setRelatedSeries("");
+      setConsentChecked(false);
+      await fetchTestimonies();
+    } catch (error: any) {
+      console.error('Error updating testimony:', error);
+      toast.error('Failed to update testimony');
+    }
+  };
+
+  const handleDeleteTestimony = async (testimonyId: string) => {
+    if (!confirm("Are you sure you want to delete this testimony?")) return;
+
+    try {
+      const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
+      const filtered = testimonies.filter((t: any) => t.id !== testimonyId);
+      setToStorage(STORAGE_KEYS.TESTIMONIES, filtered);
+      toast.success("Testimony deleted");
+      await fetchTestimonies();
+    } catch (error: any) {
+      console.error('Error deleting testimony:', error);
+      toast.error('Failed to delete testimony');
+    }
   };
 
   return (
@@ -312,7 +411,7 @@ const Testimonies = () => {
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <Label htmlFor="content">Your Testimony *</Label>
-                      <span className={`text-sm ${wordCount < 100 || wordCount > 200 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                      <span className={`text-sm ${wordCount > 200 ? 'text-destructive' : 'text-muted-foreground'}`}>
                         {wordCount} / 200 words
                       </span>
                     </div>
@@ -320,14 +419,11 @@ const Testimonies = () => {
                       id="content"
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
-                      placeholder="Share your story of answered prayer (100-200 words)"
+                      placeholder="Share your story of answered prayer (max 200 words)"
                       required
                       rows={6}
                       className="resize-none"
                     />
-                    {(wordCount < 100 && wordCount > 0) && (
-                      <p className="text-xs text-destructive mt-1">Minimum 100 words required</p>
-                    )}
                     {wordCount > 200 && (
                       <p className="text-xs text-destructive mt-1">Maximum 200 words exceeded</p>
                     )}
@@ -349,7 +445,7 @@ const Testimonies = () => {
                   {/* Submit Button */}
                   <Button
                     type="submit"
-                    disabled={!consentChecked || wordCount < 100 || wordCount > 200}
+                    disabled={!consentChecked || wordCount === 0 || wordCount > 200}
                     className="w-full"
                   >
                     <Send className="h-4 w-4 md:mr-2" />
@@ -389,21 +485,52 @@ const Testimonies = () => {
                       <p className="text-sm text-foreground/80 mb-3">
                         {truncateText(testimony.content, 150)}
                       </p>
-                      <div className="flex items-center justify-between gap-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => viewFullTestimony(testimony)}
-                            >
-                              <BookOpen className="h-4 w-4 md:mr-2" />
-                              <span className="hidden md:inline">Read More</span>
-                              <span className="md:hidden">Read</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Read full testimony</TooltipContent>
-                        </Tooltip>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex gap-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => viewFullTestimony(testimony)}
+                              >
+                                <BookOpen className="h-4 w-4 md:mr-2" />
+                                <span className="hidden md:inline">Read More</span>
+                                <span className="md:hidden">Read</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Read full testimony</TooltipContent>
+                          </Tooltip>
+                          {testimony.status !== 'approved' && (
+                            <>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEditTestimony(testimony)}
+                                  >
+                                    <span className="hidden md:inline">Edit</span>
+                                    <span className="md:inline">✏️</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Edit testimony</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDeleteTestimony(testimony.id)}
+                                  >
+                                    <span className="md:inline">🗑️</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Delete testimony</TooltipContent>
+                              </Tooltip>
+                            </>
+                          )}
+                        </div>
                         <span className="text-xs text-muted-foreground">
                           {new Date(testimony.date).toLocaleDateString()}
                         </span>
@@ -498,6 +625,107 @@ const Testimonies = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Edit Testimony Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            setEditingTestimony(null);
+            setAlias("Anonymous Seeker");
+            setLocation("");
+            setContent("");
+            setRelatedSeries("");
+            setConsentChecked(false);
+          }
+        }}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Testimony</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleUpdateTestimony} className="space-y-4">
+              <div>
+                <Label htmlFor="edit-alias">Alias *</Label>
+                <Input
+                  id="edit-alias"
+                  value={alias}
+                  onChange={(e) => setAlias(e.target.value)}
+                  placeholder="Anonymous Seeker"
+                  required
+                  maxLength={50}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-location">Location (optional)</Label>
+                <Input
+                  id="edit-location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="City, Country"
+                  maxLength={100}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-series">Related Prayer Series</Label>
+                <Select value={relatedSeries} onValueChange={setRelatedSeries}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a series (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {guidelines.map((g) => (
+                      <SelectItem key={g.id} value={`Week ${g.week_number}: ${g.title}`}>
+                        Week {g.week_number}: {g.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="edit-content">Your Testimony *</Label>
+                  <span className={`text-sm ${wordCount > 200 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {wordCount} / 200 words
+                  </span>
+                </div>
+                <Textarea
+                  id="edit-content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Share your story of answered prayer (max 200 words)"
+                  required
+                  rows={6}
+                  className="resize-none"
+                />
+                {wordCount > 200 && (
+                  <p className="text-xs text-destructive mt-1">Maximum 200 words exceeded</p>
+                )}
+              </div>
+
+              <div className="flex items-start space-x-2 p-4 bg-muted/50 rounded-lg">
+                <Checkbox
+                  id="edit-consent"
+                  checked={consentChecked}
+                  onCheckedChange={(checked) => setConsentChecked(checked as boolean)}
+                />
+                <label htmlFor="edit-consent" className="text-sm leading-relaxed cursor-pointer">
+                  By submitting, I confirm this story is true to the best of my knowledge and that it doesn't reveal another person's private information. 
+                  I grant M6V33 a non-exclusive right to display and lightly edit my testimony for clarity and encouragement.
+                </label>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={!consentChecked || wordCount === 0 || wordCount > 200}
+                className="w-full"
+              >
+                Update & Resubmit for Approval
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         {/* Full Testimony Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

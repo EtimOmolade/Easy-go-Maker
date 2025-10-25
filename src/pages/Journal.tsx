@@ -458,7 +458,7 @@ const Journal = () => {
         );
       });
 
-      toast.success("Testimony shared to admin");
+      toast.success("Thank you! Your story has been sent for review. We'll notify you once it's live.");
       setIsTestimonyDialogOpen(false);
       setSharingEntry(null);
       setTestimonyText("God has answered my prayer");
