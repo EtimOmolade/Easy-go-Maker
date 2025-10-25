@@ -1,685 +1,536 @@
-import { useEffect, useState, useRef } from "react";
-// Backend integration - Supabase COMMENTED OUT (Prototype mode)
-// import { supabase } from "@/lib/supabase";
-import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Sparkles, Search, Edit, Mic, Square, X as XIcon } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Send, Heart, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { submitTestimony, resubmitTestimony } from "@/utils/testimonyHelpers";
-import { AudioPlayer } from "@/components/AudioPlayer";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Testimony {
   id: string;
   user_id: string;
-  title: string;
+  alias: string;
+  location?: string;
   content: string;
+  related_series?: string;
   date: string;
+  approved: boolean;
   status: 'pending' | 'approved' | 'rejected';
   rejection_reason?: string;
-  admin_note?: string;
-  resubmitted_at?: string;
-  audio_note?: string;
-  audio_duration?: number;
-  rejected_by?: string;
-  rejected_at?: string;
+  gratitude_count: number;
   profiles: {
     name: string;
   };
 }
 
+interface Guideline {
+  id: string;
+  title: string;
+  week_number: number;
+}
+
 const Testimonies = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [testimonies, setTestimonies] = useState<Testimony[]>([]);
   const [myTestimonies, setMyTestimonies] = useState<Testimony[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [alias, setAlias] = useState("Anonymous Seeker");
+  const [location, setLocation] = useState("");
+  const [content, setContent] = useState("");
+  const [relatedSeries, setRelatedSeries] = useState("");
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [wordCount, setWordCount] = useState(0);
   const [selectedTestimony, setSelectedTestimony] = useState<Testimony | null>(null);
-  const [editingTestimony, setEditingTestimony] = useState<Testimony | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editContent, setEditContent] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [audioDuration, setAudioDuration] = useState(0);
-  const [audioPreview, setAudioPreview] = useState<string>("");
-  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
-  const [submitTitle, setSubmitTitle] = useState("");
-  const [submitContent, setSubmitContent] = useState("");
-  
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const navigate = useNavigate();
-
-  const filteredTestimonies = testimonies.filter(testimony =>
-    testimony.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    testimony.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredMyTestimonies = myTestimonies.filter(testimony =>
-    testimony.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    testimony.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [guidelines, setGuidelines] = useState<Guideline[]>([]);
+  const [activeTab, setActiveTab] = useState<'feed' | 'my-testimonies'>('feed');
 
   useEffect(() => {
     fetchTestimonies();
+    fetchGuidelines();
   }, [user]);
 
   useEffect(() => {
-    return () => {
-      if (recordingIntervalRef.current) {
-        clearInterval(recordingIntervalRef.current);
-      }
-      if (audioPreview) {
-        URL.revokeObjectURL(audioPreview);
-      }
-    };
-  }, [audioPreview]);
+    const words = content.trim().split(/\s+/).filter(w => w.length > 0);
+    setWordCount(words.length);
+  }, [content]);
+
+  const fetchGuidelines = async () => {
+    const guidelinesData = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
+    setGuidelines(guidelinesData);
+  };
 
   const fetchTestimonies = async () => {
     if (!user) return;
 
-    // Prototype mode: Fetch from localStorage
     const allTestimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
-    const approvedTestimonies = allTestimonies
-      .filter((t: any) => t.status === 'approved' || t.approved === true)
-      .sort((a: any, b: any) => new Date(b.date || b.created_at).getTime() - new Date(a.date || a.created_at).getTime());
-    setTestimonies(approvedTestimonies);
+    
+    // Approved testimonies for public feed
+    const approved = allTestimonies
+      .filter((t: any) => t.approved && t.status === 'approved')
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    setTestimonies(approved);
 
-    // Get user's own testimonies (all statuses)
-    const userTestimonies = allTestimonies
+    // User's own testimonies (all statuses)
+    const mine = allTestimonies
       .filter((t: any) => t.user_id === user.id)
-      .sort((a: any, b: any) => new Date(b.date || b.created_at).getTime() - new Date(a.date || a.created_at).getTime());
-    setMyTestimonies(userTestimonies);
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
-    setLoading(false);
+    setMyTestimonies(mine);
   };
 
-  const handleEditTestimony = (testimony: Testimony) => {
-    setEditingTestimony(testimony);
-    setEditTitle(testimony.title);
-    setEditContent(testimony.content);
-    setAudioBlob(null);
-    setAudioDuration(0);
-    setAudioPreview("");
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const handleResubmitTestimony = async () => {
-    if (!editingTestimony || !user) return;
+    if (!user) {
+      toast.error("Please sign in to share a testimony");
+      return;
+    }
 
-    const audioNote = audioBlob ? await blobToBase64(audioBlob) : editingTestimony.audio_note;
-    const duration = audioBlob ? audioDuration : editingTestimony.audio_duration;
+    if (!consentChecked) {
+      toast.error("Please agree to the consent statement");
+      return;
+    }
 
-    // Use helper function
-    resubmitTestimony(editingTestimony.id, editTitle, editContent, audioNote, duration);
-    
-    toast.success("Testimony resubmitted for approval");
-    setEditingTestimony(null);
-    setEditTitle("");
-    setEditContent("");
-    setAudioBlob(null);
-    setAudioDuration(0);
-    setAudioPreview("");
-    setRecordingTime(0);
-    fetchTestimonies();
-  };
-
-  const handleSubmitTestimony = async () => {
-    if (!user || !submitTitle || !submitContent) return;
-
-    const audioNote = audioBlob ? await blobToBase64(audioBlob) : undefined;
-    const duration = audioBlob ? audioDuration : undefined;
-
-    submitTestimony(user.id, submitTitle, submitContent, user.user_metadata?.name || 'Anonymous', audioNote, duration);
-    
-    toast.success("Testimony shared.");
-    setIsSubmitDialogOpen(false);
-    setSubmitTitle("");
-    setSubmitContent("");
-    setAudioBlob(null);
-    setAudioDuration(0);
-    setAudioPreview("");
-    setRecordingTime(0);
-    fetchTestimonies();
-  };
-
-  const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = (reader.result as string).split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
-
-  const startRecording = async () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      toast.error("Voice recording not supported on this browser");
+    if (wordCount < 100 || wordCount > 200) {
+      toast.error("Testimony must be between 100-200 words");
       return;
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+      // Prototype mode: Save to localStorage
+      const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
+      const newTestimony = {
+        id: `testimony-${Date.now()}`,
+        user_id: user.id,
+        alias,
+        location: location || undefined,
+        content,
+        related_series: relatedSeries || undefined,
+        date: new Date().toISOString().split('T')[0],
+        created_at: new Date().toISOString(),
+        approved: false,
+        status: 'pending',
+        gratitude_count: 0,
+        profiles: { name: user.user_metadata?.name || alias }
       };
 
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        
-        if (audioBlob.size > 5 * 1024 * 1024) {
-          toast.error("Recording exceeds 5MB limit. Please record a shorter message.");
-          return;
-        }
+      testimonies.push(newTestimony);
+      setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
 
-        setAudioBlob(audioBlob);
-        setAudioDuration(recordingTime);
-        setAudioPreview(URL.createObjectURL(audioBlob));
-        stream.getTracks().forEach(track => track.stop());
-      };
+      // Backend TODO: Log to secure database with:
+      // - timestamp, consent_confirmed: true, user_id, alias, content, location, related_series
+      console.log('[Backend Placeholder] Testimony submitted:', {
+        timestamp: new Date().toISOString(),
+        consent_confirmed: true,
+        testimony_id: newTestimony.id
+      });
 
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingTime(0);
-
-      recordingIntervalRef.current = setInterval(() => {
-        setRecordingTime(prev => {
-          const newTime = prev + 1;
-          if (newTime >= 270) {
-            toast.warning("30 seconds remaining!");
-          }
-          if (newTime >= 300) {
-            stopRecording();
-            return 300;
-          }
-          return newTime;
+      // Create admin notification
+      const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
+      const adminUserIds = Object.keys(userRoles).filter(userId => userRoles[userId] === 'admin');
+      
+      const notifications = getFromStorage(STORAGE_KEYS.NOTIFICATIONS, [] as any[]);
+      adminUserIds.forEach(adminId => {
+        notifications.push({
+          id: `notif-${Date.now()}-${adminId}`,
+          userId: adminId,
+          type: 'testimony',
+          title: 'New Testimony Pending',
+          message: `📝 New testimony from ${alias}`,
+          messageId: newTestimony.id,
+          icon: '📝',
+          read: false,
+          created_at: new Date().toISOString(),
+          isAdminOnly: true
         });
-      }, 1000);
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
-      toast.error("Unable to access microphone. Please check permissions.");
+      });
+      setToStorage(STORAGE_KEYS.NOTIFICATIONS, notifications);
+
+      toast.success("Thank you! Your story has been sent for review. We'll notify you once it's live.");
+
+      // Reset form
+      setAlias("Anonymous Seeker");
+      setLocation("");
+      setContent("");
+      setRelatedSeries("");
+      setConsentChecked(false);
+      setActiveTab('my-testimonies');
+      
+      await fetchTestimonies();
+    } catch (error: any) {
+      console.error('Error submitting testimony:', error);
+      toast.error('Failed to submit testimony');
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      if (recordingIntervalRef.current) {
-        clearInterval(recordingIntervalRef.current);
-      }
-    }
+  const handleGratitude = (testimonyId: string) => {
+    const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
+    const updated = testimonies.map((t: any) => 
+      t.id === testimonyId 
+        ? { ...t, gratitude_count: (t.gratitude_count || 0) + 1 }
+        : t
+    );
+    setToStorage(STORAGE_KEYS.TESTIMONIES, updated);
+    fetchTestimonies();
+    toast.success("Thank God with them! 🙏");
   };
 
-  const deleteRecording = () => {
-    setAudioBlob(null);
-    setAudioDuration(0);
-    setAudioPreview("");
-    setRecordingTime(0);
-    if (audioPreview) {
-      URL.revokeObjectURL(audioPreview);
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  const viewFullTestimony = (testimony: Testimony) => {
+    setSelectedTestimony(testimony);
+    setIsDialogOpen(true);
   };
 
   const getStatusBadge = (testimony: Testimony) => {
-    const status = testimony.status || 'pending';
-    
-    if (status === 'approved') {
-      return <Badge className="bg-green-500">Approved</Badge>;
-    } else if (status === 'rejected') {
-      return <Badge variant="destructive">Rejected</Badge>;
+    if (testimony.status === 'approved') {
+      return <Badge className="bg-green-500 text-white">Approved</Badge>;
+    } else if (testimony.status === 'rejected') {
+      return <Badge variant="destructive">Rejected • {testimony.rejection_reason}</Badge>;
     } else {
-      return <Badge className="bg-yellow-500">Pending</Badge>;
+      return <Badge variant="secondary">Pending Approval</Badge>;
     }
+  };
+
+  const truncateText = (text: string, maxLength: number = 100) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
   };
 
   return (
     <TooltipProvider>
       <div className="min-h-screen gradient-subtle">
         <div className="max-w-4xl mx-auto p-4 md:p-8">
-          <Tooltip>
-            <TooltipTrigger asChild>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex-1">
+              <h1 className="text-3xl md:text-4xl font-heading font-bold gradient-primary bg-clip-text text-transparent mb-2">
+                Stories of His Faithfulness
+              </h1>
+              <p className="text-sm md:text-base text-muted-foreground italic">
+                "This is the Lord's doing; it is marvellous in our eyes." — Psalm 118:23
+              </p>
+            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" onClick={() => navigate("/dashboard")} size="icon" className="md:hidden">
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Back to Dashboard</TooltipContent>
+            </Tooltip>
+            <Button variant="outline" onClick={() => navigate("/dashboard")} className="hidden md:flex">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Dashboard
+            </Button>
+          </div>
+
+          {/* Tabs - Mobile Scrollable */}
+          <div className="mb-6 overflow-x-auto">
+            <div className="flex gap-2 min-w-max md:min-w-0">
               <Button
-                variant="ghost"
-                className="mb-6"
-                onClick={() => navigate("/dashboard")}
+                variant={activeTab === 'feed' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('feed')}
+                className="flex-shrink-0"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Back to Dashboard</span>
+                <BookOpen className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Public Feed</span>
               </Button>
-            </TooltipTrigger>
-            <TooltipContent>Return to Dashboard</TooltipContent>
-          </Tooltip>
-
-        <div className="flex items-center justify-between gap-3 mb-2">
-          <div className="flex items-center gap-3">
-            <Sparkles className="h-8 w-8 text-accent" />
-            <h1 className="text-3xl md:text-4xl font-heading font-bold gradient-primary bg-clip-text text-transparent">
-              Testimonies
-            </h1>
+              <Button
+                variant={activeTab === 'my-testimonies' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('my-testimonies')}
+                className="flex-shrink-0"
+              >
+                <Heart className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">My Testimonies</span>
+              </Button>
+            </div>
           </div>
-          <Button onClick={() => setIsSubmitDialogOpen(true)}>
-            <Sparkles className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Share Testimony</span>
-          </Button>
-        </div>
-        <p className="text-muted-foreground mb-4">
-          Stories of answered prayers and faith journeys from our community
-        </p>
 
-        {/* Search Bar */}
-        <div className="mb-8">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search testimonies..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
+          {/* Share Testimony Form */}
+          {activeTab === 'my-testimonies' && (
+            <Card className="mb-8 shadow-medium">
+              <CardHeader>
+                <CardTitle>Share Your Testimony</CardTitle>
+                <CardDescription>Share what God has done</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Alias */}
+                  <div>
+                    <Label htmlFor="alias">Alias *</Label>
+                    <Input
+                      id="alias"
+                      value={alias}
+                      onChange={(e) => setAlias(e.target.value)}
+                      placeholder="Anonymous Seeker"
+                      required
+                      maxLength={50}
+                    />
+                  </div>
 
-        <Tabs defaultValue="community" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="community">Community Testimonies</TabsTrigger>
-            <TabsTrigger value="my-submissions">My Submissions</TabsTrigger>
-          </TabsList>
+                  {/* Location */}
+                  <div>
+                    <Label htmlFor="location">Location (optional)</Label>
+                    <Input
+                      id="location"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="City, Country"
+                      maxLength={100}
+                    />
+                  </div>
 
-          <TabsContent value="community">
-            {loading ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">Loading testimonies...</p>
-              </div>
-            ) : testimonies.length === 0 ? (
-              <Card className="shadow-medium">
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">No testimonies yet. Be the first to share!</p>
-                </CardContent>
-              </Card>
-            ) : filteredTestimonies.length === 0 ? (
-              <Card className="shadow-medium">
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">No testimonies found matching your search.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-6">
-                {filteredTestimonies.map((testimony) => (
-                  <Card key={testimony.id} className="shadow-medium hover:shadow-glow transition-shadow">
+                  {/* Related Prayer Series */}
+                  <div>
+                    <Label htmlFor="series">Related Prayer Series</Label>
+                    <Select value={relatedSeries} onValueChange={setRelatedSeries}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a series (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {guidelines.map((g) => (
+                          <SelectItem key={g.id} value={`Week ${g.week_number}: ${g.title}`}>
+                            Week {g.week_number}: {g.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Testimony Text */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="content">Your Testimony *</Label>
+                      <span className={`text-sm ${wordCount < 100 || wordCount > 200 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {wordCount} / 200 words
+                      </span>
+                    </div>
+                    <Textarea
+                      id="content"
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder="Share your story of answered prayer (100-200 words)"
+                      required
+                      rows={6}
+                      className="resize-none"
+                    />
+                    {(wordCount < 100 && wordCount > 0) && (
+                      <p className="text-xs text-destructive mt-1">Minimum 100 words required</p>
+                    )}
+                    {wordCount > 200 && (
+                      <p className="text-xs text-destructive mt-1">Maximum 200 words exceeded</p>
+                    )}
+                  </div>
+
+                  {/* Consent Checkbox */}
+                  <div className="flex items-start space-x-2 p-4 bg-muted/50 rounded-lg">
+                    <Checkbox
+                      id="consent"
+                      checked={consentChecked}
+                      onCheckedChange={(checked) => setConsentChecked(checked as boolean)}
+                    />
+                    <label htmlFor="consent" className="text-sm leading-relaxed cursor-pointer">
+                      By submitting, I confirm this story is true to the best of my knowledge and that it doesn't reveal another person's private information. 
+                      I grant M6V33 a non-exclusive right to display and lightly edit my testimony for clarity and encouragement.
+                    </label>
+                  </div>
+
+                  {/* Submit Button */}
+                  <Button
+                    type="submit"
+                    disabled={!consentChecked || wordCount < 100 || wordCount > 200}
+                    className="w-full"
+                  >
+                    <Send className="h-4 w-4 md:mr-2" />
+                    <span className="hidden md:inline">Submit for Review</span>
+                    <span className="md:hidden">Submit</span>
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* My Testimonies List */}
+          {activeTab === 'my-testimonies' && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-heading font-bold">My Submissions</h2>
+              {myTestimonies.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center text-muted-foreground">
+                    You haven't shared any testimonies yet.
+                  </CardContent>
+                </Card>
+              ) : (
+                myTestimonies.map((testimony) => (
+                  <Card key={testimony.id} className="shadow-soft hover:shadow-medium transition-all">
                     <CardHeader>
-                      <CardTitle className="text-2xl">
-                        {testimony.title}
-                      </CardTitle>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="font-medium">{testimony.profiles?.name}</span>
-                        <span>•</span>
-                        <span>{new Date(testimony.date).toLocaleDateString()}</span>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-lg">{testimony.alias}</CardTitle>
+                          {testimony.location && (
+                            <CardDescription>{testimony.location}</CardDescription>
+                          )}
+                        </div>
+                        {getStatusBadge(testimony)}
                       </div>
                     </CardHeader>
                     <CardContent>
-                      {testimony.audio_note && (
-                        <div className="mb-4">
-                          <AudioPlayer audioBase64={testimony.audio_note} duration={testimony.audio_duration || 0} />
+                      <p className="text-sm text-foreground/80 mb-3">
+                        {truncateText(testimony.content, 150)}
+                      </p>
+                      <div className="flex items-center justify-between gap-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => viewFullTestimony(testimony)}
+                            >
+                              <BookOpen className="h-4 w-4 md:mr-2" />
+                              <span className="hidden md:inline">Read More</span>
+                              <span className="md:hidden">Read</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Read full testimony</TooltipContent>
+                        </Tooltip>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(testimony.date).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {testimony.rejection_reason && (
+                        <div className="mt-3 p-3 bg-destructive/10 rounded-lg">
+                          <p className="text-sm text-destructive font-medium">Rejection Reason:</p>
+                          <p className="text-sm text-foreground/80 mt-1">{testimony.rejection_reason}</p>
                         </div>
                       )}
-                      <p className="text-foreground/90 leading-relaxed mb-4">
-                        {testimony.content.substring(0, 150)}
-                        {testimony.content.length > 150 && '...'}
-                      </p>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setSelectedTestimony(testimony)}
-                      >
-                        Read More
-                      </Button>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="my-submissions">
-            {loading ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">Loading your submissions...</p>
-              </div>
-            ) : myTestimonies.length === 0 ? (
-              <Card className="shadow-medium">
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">You haven't submitted any testimonies yet.</p>
-                </CardContent>
-              </Card>
-            ) : filteredMyTestimonies.length === 0 ? (
-              <Card className="shadow-medium">
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">No submissions found matching your search.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-6">
-                {filteredMyTestimonies.map((testimony) => {
-                  const status = testimony.status || 'pending';
-                  const isRejected = status === 'rejected';
-                  
-                  return (
-                    <Card key={testimony.id} className="shadow-medium hover:shadow-glow transition-shadow">
-                      <CardHeader>
-                        <div className="flex justify-between items-start gap-4">
-                          <div className="flex-1">
-                            <CardTitle className="text-2xl mb-2">{testimony.title}</CardTitle>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                              <span>{new Date(testimony.date).toLocaleDateString()}</span>
-                              <span>•</span>
-                              {getStatusBadge(testimony)}
-                            </div>
-                          </div>
-                          {isRejected && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleEditTestimony(testimony)}
-                            >
-                              <Edit className="h-4 w-4 sm:mr-2" />
-                              <span className="hidden sm:inline">Edit & Resubmit</span>
-                            </Button>
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        {testimony.audio_note && (
-                          <div className="mb-4">
-                            <AudioPlayer audioBase64={testimony.audio_note} duration={testimony.audio_duration || 0} />
-                          </div>
-                        )}
-                        <p className="text-foreground/90 leading-relaxed mb-4 whitespace-pre-wrap">
-                          {testimony.content.substring(0, 150)}
-                          {testimony.content.length > 150 && '...'}
-                        </p>
-                        {isRejected && testimony.rejection_reason && (
-                          <div className="mt-4 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-                            <p className="text-sm font-medium text-destructive mb-1">
-                              Rejected • {testimony.rejection_reason}
-                            </p>
-                            {testimony.admin_note && (
-                              <p className="text-sm text-muted-foreground mt-2">Note: {testimony.admin_note}</p>
-                            )}
-                            {testimony.rejected_by && (
-                              <p className="text-xs text-muted-foreground mt-2">
-                                By {testimony.rejected_by} • {new Date(testimony.rejected_at || '').toLocaleString()}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                        <Button 
-                          variant="outline" 
-                          className="mt-4"
-                          onClick={() => setSelectedTestimony(testimony)}
-                        >
-                          Read Full Content
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-        
-        {/* Submit Testimony Dialog */}
-        <Dialog open={isSubmitDialogOpen} onOpenChange={(open) => {
-          setIsSubmitDialogOpen(open);
-          if (!open) {
-            setSubmitTitle("");
-            setSubmitContent("");
-            deleteRecording();
-          }
-        }}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Share Your Testimony</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="submit-title">Title</Label>
-                <Input
-                  id="submit-title"
-                  value={submitTitle}
-                  onChange={(e) => setSubmitTitle(e.target.value)}
-                  placeholder="Testimony title"
-                />
-              </div>
-
-              {/* Voice Recording */}
-              <div className="space-y-2">
-                <Label>Voice Note (Optional)</Label>
-                {!audioPreview && !isRecording && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={startRecording}
-                  >
-                    <Mic className="mr-2 h-4 w-4" />
-                    Record Voice Note
-                  </Button>
-                )}
-
-                {isRecording && (
-                  <div className="flex items-center gap-4 p-4 bg-destructive/10 rounded-lg border border-destructive">
-                    <div className="flex items-center gap-2 flex-1">
-                      <div className="w-3 h-3 bg-destructive rounded-full animate-pulse" />
-                      <span className="font-mono">{formatTime(recordingTime)}</span>
-                      <span className="text-sm text-muted-foreground">Recording...</span>
-                    </div>
-                    <Button type="button" size="sm" variant="destructive" onClick={stopRecording}>
-                      <Square className="h-4 w-4 mr-2" />
-                      Stop
-                    </Button>
-                  </div>
-                )}
-
-                {audioPreview && audioBlob && (
-                  <div className="space-y-2">
-                    <audio src={audioPreview} controls className="w-full" />
-                    <div className="flex gap-2">
-                      <Button type="button" size="sm" variant="outline" onClick={deleteRecording} className="flex-1">
-                        <XIcon className="h-4 w-4 mr-2" />
-                        Delete
-                      </Button>
-                      <Button type="button" size="sm" variant="outline" onClick={() => { deleteRecording(); startRecording(); }} className="flex-1">
-                        Re-record
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="submit-content">Content</Label>
-                <Textarea
-                  id="submit-content"
-                  value={submitContent}
-                  onChange={(e) => setSubmitContent(e.target.value)}
-                  placeholder="Share your testimony..."
-                  rows={10}
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsSubmitDialogOpen(false);
-                    setSubmitTitle("");
-                    setSubmitContent("");
-                    deleteRecording();
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleSubmitTestimony} disabled={!submitTitle || !submitContent}>
-                  Submit for Approval
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Read More Modal */}
-        <Dialog open={!!selectedTestimony} onOpenChange={() => setSelectedTestimony(null)}>
-          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto overflow-x-hidden">
-            <DialogHeader>
-              <DialogTitle className="text-2xl pr-8">{selectedTestimony?.title}</DialogTitle>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground pt-2">
-                <span className="font-medium">{selectedTestimony?.profiles?.name}</span>
-                <span>•</span>
-                <span>{selectedTestimony && new Date(selectedTestimony.date).toLocaleDateString()}</span>
-              </div>
-            </DialogHeader>
-            <div className="mt-4 overflow-hidden">
-              {selectedTestimony?.audio_note && (
-                <div className="mb-4">
-                  <AudioPlayer audioBase64={selectedTestimony.audio_note} duration={selectedTestimony.audio_duration || 0} />
-                </div>
+                ))
               )}
-              <p className="whitespace-pre-wrap text-foreground/90 leading-relaxed break-words overflow-wrap-anywhere">
-                {selectedTestimony?.content}
-              </p>
             </div>
-          </DialogContent>
-        </Dialog>
+          )}
 
-        {/* Edit & Resubmit Modal */}
-        <Dialog open={!!editingTestimony} onOpenChange={() => {
-          setEditingTestimony(null);
-          setEditTitle("");
-          setEditContent("");
-          deleteRecording();
-        }}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Edit & Resubmit Testimony</DialogTitle>
-            </DialogHeader>
+          {/* Public Feed */}
+          {activeTab === 'feed' && (
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit-title">Title</Label>
-                <Input
-                  id="edit-title"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  placeholder="Testimony title"
-                />
-              </div>
-
-              {/* Voice Recording */}
-              <div className="space-y-2">
-                <Label>Voice Note (Optional)</Label>
-                {editingTestimony?.audio_note && !audioBlob && (
-                  <div className="mb-2">
-                    <p className="text-sm text-muted-foreground mb-2">Current voice note:</p>
-                    <AudioPlayer audioBase64={editingTestimony.audio_note} duration={editingTestimony.audio_duration || 0} />
-                  </div>
-                )}
-                
-                {!audioPreview && !isRecording && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={startRecording}
-                  >
-                    <Mic className="mr-2 h-4 w-4" />
-                    {editingTestimony?.audio_note ? 'Replace Voice Note' : 'Record Voice Note'}
-                  </Button>
-                )}
-
-                {isRecording && (
-                  <div className="flex items-center gap-4 p-4 bg-destructive/10 rounded-lg border border-destructive">
-                    <div className="flex items-center gap-2 flex-1">
-                      <div className="w-3 h-3 bg-destructive rounded-full animate-pulse" />
-                      <span className="font-mono">{formatTime(recordingTime)}</span>
-                      <span className="text-sm text-muted-foreground">Recording...</span>
-                    </div>
-                    <Button type="button" size="sm" variant="destructive" onClick={stopRecording}>
-                      <Square className="h-4 w-4 mr-2" />
-                      Stop
-                    </Button>
-                  </div>
-                )}
-
-                {audioPreview && audioBlob && (
-                  <div className="space-y-2">
-                    <audio src={audioPreview} controls className="w-full" />
-                    <div className="flex gap-2">
-                      <Button type="button" size="sm" variant="outline" onClick={deleteRecording} className="flex-1">
-                        <XIcon className="h-4 w-4 mr-2" />
-                        Delete
-                      </Button>
-                      <Button type="button" size="sm" variant="outline" onClick={() => { deleteRecording(); startRecording(); }} className="flex-1">
-                        Re-record
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="edit-content">Content</Label>
-                <Textarea
-                  id="edit-content"
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  placeholder="Share your testimony..."
-                  rows={10}
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setEditingTestimony(null);
-                    setEditTitle("");
-                    setEditContent("");
-                    deleteRecording();
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleResubmitTestimony}>
-                  Resubmit for Approval
-                </Button>
-              </div>
+              <h2 className="text-2xl font-heading font-bold">Community Testimonies</h2>
+              {testimonies.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center text-muted-foreground">
+                    No testimonies have been shared yet. Be the first to share!
+                  </CardContent>
+                </Card>
+              ) : (
+                testimonies.map((testimony) => (
+                  <Card key={testimony.id} className="shadow-soft hover:shadow-medium transition-all">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-lg">{testimony.alias}</CardTitle>
+                          <CardDescription>
+                            {testimony.location && `${testimony.location} • `}
+                            {testimony.related_series || 'General Testimony'}
+                          </CardDescription>
+                        </div>
+                        <Badge className="bg-green-500 text-white hidden md:flex">Approved</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-foreground/80 mb-4">
+                        {truncateText(testimony.content, 150)}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => viewFullTestimony(testimony)}
+                            >
+                              <BookOpen className="h-4 w-4 md:mr-2" />
+                              <span className="hidden md:inline">Read More</span>
+                              <span className="md:hidden">Read</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Read full testimony</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleGratitude(testimony.id)}
+                            >
+                              <Heart className="h-4 w-4 md:mr-2" />
+                              <span className="hidden md:inline">Thank God With Them ({testimony.gratitude_count})</span>
+                              <span className="md:hidden">{testimony.gratitude_count}</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Thank God with them</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
+          )}
+
+          {/* Legal Disclaimer */}
+          <Card className="mt-8 border-muted">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                <strong>Disclaimer:</strong> Testimonies reflect personal experiences and are not verified claims. 
+                M6V33 does not offer medical, financial, or legal advice and is not responsible for outcomes mentioned. 
+                All stories are reviewed for tone and privacy before publication.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Full Testimony Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">{selectedTestimony?.alias}</DialogTitle>
+            </DialogHeader>
+            {selectedTestimony && (
+              <div className="space-y-4">
+                {selectedTestimony.location && (
+                  <p className="text-sm text-muted-foreground">{selectedTestimony.location}</p>
+                )}
+                {selectedTestimony.related_series && (
+                  <Badge variant="outline">{selectedTestimony.related_series}</Badge>
+                )}
+                <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                  {selectedTestimony.content}
+                </p>
+                <div className="pt-4 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    Shared on {new Date(selectedTestimony.date).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>
-    </div>
     </TooltipProvider>
   );
 };
