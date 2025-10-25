@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Plus, Check, X, Trash2, Megaphone, Shield, UserPlus, UserMinus, Clock, AlertTriangle, Search } from "lucide-react";
+import { ArrowLeft, Plus, Check, X, Trash2, Megaphone, Shield, UserPlus, UserMinus, Clock, AlertTriangle, Search, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -916,47 +916,49 @@ const Admin = () => {
                                 <Badge variant="outline" className="mt-2">Resubmitted</Badge>
                               )}
                             </div>
-                            <div className="flex gap-2 flex-shrink-0">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="sm" onClick={() => handleApproveTestimony(testimony.id)}>
-                                    <Check className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Approve testimony</TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="sm" variant="outline" onClick={() => handleEditTestimony(testimony)}>
-                                    ✏️
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Edit testimony</TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    size="sm" 
-                                    variant="destructive"
-                                    onClick={() => {
-                                      setRejectingTestimony(testimony);
-                                      setRejectionReason("");
-                                      setCustomReason("");
-                                    }}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Reject testimony</TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}>
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Delete testimony</TooltipContent>
-                              </Tooltip>
+                            <div className="flex gap-2 flex-shrink-0 flex-wrap max-w-[200px] justify-end">
+                              <div className="grid grid-cols-2 gap-2 md:flex md:flex-row">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button size="sm" onClick={() => handleApproveTestimony(testimony.id)}>
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Approve testimony</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button size="sm" variant="outline" onClick={() => handleEditTestimony(testimony)}>
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Edit testimony</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      size="sm" 
+                                      variant="destructive"
+                                      onClick={() => {
+                                        setRejectingTestimony(testimony);
+                                        setRejectionReason("");
+                                        setCustomReason("");
+                                      }}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Reject testimony</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Delete testimony</TooltipContent>
+                                </Tooltip>
+                              </div>
                             </div>
                           </div>
                         </CardHeader>

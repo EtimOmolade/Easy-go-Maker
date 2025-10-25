@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Send, Heart, BookOpen } from "lucide-react";
+import { ArrowLeft, Send, Heart, BookOpen, Edit, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +55,25 @@ const Testimonies = () => {
   const [activeTab, setActiveTab] = useState<'feed' | 'my-testimonies'>('feed');
   const [editingTestimony, setEditingTestimony] = useState<Testimony | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [journalEntryId, setJournalEntryId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check for pre-filled data from journal
+    const prefillData = sessionStorage.getItem('prefillTestimony');
+    if (prefillData) {
+      try {
+        const data = JSON.parse(prefillData);
+        setContent(data.content || '');
+        setAlias(user?.user_metadata?.name || 'Anonymous Seeker');
+        setJournalEntryId(data.journalEntryId || null);
+        setActiveTab('my-testimonies');
+        sessionStorage.removeItem('prefillTestimony');
+        toast.success('Journal entry loaded! Please complete the remaining fields.');
+      } catch (error) {
+        console.error('Error parsing prefill data:', error);
+      }
+    }
+  }, [user]);
 
   useEffect(() => {
     fetchTestimonies();
@@ -129,6 +148,18 @@ const Testimonies = () => {
 
       testimonies.push(newTestimony);
       setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
+
+      // Update journal entry if this was shared from journal
+      if (journalEntryId) {
+        const journalEntries = getFromStorage(STORAGE_KEYS.JOURNAL_ENTRIES, [] as any[]);
+        const entryIndex = journalEntries.findIndex((e: any) => e.id === journalEntryId);
+        if (entryIndex !== -1) {
+          journalEntries[entryIndex].is_shared = true;
+          journalEntries[entryIndex].testimony_status = 'pending';
+          setToStorage(STORAGE_KEYS.JOURNAL_ENTRIES, journalEntries);
+        }
+        setJournalEntryId(null);
+      }
 
       // Backend TODO: Log to secure database with:
       // - timestamp, consent_confirmed: true, user_id, alias, content, location, related_series
@@ -485,8 +516,8 @@ const Testimonies = () => {
                       <p className="text-sm text-foreground/80 mb-3">
                         {truncateText(testimony.content, 150)}
                       </p>
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <div className="flex gap-2">
+                       <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex gap-2 flex-wrap">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
@@ -502,34 +533,33 @@ const Testimonies = () => {
                             <TooltipContent>Read full testimony</TooltipContent>
                           </Tooltip>
                           {testimony.status !== 'approved' && (
-                            <>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleEditTestimony(testimony)}
-                                  >
-                                    <span className="hidden md:inline">Edit</span>
-                                    <span className="md:inline">✏️</span>
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Edit testimony</TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleDeleteTestimony(testimony.id)}
-                                  >
-                                    <span className="md:inline">🗑️</span>
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Delete testimony</TooltipContent>
-                              </Tooltip>
-                            </>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditTestimony(testimony)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                  <span className="hidden md:inline ml-1">Edit</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit testimony</TooltipContent>
+                            </Tooltip>
                           )}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteTestimony(testimony.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="hidden md:inline ml-1">Delete</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete testimony</TooltipContent>
+                          </Tooltip>
                         </div>
                         <span className="text-xs text-muted-foreground">
                           {new Date(testimony.date).toLocaleDateString()}

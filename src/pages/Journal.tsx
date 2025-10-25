@@ -39,9 +39,6 @@ const Journal = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sharingEntry, setSharingEntry] = useState<JournalEntry | null>(null);
-  const [testimonyText, setTestimonyText] = useState("God has answered my prayer");
-  const [isTestimonyDialogOpen, setIsTestimonyDialogOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -401,72 +398,18 @@ const Journal = () => {
   };
 
   const openTestimonyDialog = (entry: JournalEntry) => {
-    setSharingEntry(entry);
-    setTestimonyText(entry.testimony_text || "God has answered my prayer");
-    setIsTestimonyDialogOpen(true);
-  };
-
-  const shareAsTestimony = async () => {
-    if (!user || !sharingEntry) return;
-
-    try {
-      const fullTestimonyContent = `${testimonyText}\n\n${sharingEntry.content}`;
-
-      // Include audio note if present
-      const audioNote = sharingEntry.audio_note;
-      const audioDuration = sharingEntry.audio_duration;
-
-      const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
-      const newTestimony = {
-        id: `testimony-${Date.now()}`,
-        user_id: user.id,
-        title: sharingEntry.title,
-        content: fullTestimonyContent,
-        date: new Date().toISOString().split('T')[0],
-        approved: false,
-        status: 'pending',
-        audio_note: audioNote,
-        audio_duration: audioDuration,
-        profiles: { name: user.user_metadata?.name || 'Anonymous' }
-      };
-      testimonies.push(newTestimony);
-      setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
-
-      // Mark journal entry as shared and set testimony status
-      const allEntries = getFromStorage(STORAGE_KEYS.JOURNAL_ENTRIES, [] as any[]);
-      const entryIndex = allEntries.findIndex((e: any) => e.id === sharingEntry.id);
-      if (entryIndex !== -1) {
-        allEntries[entryIndex].is_shared = true;
-        allEntries[entryIndex].testimony_text = testimonyText;
-        allEntries[entryIndex].testimony_status = 'pending';
-        setToStorage(STORAGE_KEYS.JOURNAL_ENTRIES, allEntries);
-      }
-
-      // Create admin notification
-      const { createNotification } = await import('@/data/mockData');
-      const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
-      const adminUserIds = Object.keys(userRoles).filter(userId => userRoles[userId] === 'admin');
-      adminUserIds.forEach(adminId => {
-        createNotification(
-          'testimony',
-          'New Testimony Pending',
-          `📝 New testimony: "${sharingEntry.title}"`,
-          adminId,
-          newTestimony.id,
-          '📝',
-          true
-        );
-      });
-
-      toast.success("Thank you! Your story has been sent for review. We'll notify you once it's live.");
-      setIsTestimonyDialogOpen(false);
-      setSharingEntry(null);
-      setTestimonyText("God has answered my prayer");
-      fetchEntries();
-    } catch (error: any) {
-      console.error("Error sharing testimony:", error);
-      toast.error(error.message || "Failed to share testimony");
-    }
+    // Redirect to Testimonies page with pre-filled data
+    const testimonyData = {
+      title: entry.title,
+      content: entry.content,
+      audioNote: entry.audio_note,
+      audioDuration: entry.audio_duration,
+      journalEntryId: entry.id
+    };
+    
+    // Store in sessionStorage for the Testimonies page to pick up
+    sessionStorage.setItem('prefillTestimony', JSON.stringify(testimonyData));
+    navigate('/testimonies');
   };
 
   const handleResubmitTestimony = (entry: JournalEntry) => {
@@ -830,46 +773,6 @@ const Journal = () => {
                   <Upload className="mr-2 h-4 w-4" />
                   Download as PDF
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Testimony Sharing Dialog */}
-          <Dialog open={isTestimonyDialogOpen} onOpenChange={setIsTestimonyDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Share as Testimony</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="testimony-text">Testimony Message</Label>
-                  <Textarea
-                    id="testimony-text"
-                    value={testimonyText}
-                    onChange={(e) => setTestimonyText(e.target.value)}
-                    placeholder="God has answered my prayer..."
-                    rows={3}
-                  />
-                  <p className="text-xs text-muted-foreground mt-2">
-                    This message will appear at the beginning of your testimony
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={shareAsTestimony} className="flex-1">
-                    Share Testimony
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setIsTestimonyDialogOpen(false);
-                      setSharingEntry(null);
-                      setTestimonyText("God has answered my prayer");
-                    }}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                </div>
               </div>
             </DialogContent>
           </Dialog>
