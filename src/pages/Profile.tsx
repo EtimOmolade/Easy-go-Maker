@@ -3,15 +3,17 @@ import { useAuth } from "@/contexts/AuthContext";
 // Backend integration - Supabase COMMENTED OUT (Prototype mode)
 // import { supabase } from "@/lib/supabase";
 import { STORAGE_KEYS, MILESTONES, getFromStorage, setToStorage } from "@/data/mockData";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Award } from "lucide-react";
+import { ArrowLeft, Award, Scale } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useState as useCollapsibleState } from "react";
 
 interface ProfileData {
   name: string;
@@ -225,7 +227,7 @@ const Profile = () => {
         </Card>
 
         {/* Settings Card */}
-        <Card className="shadow-medium">
+        <Card className="shadow-medium mb-6">
           <CardHeader>
             <CardTitle>Account Settings</CardTitle>
           </CardHeader>
@@ -261,6 +263,72 @@ const Profile = () => {
                 {loading ? "Saving..." : "Save Changes"}
               </Button>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* Legal & Policies Section */}
+        <Card className="shadow-medium">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Scale className="h-5 w-5 text-muted-foreground" />
+              Legal & Policies
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Important information about your privacy and our terms
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  <span className="flex items-center gap-2">
+                    🧾 Privacy Policy
+                  </span>
+                  <span className="text-xs text-muted-foreground">View</span>
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-3 p-4 border rounded-lg bg-muted/30">
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <div>
+                    <p className="font-semibold text-foreground mb-1">Data We Collect:</p>
+                    <p>Alias, testimony story, and optional location.</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground mb-1">How We Store It:</p>
+                    <p>Information is encrypted and used internally only.</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground mb-1">Your Rights:</p>
+                    <p>You may edit or delete your testimony anytime.</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground mb-1">Consent:</p>
+                    <p>By submitting, you grant M6V33 a non-exclusive right to display and lightly edit your story for clarity and encouragement.</p>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  <span className="flex items-center gap-2">
+                    📜 Terms of Use
+                  </span>
+                  <span className="text-xs text-muted-foreground">View</span>
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-3 p-4 border rounded-lg bg-muted/30">
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <p>By using this app, you agree to share only true experiences and respect others' privacy.</p>
+                  <p>M6V33 reserves the right to review and moderate content before publication.</p>
+                  <p>Testimonies are personal experiences and not verified claims.</p>
+                  <p className="text-xs italic text-foreground/70 pt-2 border-t">
+                    © M6V33 — All rights reserved.
+                  </p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </CardContent>
         </Card>
       </div>
