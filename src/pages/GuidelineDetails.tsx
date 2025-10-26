@@ -187,16 +187,21 @@ const GuidelineDetails = () => {
   };
 
   const getCurrentStepInfo = () => {
-    if (!isGuidedMode) return null;
+    if (!isGuidedMode || !guideline.steps || guideline.steps.length === 0) return null;
     
     const step = guideline.steps[currentStepIndex];
-    const point = prayerPoints.find(p => p.id === step.prayer_point_ids[currentPointIndex]);
+    if (!step) return null;
+    
+    const point = step.prayer_point_ids && step.prayer_point_ids.length > 0 
+      ? prayerPoints.find(p => p.id === step.prayer_point_ids[currentPointIndex])
+      : undefined;
     const progress = ((currentStepIndex / guideline.steps.length) * 100);
     
     return { step, point, progress };
   };
 
   const stepInfo = getCurrentStepInfo();
+  const hasSteps = guideline.steps && guideline.steps.length > 0;
 
   return (
     <div className="min-h-screen gradient-subtle">
@@ -223,23 +228,25 @@ const GuidelineDetails = () => {
 
         {!isGuidedMode ? (
           <div className="grid md:grid-cols-2 gap-6">
-            <Card className="shadow-medium">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Play className="h-5 w-5 text-primary" />
-                  Start Guided Prayer
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Begin today's prayer journey with step-by-step guidance, timers, and voice prompts.
-                </p>
-                <Button className="w-full" onClick={startGuidedSession}>
-                  <Play className="mr-2 h-4 w-4" />
-                  Start Guided Session
-                </Button>
-              </CardContent>
-            </Card>
+            {hasSteps && (
+              <Card className="shadow-medium">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Play className="h-5 w-5 text-primary" />
+                    Start Guided Prayer
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Begin today's prayer journey with step-by-step guidance, timers, and voice prompts.
+                  </p>
+                  <Button className="w-full" onClick={startGuidedSession}>
+                    <Play className="mr-2 h-4 w-4" />
+                    Start Guided Session
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
             <Card className="shadow-medium">
               <CardHeader>

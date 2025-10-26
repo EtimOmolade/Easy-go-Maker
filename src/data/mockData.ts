@@ -254,7 +254,7 @@ export const mockPrayerPoints: PrayerPoint[] = [
 // Sample guidelines with new structure
 export const mockGuidelines: MockGuideline[] = [
   {
-    id: 'guideline-1',
+    id: '1',
     title: 'Week 1 - Seek First the Kingdom',
     week_number: 1,
     day_of_week: 'Monday',
@@ -291,7 +291,7 @@ export const mockGuidelines: MockGuideline[] = [
     ]
   },
   {
-    id: 'guideline-2',
+    id: '2',
     title: 'Week 2 - Kingdom Advancement',
     week_number: 2,
     day_of_week: 'Monday',
