@@ -164,9 +164,10 @@ const createAdminNotificationForResubmission = (testimony: any) => {
 
 const createAnnouncementForTestimony = (testimony: any) => {
   const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, [] as any[]);
+  const title = testimony?.title || 'Untitled';
   const announcement = {
     id: `announce-testimony-${Date.now()}`,
-    content: `✨ New testimony: ${testimony.title.substring(0, 40)}${testimony.title.length > 40 ? '...' : ''}`,
+    content: `✨ New testimony: ${title.substring(0, 40)}${title.length > 40 ? '...' : ''}`,
     created_at: new Date().toISOString(),
     created_by: 'system'
   };
