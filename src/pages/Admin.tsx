@@ -425,17 +425,12 @@ const Admin = () => {
   };
 
   const handleApproveTestimony = async (id: string) => {
-    try {
-      // Use testimonyHelpers to handle approval properly
-      const { approveTestimony } = await import('@/utils/testimonyHelpers');
-      approveTestimony(id, user?.user_metadata?.name || 'Admin');
-      
-      toast.success("✨ Testimony approved and posted to testimony page!");
-      await fetchTestimonies();
-    } catch (error: any) {
-      console.error('Error approving testimony:', error);
-      toast.error('Failed to approve testimony');
-    }
+    // Use testimonyHelpers to handle approval properly
+    const { approveTestimony } = await import('@/utils/testimonyHelpers');
+    approveTestimony(id, user?.user_metadata?.name || 'Admin');
+    
+    toast.success("✨ Testimony approved and posted to testimony page!");
+    await fetchTestimonies();
 
     // Backend integration - Supabase COMMENTED OUT
     // try {

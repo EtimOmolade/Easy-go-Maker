@@ -632,7 +632,7 @@ const Journal = () => {
                           {new Date(entry.created_at).toLocaleDateString()} at {new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 md:flex md:flex-row md:gap-1 md:flex-wrap md:justify-end">
+                      <div className="grid grid-cols-2 gap-2 md:flex md:flex-row md:gap-1 md:flex-nowrap md:justify-end">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button

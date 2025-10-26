@@ -7,7 +7,7 @@ import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, CheckCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -280,6 +280,20 @@ const GuidelineDetails = () => {
 
             <div className="prose prose-sm max-w-none mb-8">
               <p className="text-foreground/90 whitespace-pre-wrap">{guideline.content}</p>
+            </div>
+
+            <div className="mb-8">
+              <Button 
+                onClick={() => navigate(`/guided-session/${guideline.id}`)}
+                className="w-full"
+                size="lg"
+              >
+                <Calendar className="mr-2 h-5 w-5" />
+                Start Guided Prayer Session
+              </Button>
+              <p className="text-xs text-center text-muted-foreground mt-2">
+                Experience a step-by-step prayer journey with timers and voice prompts
+              </p>
             </div>
 
             <div className="space-y-3">

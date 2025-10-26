@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Guidelines from "./pages/Guidelines";
 import GuidelineDetails from "./pages/GuidelineDetails";
+import GuidedPrayerSession from "./pages/GuidedPrayerSession";
 import Journal from "./pages/Journal";
 import Testimonies from "./pages/Testimonies";
 import Profile from "./pages/Profile";
@@ -51,6 +52,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <GuidelineDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/guided-session/:id"
+              element={
+                <ProtectedRoute>
+                  <GuidedPrayerSession />
                 </ProtectedRoute>
               }
             />
