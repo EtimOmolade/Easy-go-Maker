@@ -16,8 +16,7 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 const STEP_TYPES = [
   { value: 'kingdom', label: 'Kingdom Focused Prayer', defaultDuration: 180 },
   { value: 'personal', label: 'Personal Supplication', defaultDuration: 300 },
-  { value: 'listening', label: 'Listening Prayer', defaultDuration: 240 },
-  { value: 'reflection', label: 'Reflection & Journaling', defaultDuration: 0 }
+  { value: 'listening', label: 'Listening Prayer', defaultDuration: 240 }
 ];
 
 const CreateGuideline = () => {
@@ -58,7 +57,7 @@ const CreateGuideline = () => {
       return;
     }
 
-    if (currentStep.type !== 'personal' && currentStep.type !== 'reflection' && (!currentStep.prayer_point_ids || currentStep.prayer_point_ids.length === 0)) {
+    if (currentStep.type !== 'personal' && (!currentStep.prayer_point_ids || currentStep.prayer_point_ids.length === 0)) {
       toast.error("Please select at least one prayer point");
       return;
     }
@@ -225,7 +224,7 @@ const CreateGuideline = () => {
                   </Select>
                 </div>
 
-                {currentStep.type !== 'personal' && currentStep.type !== 'reflection' && (
+                {currentStep.type !== 'personal' && (
                   <div>
                     <Label>Select Prayer Points</Label>
                     {availablePoints.length === 0 ? (

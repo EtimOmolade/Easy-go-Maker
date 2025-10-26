@@ -59,7 +59,7 @@ export interface DailyPrayer {
   completedAt?: string;
 }
 
-export type PrayerPointCategory = 'Kingdom Focused' | 'Personal Supplication' | 'Listening Prayer' | 'Reflection Prompts';
+export type PrayerPointCategory = 'Kingdom Focused' | 'Listening Prayer';
 
 export interface PrayerPoint {
   id: string;
@@ -189,104 +189,143 @@ export const mockTestimonies: MockTestimony[] = [
   }
 ];
 
-// Sample guidelines
+// Sample prayer points for library
+export const mockPrayerPoints: PrayerPoint[] = [
+  // Kingdom Focused Points
+  {
+    id: 'kf-1',
+    title: 'Pray for Global Missions',
+    content: 'Father, raise up laborers for the harvest. Send more missionaries to unreached nations. Open doors where the gospel has not been preached. Strengthen those already on the field.',
+    category: 'Kingdom Focused',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'kf-2',
+    title: 'Pray for Church Unity',
+    content: 'Lord, unite your Church across denominations and nations. Break down walls of division. Help us love one another as you loved us. May we be known by our love.',
+    category: 'Kingdom Focused',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'kf-3',
+    title: 'Pray for Revival',
+    content: 'God, send revival to our generation. Awaken hearts that are cold. Draw the lost to yourself. Pour out your Spirit in power. Let signs and wonders follow your Word.',
+    category: 'Kingdom Focused',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'kf-4',
+    title: 'Pray for Kingdom Resources',
+    content: 'Father, release financial provision for Kingdom work. Multiply the seeds sown by your people. Open heaven\'s storehouses. Fund every God-ordained project and ministry.',
+    category: 'Kingdom Focused',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'kf-5',
+    title: 'Pray for Leaders and Authorities',
+    content: 'Lord, we lift up those in authority over us. Give them wisdom to lead with justice and righteousness. Turn their hearts toward You. Let Your will be done through their decisions.',
+    category: 'Kingdom Focused',
+    created_at: new Date().toISOString()
+  },
+  // Listening Prayer Points (Bible Verses)
+  {
+    id: 'lp-1',
+    title: 'Matthew 6:33 - Seek First the Kingdom',
+    content: '"But seek first the kingdom of God and his righteousness, and all these things will be added to you." - Matthew 6:33\n\nMeditate: What does it mean to seek first the Kingdom? What in your life needs to be reordered around this priority?',
+    category: 'Listening Prayer',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'lp-2',
+    title: 'Isaiah 40:31 - Renewed Strength',
+    content: '"But they who wait for the LORD shall renew their strength; they shall mount up with wings like eagles; they shall run and not be weary; they shall walk and not faint." - Isaiah 40:31\n\nReflect: Where do you need renewed strength today? How can you practice waiting on the Lord?',
+    category: 'Listening Prayer',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'lp-3',
+    title: 'Philippians 4:6-7 - Peace in Prayer',
+    content: '"Do not be anxious about anything, but in everything by prayer and supplication with thanksgiving let your requests be made known to God. And the peace of God, which surpasses all understanding, will guard your hearts and your minds in Christ Jesus." - Philippians 4:6-7\n\nListen: What anxieties is God calling you to surrender in prayer? What are you thankful for today?',
+    category: 'Listening Prayer',
+    created_at: new Date().toISOString()
+  },
+];
+
+// Sample guidelines with new structure
 export const mockGuidelines: MockGuideline[] = [
   {
-    id: '1',
-    title: 'Week of Faith and Trust',
-    week_number: 3,
-    day_of_week: 'Monday',
-    content: `Monday: Trust in the Lord
-Proverbs 3:5-6
-Pray for complete trust in God's plan for your life.
-
-Tuesday: Faith Over Fear
-2 Timothy 1:7
-Ask God to replace your fears with faith and courage.
-
-Wednesday: Walking by Faith
-2 Corinthians 5:7
-Pray for guidance to walk by faith, not by sight.
-
-Thursday: Strengthening Faith
-Romans 10:17
-Thank God for His word that builds your faith.
-
-Friday: Faith in Action
-James 2:17
-Ask God to help you demonstrate your faith through actions.
-
-Saturday: Unwavering Faith
-Hebrews 11:1
-Pray for steadfast faith in God's promises.
-
-Sunday: Rest and Reflection
-Reflect on how God has strengthened your faith this week.`,
-    date_uploaded: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    steps: []
-  },
-  {
-    id: '2',
-    title: 'Week of Gratitude',
-    week_number: 2,
-    day_of_week: 'Monday',
-    content: `Monday: Thankful Heart
-Psalm 100:4
-Begin the week with thanksgiving for God's blessings.
-
-Tuesday: Count Your Blessings
-1 Thessalonians 5:18
-List and pray over all the ways God has blessed you.
-
-Wednesday: Grateful in Trials
-James 1:2-4
-Thank God for growth through challenges.
-
-Thursday: Worship Through Thanks
-Psalm 95:2
-Worship God with a grateful heart today.
-
-Friday: Sharing Gratitude
-Colossians 3:17
-Thank God and share your gratitude with others.
-
-Saturday: Grateful Living
-Ephesians 5:20
-Live today with constant awareness of God's goodness.
-
-Sunday: Reflection on Blessings
-Meditate on God's faithfulness in your life.`,
-    date_uploaded: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-    steps: []
-  },
-  {
-    id: '3',
-    title: 'Week of Prayer for Others',
+    id: 'guideline-1',
+    title: 'Week 1 - Seek First the Kingdom',
     week_number: 1,
     day_of_week: 'Monday',
-    content: `Monday: Family Members
-Pray for each family member by name and their specific needs.
-
-Tuesday: Friends and Community
-Lift up friends and community members in prayer.
-
-Wednesday: Church Leaders
-Pray for wisdom and strength for church leaders.
-
-Thursday: Those in Authority
-1 Timothy 2:1-2
-Pray for government leaders and those in authority.
-
-Friday: The Sick and Suffering
-Pray for healing and comfort for those who are ill.
-
-Saturday: Lost and Unsaved
-Pray for the salvation of those who don't know Christ.
-
-Sunday: World Missions
-Pray for missionaries and the spread of the Gospel worldwide.`,
-    date_uploaded: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
-    steps: []
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-1', 'kf-2', 'kf-3', 'kf-4'],
+        duration: 180 // 3 minutes per point
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300 // 5 minutes
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-1', 'lp-2'],
+        duration: 240 // 4 minutes total
+      }
+    ],
+    dailyPrayers: [
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ]
+  },
+  {
+    id: 'guideline-2',
+    title: 'Week 2 - Kingdom Advancement',
+    week_number: 2,
+    day_of_week: 'Monday',
+    content: '',
+    date_uploaded: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-5', 'kf-1', 'kf-3', 'kf-2'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-3', 'lp-1'],
+        duration: 240
+      }
+    ],
+    dailyPrayers: [
+      { day: 'Monday', completed: true, completedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString() },
+      { day: 'Tuesday', completed: true, completedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ]
   }
 ];
 
@@ -538,6 +577,9 @@ export const initializeMockData = () => {
   }
   if (!localStorage.getItem(STORAGE_KEYS.ENCOURAGEMENT)) {
     localStorage.setItem(STORAGE_KEYS.ENCOURAGEMENT, JSON.stringify(mockEncouragementMessages));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.PRAYER_POINTS)) {
+    localStorage.setItem(STORAGE_KEYS.PRAYER_POINTS, JSON.stringify(mockPrayerPoints));
   }
 };
 

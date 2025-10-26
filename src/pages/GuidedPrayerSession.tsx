@@ -115,7 +115,7 @@ const GuidedPrayerSession = () => {
     let prompt = '';
     switch (type) {
       case 'kingdom':
-        prompt = currentStepIndex === 0 ? VOICE_PROMPTS.KINGDOM_START : VOICE_PROMPTS.KINGDOM_CONTINUE;
+        prompt = currentStepIndex === 0 ? VOICE_PROMPTS.KINGDOM_START : VOICE_PROMPTS.KINGDOM_NEXT;
         break;
       case 'personal':
         prompt = VOICE_PROMPTS.PERSONAL_START;
@@ -124,7 +124,7 @@ const GuidedPrayerSession = () => {
         prompt = VOICE_PROMPTS.LISTENING_START;
         break;
       case 'reflection':
-        prompt = VOICE_PROMPTS.REFLECTION_START;
+        prompt = VOICE_PROMPTS.JOURNALING_START;
         break;
     }
     if (prompt) playVoicePrompt(prompt);

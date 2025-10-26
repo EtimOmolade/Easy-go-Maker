@@ -2,12 +2,11 @@
 
 export const VOICE_PROMPTS = {
   KINGDOM_START: "Now pray for kingdom purposes. Let's intercede for God's work in the world.",
-  KINGDOM_CONTINUE: "Continue praying for the next kingdom-focused point.",
-  PERSONAL_START: "Now bring your personal requests to God. Share what's on your heart.",
+  KINGDOM_NEXT: "Continue praying for the next kingdom-focused point.",
+  PERSONAL_START: "Now bring your personal requests to God. You have five minutes to share what's on your heart.",
   LISTENING_START: "Take a moment to listen and meditate on these scriptures. Let God speak to you.",
-  REFLECTION_START: "Write down what you sense or learned during prayer. Capture this moment.",
-  TESTIMONY_PROMPT: "Would you like to share a testimony from today's prayer?",
-  SESSION_COMPLETE: "Well done! You've completed today's prayer session."
+  JOURNALING_START: "Open your journal and write down what you sense or learned during prayer.",
+  SESSION_COMPLETE: "Well done! You've completed today's prayer session. May God bless you."
 };
 
 export const playVoicePrompt = (text: string) => {

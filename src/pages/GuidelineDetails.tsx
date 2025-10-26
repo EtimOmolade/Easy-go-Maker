@@ -1,345 +1,405 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-// Backend integration - Supabase COMMENTED OUT (Prototype mode)
-// import { supabase } from "@/lib/supabase";
-import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
+import { STORAGE_KEYS, getFromStorage, PrayerGuideline, DailyPrayer, getUserProgress, PrayerPoint } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ArrowLeft, Play, Calendar, CheckCircle2, Circle, Volume2, Pause } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, CheckCircle, Calendar } from "lucide-react";
+import { PrayerTimer } from "@/components/PrayerTimer";
+import { markPrayerCompleted } from "@/utils/prayerHelpers";
 import { toast } from "sonner";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { TextToSpeech } from "@/components/TextToSpeech";
 import { MilestoneAchievementModal } from "@/components/MilestoneAchievementModal";
-
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-interface Guideline {
-  id: string;
-  title: string;
-  week_number: number;
-  content: string;
-  date_uploaded: string;
-}
+import { VOICE_PROMPTS, playVoicePrompt } from "@/utils/voicePrompts";
+import { Progress } from "@/components/ui/progress";
 
 const GuidelineDetails = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [guideline, setGuideline] = useState<Guideline | null>(null);
-  const [completedDays, setCompletedDays] = useState<string[]>([]);
-  const [streakCount, setStreakCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [guideline, setGuideline] = useState<PrayerGuideline | null>(null);
+  const [prayerPoints, setPrayerPoints] = useState<PrayerPoint[]>([]);
+  const [showTrackerDialog, setShowTrackerDialog] = useState(false);
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
-  const [achievedMilestoneLevel, setAchievedMilestoneLevel] = useState(0);
+  const [achievedMilestoneLevel, setAchievedMilestoneLevel] = useState<number | null>(null);
+  const [dailyPrayers, setDailyPrayers] = useState<DailyPrayer[]>([]);
+  
+  // Guided session state
+  const [isGuidedMode, setIsGuidedMode] = useState(false);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [currentPointIndex, setCurrentPointIndex] = useState(0);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
   useEffect(() => {
     if (id && user) {
       fetchGuideline();
-      fetchPrayerCompletions();
-      fetchUserStreak();
+      fetchDailyProgress();
     }
   }, [id, user]);
 
-  const fetchGuideline = async () => {
-    if (!id) return;
+  const fetchGuideline = () => {
+    const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as PrayerGuideline[]);
+    const found = guidelines.find((g: PrayerGuideline) => g.id === id);
+    if (found) {
+      setGuideline(found);
+    }
 
-    // Prototype mode: Fetch from localStorage
-    const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
-    const foundGuideline = guidelines.find((g: any) => g.id === id);
+    const points = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
+    setPrayerPoints(points);
+  };
 
-    if (foundGuideline) {
-      setGuideline(foundGuideline);
+  const fetchDailyProgress = () => {
+    if (!user || !id) return;
+
+    const progress = getUserProgress(user.id);
+    if (progress.dailyPrayers[id]) {
+      setDailyPrayers(progress.dailyPrayers[id]);
     } else {
-      toast.error("Guideline not found");
+      // Initialize daily prayers for this guideline
+      setDailyPrayers([
+        { day: 'Monday', completed: false },
+        { day: 'Tuesday', completed: false },
+        { day: 'Wednesday', completed: false },
+        { day: 'Thursday', completed: false },
+        { day: 'Friday', completed: false },
+        { day: 'Saturday', completed: false },
+        { day: 'Sunday', completed: false }
+      ]);
     }
-    setLoading(false);
-
-    // Backend integration - Supabase COMMENTED OUT
-    // const { data, error } = await supabase
-    //   .from("guidelines")
-    //   .select("*")
-    //   .eq("id", id)
-    //   .single();
-    //
-    // if (error) {
-    //   console.error("Error fetching guideline:", error);
-    //   toast.error("Failed to load guideline");
-    // } else {
-    //   setGuideline(data);
-    // }
-    // setLoading(false);
   };
 
-  const fetchPrayerCompletions = async () => {
-    if (!id || !user) return;
-
-    // Prototype mode: Fetch from localStorage
-    const allEntries = getFromStorage(STORAGE_KEYS.JOURNAL_ENTRIES, [] as any[]);
-    const prayerEntries = allEntries
-      .filter((entry: any) =>
-        entry.user_id === user.id &&
-        entry.title.startsWith('[PRAYER_TRACK]') &&
-        entry.title.includes(id)
-      );
-
-    const days = prayerEntries
-      .map((entry: any) => {
-        const match = entry.title.match(/- (Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)$/);
-        return match ? match[1] : null;
-      })
-      .filter(Boolean) as string[];
-
-    setCompletedDays(days);
-
-    // Backend integration - Supabase COMMENTED OUT
-    // const { data, error } = await supabase
-    //   .from("journal_entries")
-    //   .select("title")
-    //   .eq("user_id", user.id)
-    //   .like("title", `[PRAYER_TRACK]%${id}%`);
-    //
-    // if (error) {
-    //   console.error("Error fetching prayer completions:", error);
-    // } else if (data) {
-    //   const days = data
-    //     .map(entry => {
-    //       const match = entry.title.match(/- (Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)$/);
-    //       return match ? match[1] : null;
-    //     })
-    //     .filter(Boolean) as string[];
-    //
-    //   setCompletedDays(days);
-    // }
-  };
-
-  const fetchUserStreak = async () => {
-    if (!user) return;
-
-    // Prototype mode: Fetch from localStorage
-    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
-    const userProfile = profiles[user.id];
-    if (userProfile) {
-      setStreakCount(userProfile.streak_count || 0);
-    }
-
-    // Backend integration - Supabase COMMENTED OUT
-    // const { data, error } = await supabase
-    //   .from("profiles")
-    //   .select("streak_count")
-    //   .eq("id", user.id)
-    //   .single();
-    //
-    // if (error) {
-    //   console.error("Error fetching streak:", error);
-    // } else if (data) {
-    //   setStreakCount(data.streak_count);
-    // }
-  };
-
-  const handleDayComplete = async (day: string) => {
+  const handleMarkComplete = (day: string) => {
     if (!user || !guideline) return;
 
-    try {
-      // Import prayer helper
-      const { markPrayerCompleted } = await import('@/utils/prayerHelpers');
+    const { newStreak, milestone } = markPrayerCompleted(user.id);
+    fetchDailyProgress();
 
-      // Prototype mode: Create hidden journal entry in localStorage
-      const allEntries = getFromStorage(STORAGE_KEYS.JOURNAL_ENTRIES, [] as any[]);
-      const newEntry = {
-        id: `prayer-${Date.now()}`,
-        user_id: user.id,
-        title: `[PRAYER_TRACK] ${guideline.id} - ${day}`,
-        content: `Completed daily prayer for ${guideline.title} - ${day}`,
-        date: new Date().toISOString().split('T')[0],
-        created_at: new Date().toISOString(),
-        is_answered: true,
-        is_shared: false
-      };
-      allEntries.push(newEntry);
-      setToStorage(STORAGE_KEYS.JOURNAL_ENTRIES, allEntries);
-
-      // Use prayer helper to update streak and check milestones
-      const { newStreak, milestone } = markPrayerCompleted(user.id);
-
-      // Update local state
-      setCompletedDays([...completedDays, day]);
-      setStreakCount(newStreak);
-
-      // Show milestone achievement if unlocked
-      if (milestone) {
-        setAchievedMilestoneLevel(milestone.level);
-        setShowMilestoneModal(true);
-      } else {
-        toast.success(`🎉 ${day} Complete! ${newStreak}-day streak! Keep the fire burning!`);
-      }
-
-      // Backend integration - Supabase COMMENTED OUT
-      // const { error } = await supabase
-      //   .from("journal_entries")
-      //   .insert({
-      //     user_id: user.id,
-      //     title: `[PRAYER_TRACK] ${guideline.id} - ${day}`,
-      //     content: `Completed daily prayer for ${guideline.title} - ${day}`,
-      //     is_answered: true
-      //   });
-      //
-      // if (error) throw error;
-      // setCompletedDays([...completedDays, day]);
-      // await fetchUserStreak();
-      // toast.success(`🎉 ${day} Complete! Keep the fire burning! +1 to your streak!`);
-    } catch (error: any) {
-      console.error("Error completing prayer:", error);
-      toast.error(error.message || "Failed to mark prayer as complete");
+    if (milestone) {
+      setAchievedMilestoneLevel(milestone.level);
+      setShowMilestoneModal(true);
+    } else {
+      toast.success(`${day} completed! ${newStreak}-day streak!`);
     }
   };
-
-  const getDayStatus = (day: string) => {
-    return completedDays.includes(day);
-  };
-
-  const isTodaysDay = (day: string) => {
-    const dayIndex = DAYS.indexOf(day);
-    const today = new Date().getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
-    // Convert JavaScript day (0=Sun) to our array index (0=Mon)
-    const currentDayIndex = today === 0 ? 6 : today - 1;
-    return dayIndex === currentDayIndex;
-  };
-
-  const completedCount = completedDays.length;
-  const progressPercent = (completedCount / 7) * 100;
-
-  const formatGuidelineDate = (dateUploaded: string) => {
-    const date = new Date(dateUploaded);
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen gradient-subtle flex items-center justify-center">
-        <p className="text-muted-foreground">Loading guideline...</p>
-      </div>
-    );
-  }
 
   if (!guideline) {
     return (
-      <div className="min-h-screen gradient-subtle flex items-center justify-center">
-        <p className="text-muted-foreground">Guideline not found</p>
+      <div className="min-h-screen gradient-subtle p-8">
+        <Button variant="ghost" onClick={() => navigate("/guidelines")}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Guidelines
+        </Button>
+        <p className="text-center text-muted-foreground mt-8">Guideline not found</p>
       </div>
     );
   }
 
+  const startGuidedSession = () => {
+    setIsGuidedMode(true);
+    setCurrentStepIndex(0);
+    setCurrentPointIndex(0);
+    
+    // Play welcome prompt
+    setTimeout(() => {
+      playVoicePrompt("Welcome to today's prayer session. Let's begin by seeking first the Kingdom of God.");
+    }, 500);
+    
+    // Start first step
+    setTimeout(() => {
+      playVoicePrompt(VOICE_PROMPTS.KINGDOM_START);
+    }, 4000);
+  };
+
+  const handleStepComplete = () => {
+    const nextStepIndex = currentStepIndex + 1;
+    
+    if (nextStepIndex < guideline.steps.length) {
+      setCurrentStepIndex(nextStepIndex);
+      setCurrentPointIndex(0);
+      
+      const nextStep = guideline.steps[nextStepIndex];
+      
+      // Play transition prompt
+      setTimeout(() => {
+        if (nextStep.type === 'personal') {
+          playVoicePrompt(VOICE_PROMPTS.PERSONAL_START);
+        } else if (nextStep.type === 'listening') {
+          playVoicePrompt(VOICE_PROMPTS.LISTENING_START);
+        }
+      }, 500);
+    } else {
+      // Session complete
+      setIsGuidedMode(false);
+      playVoicePrompt(VOICE_PROMPTS.SESSION_COMPLETE);
+      toast.success("Prayer session completed!");
+      
+      // Redirect to journal
+      setTimeout(() => {
+        playVoicePrompt(VOICE_PROMPTS.JOURNALING_START);
+        navigate("/journal");
+      }, 3000);
+    }
+  };
+
+  const handlePointComplete = () => {
+    const currentStep = guideline.steps[currentStepIndex];
+    const nextPointIndex = currentPointIndex + 1;
+    
+    if (nextPointIndex < currentStep.prayer_point_ids.length) {
+      setCurrentPointIndex(nextPointIndex);
+      
+      // Play next point prompt for kingdom prayers
+      if (currentStep.type === 'kingdom') {
+        setTimeout(() => {
+          playVoicePrompt(VOICE_PROMPTS.KINGDOM_NEXT);
+        }, 500);
+      }
+    } else {
+      handleStepComplete();
+    }
+  };
+
+  const toggleAudioReading = () => {
+    if (isPlayingAudio) {
+      window.speechSynthesis.cancel();
+      setIsPlayingAudio(false);
+    } else {
+      const currentStep = guideline.steps[currentStepIndex];
+      const point = prayerPoints.find(p => p.id === currentStep.prayer_point_ids[currentPointIndex]);
+      
+      if (point && currentStep.type === 'listening') {
+        const utterance = new SpeechSynthesisUtterance(point.content);
+        utterance.rate = 0.85;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        utterance.onend = () => {
+          setIsPlayingAudio(false);
+          // Auto-advance to next point after listening
+          setTimeout(() => {
+            handlePointComplete();
+          }, 1000);
+        };
+        window.speechSynthesis.speak(utterance);
+        setIsPlayingAudio(true);
+      }
+    }
+  };
+
+  const getCurrentStepInfo = () => {
+    if (!isGuidedMode) return null;
+    
+    const step = guideline.steps[currentStepIndex];
+    const point = prayerPoints.find(p => p.id === step.prayer_point_ids[currentPointIndex]);
+    const progress = ((currentStepIndex / guideline.steps.length) * 100);
+    
+    return { step, point, progress };
+  };
+
+  const stepInfo = getCurrentStepInfo();
+
   return (
     <div className="min-h-screen gradient-subtle">
-      <div className="max-w-4xl mx-auto p-4 md:p-8">
+      <div className="max-w-5xl mx-auto p-4 md:p-8">
         <MilestoneAchievementModal 
-          milestoneLevel={achievedMilestoneLevel}
+          milestoneLevel={achievedMilestoneLevel || 0}
           isOpen={showMilestoneModal}
           onClose={() => setShowMilestoneModal(false)}
         />
-        
-        <Button
-          variant="ghost"
-          className="mb-6"
-          onClick={() => navigate("/guidelines")}
-        >
+
+        <Button variant="ghost" className="mb-6" onClick={() => navigate("/guidelines")}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Guidelines
         </Button>
 
-        <Card className="shadow-medium mb-6">
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div>
-                <Badge variant="secondary" className="mb-2">
-                  Week {guideline.week_number} - {formatGuidelineDate(guideline.date_uploaded)}
-                </Badge>
-                <CardTitle className="text-3xl">{guideline.title}</CardTitle>
+        <div className="mb-8">
+          <h1 className="text-4xl font-heading font-bold gradient-primary bg-clip-text text-transparent">
+            {guideline.title}
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Week {guideline.week_number} • {guideline.day}
+          </p>
+        </div>
+
+        {!isGuidedMode ? (
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card className="shadow-medium">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Play className="h-5 w-5 text-primary" />
+                  Start Guided Prayer
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Begin today's prayer journey with step-by-step guidance, timers, and voice prompts.
+                </p>
+                <Button className="w-full" onClick={startGuidedSession}>
+                  <Play className="mr-2 h-4 w-4" />
+                  Start Guided Session
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-medium">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-accent" />
+                  Daily Tracker
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setShowTrackerDialog(true)}
+                >
+                  View Week Progress
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <Card className="shadow-glow border-primary/20">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>
+                  Step {currentStepIndex + 1} of {guideline.steps.length}
+                </CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => setIsGuidedMode(false)}>
+                  Exit Session
+                </Button>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-accent">{streakCount}</div>
-                <div className="text-xs text-muted-foreground">day streak</div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium">Weekly Progress</p>
-                <p className="text-sm text-muted-foreground">{completedCount}/7 days</p>
-              </div>
-              <Progress value={progressPercent} className="h-2" />
-            </div>
+              <Progress value={stepInfo?.progress || 0} className="mt-2" />
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {stepInfo?.step.type === 'kingdom' && stepInfo.point && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-semibold text-primary">Kingdom Focused Prayer</h3>
+                    <span className="text-sm text-muted-foreground">
+                      Point {currentPointIndex + 1} of {stepInfo.step.prayer_point_ids.length}
+                    </span>
+                  </div>
+                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
+                    <h4 className="font-semibold mb-2">{stepInfo.point.title}</h4>
+                    <p className="text-foreground/90 whitespace-pre-wrap">{stepInfo.point.content}</p>
+                  </div>
+                  <PrayerTimer 
+                    duration={180}
+                    onComplete={handlePointComplete}
+                    autoStart={true}
+                  />
+                </div>
+              )}
+              
+              {stepInfo?.step.type === 'personal' && (
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold text-primary">Personal Supplication</h3>
+                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
+                    <p className="text-foreground/90">
+                      Now is the time to bring your personal requests to God. Share what's on your heart - your needs, your family, your work, your health. God is listening.
+                    </p>
+                  </div>
+                  <PrayerTimer 
+                    duration={300}
+                    onComplete={handleStepComplete}
+                    autoStart={true}
+                  />
+                </div>
+              )}
+              
+              {stepInfo?.step.type === 'listening' && stepInfo.point && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-semibold text-primary">Listening Prayer</h3>
+                    <span className="text-sm text-muted-foreground">
+                      Passage {currentPointIndex + 1} of {stepInfo.step.prayer_point_ids.length}
+                    </span>
+                  </div>
+                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
+                    <h4 className="font-semibold mb-3">{stepInfo.point.title}</h4>
+                    <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{stepInfo.point.content}</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button 
+                      onClick={toggleAudioReading}
+                      variant={isPlayingAudio ? "secondary" : "default"}
+                      className="flex-1"
+                    >
+                      {isPlayingAudio ? (
+                        <>
+                          <Pause className="mr-2 h-4 w-4" />
+                          Pause Audio
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="mr-2 h-4 w-4" />
+                          Listen to Scripture
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      onClick={handlePointComplete}
+                      variant="outline"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-            <div className="mb-6">
-              <TextToSpeech text={guideline.content} />
-            </div>
-
-            <div className="prose prose-sm max-w-none mb-8">
-              <p className="text-foreground/90 whitespace-pre-wrap">{guideline.content}</p>
-            </div>
-
-            <div className="mb-8">
-              <Button 
-                onClick={() => navigate(`/guided-session/${guideline.id}`)}
-                className="w-full"
-                size="lg"
-              >
-                <Calendar className="mr-2 h-5 w-5" />
-                Start Guided Prayer Session
-              </Button>
-              <p className="text-xs text-center text-muted-foreground mt-2">
-                Experience a step-by-step prayer journey with timers and voice prompts
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="font-semibold text-lg mb-4">Daily Prayer Tracker</h3>
-              {DAYS.map((day) => {
-                const isCompleted = getDayStatus(day);
-                const isToday = isTodaysDay(day);
-                const canCheck = isToday && !isCompleted;
-
-                return (
-                  <Card key={day} className={`${isCompleted ? 'bg-primary/5 border-primary/20' : isToday ? 'bg-accent/5 border-accent/20' : ''}`}>
-                    <CardContent className="py-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <Checkbox
-                            id={day}
-                            checked={isCompleted}
-                            onCheckedChange={() => canCheck && handleDayComplete(day)}
-                            disabled={!canCheck}
-                          />
-                          <label
-                            htmlFor={day}
-                            className={`text-base font-medium ${
-                              isCompleted
-                                ? 'line-through text-muted-foreground cursor-default'
-                                : canCheck
-                                ? 'cursor-pointer'
-                                : 'text-muted-foreground cursor-not-allowed'
-                            }`}
-                          >
-                            {day}
-                            {isToday && !isCompleted && <span className="ml-2 text-xs text-accent">(Today)</span>}
-                            {!isToday && !isCompleted && <span className="ml-2 text-xs italic">(Available on {day})</span>}
-                          </label>
-                        </div>
-                        {isCompleted && (
-                          <CheckCircle className="h-5 w-5 text-primary" />
-                        )}
+        <Dialog open={showTrackerDialog} onOpenChange={setShowTrackerDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Weekly Prayer Tracker</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-3">
+                {dailyPrayers.map((prayer, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-accent/5 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        id={`day-${index}`}
+                        checked={prayer.completed}
+                        onCheckedChange={() => handleMarkComplete(prayer.day)}
+                      />
+                      <label 
+                        htmlFor={`day-${index}`}
+                        className="font-medium cursor-pointer select-none"
+                      >
+                        {prayer.day}
+                      </label>
+                    </div>
+                    {prayer.completed ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <span>
+                          {prayer.completedAt 
+                            ? new Date(prayer.completedAt).toLocaleDateString()
+                            : 'Completed'}
+                        </span>
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                    ) : (
+                      <Circle className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="pt-4 border-t">
+                <p className="text-sm font-medium">
+                  Progress: {dailyPrayers.filter(p => p.completed).length} of 7 days completed
+                </p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
