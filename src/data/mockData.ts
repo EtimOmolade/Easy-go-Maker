@@ -227,6 +227,41 @@ export const mockPrayerPoints: PrayerPoint[] = [
     category: 'Kingdom Focused',
     created_at: new Date().toISOString()
   },
+  {
+    id: 'kf-6',
+    title: 'Pray for the Persecuted Church',
+    content: 'Father, strengthen our brothers and sisters facing persecution. Give them courage to stand firm. Comfort those who mourn. Turn the hearts of their oppressors. Let their faith shine as a testimony.',
+    category: 'Kingdom Focused',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'kf-7',
+    title: 'Pray for Gospel Laborers',
+    content: 'Lord of the harvest, send out workers into Your harvest field. Raise up pastors, evangelists, teachers, and prophets. Equip them with power and boldness. Protect them from the enemy.',
+    category: 'Kingdom Focused',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'kf-8',
+    title: 'Pray for Spiritual Awakening',
+    content: 'God, awaken this generation to spiritual truth. Open blind eyes and deaf ears. Break the strongholds of deception. Let the light of the gospel pierce through darkness in every nation.',
+    category: 'Kingdom Focused',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'kf-9',
+    title: 'Pray for Kingdom Multiplication',
+    content: 'Father, multiply the Kingdom impact of every believer. Make us fruitful in every good work. Let our lives bear testimony to Your glory. Use us to disciple nations.',
+    category: 'Kingdom Focused',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'kf-10',
+    title: 'Pray for Breakthrough in Closed Nations',
+    content: 'Lord, break through every barrier to the gospel. Open doors in nations that are closed to Christianity. Protect secret believers. Let Your Word spread rapidly despite opposition.',
+    category: 'Kingdom Focused',
+    created_at: new Date().toISOString()
+  },
   // Listening Prayer Points (Bible Verses)
   {
     id: 'lp-1',
@@ -249,13 +284,42 @@ export const mockPrayerPoints: PrayerPoint[] = [
     category: 'Listening Prayer',
     created_at: new Date().toISOString()
   },
+  {
+    id: 'lp-4',
+    title: 'Psalm 46:10 - Be Still',
+    content: '"Be still, and know that I am God. I will be exalted among the nations, I will be exalted in the earth!" - Psalm 46:10\n\nPause: In the stillness, what is God speaking to your heart? What do you need to surrender to Him?',
+    category: 'Listening Prayer',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'lp-5',
+    title: 'Jeremiah 29:11 - God\'s Plans',
+    content: '"For I know the plans I have for you, declares the LORD, plans for welfare and not for evil, to give you a future and a hope." - Jeremiah 29:11\n\nReflect: What hope does this promise give you today? How can you trust God\'s plans even when you can\'t see the full picture?',
+    category: 'Listening Prayer',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'lp-6',
+    title: 'Romans 8:28 - All Things Together',
+    content: '"And we know that for those who love God all things work together for good, for those who are called according to his purpose." - Romans 8:28\n\nMeditate: What situation in your life needs you to trust that God is working all things together for good?',
+    category: 'Listening Prayer',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'lp-7',
+    title: 'John 15:5 - Abide in Christ',
+    content: '"I am the vine; you are the branches. Whoever abides in me and I in him, he it is that bears much fruit, for apart from me you can do nothing." - John 15:5\n\nListen: What does it mean to abide in Christ today? How can you stay connected to the Vine?',
+    category: 'Listening Prayer',
+    created_at: new Date().toISOString()
+  },
 ];
 
 // Sample guidelines with new structure
 export const mockGuidelines: MockGuideline[] = [
+  // WEEK 1
   {
     id: '1',
-    title: 'Week 1 - Seek First the Kingdom',
+    title: 'Week 1 - Day 1: Foundation of Seeking',
     week_number: 1,
     day_of_week: 'Monday',
     content: '',
@@ -265,19 +329,19 @@ export const mockGuidelines: MockGuideline[] = [
         id: 'step-1',
         type: 'kingdom',
         prayer_point_ids: ['kf-1', 'kf-2', 'kf-3', 'kf-4'],
-        duration: 180 // 3 minutes per point
+        duration: 180
       },
       {
         id: 'step-2',
         type: 'personal',
         prayer_point_ids: [],
-        duration: 300 // 5 minutes
+        duration: 300
       },
       {
         id: 'step-3',
         type: 'listening',
         prayer_point_ids: ['lp-1', 'lp-2'],
-        duration: 240 // 4 minutes total
+        duration: 240
       }
     ],
     dailyPrayers: [
@@ -292,16 +356,16 @@ export const mockGuidelines: MockGuideline[] = [
   },
   {
     id: '2',
-    title: 'Week 2 - Kingdom Advancement',
-    week_number: 2,
-    day_of_week: 'Monday',
+    title: 'Week 1 - Day 2: Unity in Prayer',
+    week_number: 1,
+    day_of_week: 'Tuesday',
     content: '',
-    date_uploaded: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    date_uploaded: new Date().toISOString(),
     steps: [
       {
         id: 'step-1',
         type: 'kingdom',
-        prayer_point_ids: ['kf-5', 'kf-1', 'kf-3', 'kf-2'],
+        prayer_point_ids: ['kf-2', 'kf-5', 'kf-6', 'kf-1'],
         duration: 180
       },
       {
@@ -313,13 +377,498 @@ export const mockGuidelines: MockGuideline[] = [
       {
         id: 'step-3',
         type: 'listening',
-        prayer_point_ids: ['lp-3', 'lp-1'],
+        prayer_point_ids: ['lp-3', 'lp-4'],
         duration: 240
       }
     ],
     dailyPrayers: [
-      { day: 'Monday', completed: true, completedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString() },
-      { day: 'Tuesday', completed: true, completedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ]
+  },
+  {
+    id: '3',
+    title: 'Week 1 - Day 3: Revival Fire',
+    week_number: 1,
+    day_of_week: 'Wednesday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-3', 'kf-7', 'kf-8', 'kf-9'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-5', 'lp-6'],
+        duration: 240
+      }
+    ],
+    dailyPrayers: [
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ]
+  },
+  {
+    id: '4',
+    title: 'Week 1 - Day 4: Kingdom Resources',
+    week_number: 1,
+    day_of_week: 'Thursday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-4', 'kf-9', 'kf-1', 'kf-7'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-7', 'lp-1'],
+        duration: 240
+      }
+    ],
+    dailyPrayers: [
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ]
+  },
+  {
+    id: '5',
+    title: 'Week 1 - Day 5: Leadership Prayer',
+    week_number: 1,
+    day_of_week: 'Friday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-5', 'kf-6', 'kf-10', 'kf-2'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-2', 'lp-3'],
+        duration: 240
+      }
+    ],
+    dailyPrayers: [
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ]
+  },
+
+  // WEEK 2
+  {
+    id: '6',
+    title: 'Week 2 - Day 1: Kingdom Advancement',
+    week_number: 2,
+    day_of_week: 'Monday',
+    content: '',
+    date_uploaded: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-8', 'kf-9', 'kf-10', 'kf-1'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-4', 'lp-5'],
+        duration: 240
+      }
+    ],
+    dailyPrayers: [
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ]
+  },
+  {
+    id: '7',
+    title: 'Week 2 - Day 2: Persecuted Church',
+    week_number: 2,
+    day_of_week: 'Tuesday',
+    content: '',
+    date_uploaded: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-6', 'kf-10', 'kf-7', 'kf-3'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-6', 'lp-7'],
+        duration: 240
+      }
+    ],
+    dailyPrayers: [
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ]
+  },
+  {
+    id: '8',
+    title: 'Week 2 - Day 3: Gospel Laborers',
+    week_number: 2,
+    day_of_week: 'Wednesday',
+    content: '',
+    date_uploaded: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-7', 'kf-1', 'kf-4', 'kf-9'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-1', 'lp-4'],
+        duration: 240
+      }
+    ],
+    dailyPrayers: [
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ]
+  },
+  {
+    id: '9',
+    title: 'Week 2 - Day 4: Spiritual Awakening',
+    week_number: 2,
+    day_of_week: 'Thursday',
+    content: '',
+    date_uploaded: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-8', 'kf-3', 'kf-2', 'kf-5'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-2', 'lp-6'],
+        duration: 240
+      }
+    ],
+    dailyPrayers: [
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ]
+  },
+  {
+    id: '10',
+    title: 'Week 2 - Day 5: Breakthrough Nations',
+    week_number: 2,
+    day_of_week: 'Friday',
+    content: '',
+    date_uploaded: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-10', 'kf-6', 'kf-1', 'kf-8'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-3', 'lp-7'],
+        duration: 240
+      }
+    ],
+    dailyPrayers: [
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ]
+  },
+
+  // WEEK 3
+  {
+    id: '11',
+    title: 'Week 3 - Day 1: Multiply the Kingdom',
+    week_number: 3,
+    day_of_week: 'Monday',
+    content: '',
+    date_uploaded: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-9', 'kf-4', 'kf-7', 'kf-2'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-5', 'lp-1'],
+        duration: 240
+      }
+    ],
+    dailyPrayers: [
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ]
+  },
+  {
+    id: '12',
+    title: 'Week 3 - Day 2: Unity Across Nations',
+    week_number: 3,
+    day_of_week: 'Tuesday',
+    content: '',
+    date_uploaded: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-2', 'kf-6', 'kf-5', 'kf-10'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-7', 'lp-2'],
+        duration: 240
+      }
+    ],
+    dailyPrayers: [
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ]
+  },
+  {
+    id: '13',
+    title: 'Week 3 - Day 3: Revival & Awakening',
+    week_number: 3,
+    day_of_week: 'Wednesday',
+    content: '',
+    date_uploaded: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-3', 'kf-8', 'kf-1', 'kf-4'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-4', 'lp-6'],
+        duration: 240
+      }
+    ],
+    dailyPrayers: [
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ]
+  },
+  {
+    id: '14',
+    title: 'Week 3 - Day 4: Resource the Kingdom',
+    week_number: 3,
+    day_of_week: 'Thursday',
+    content: '',
+    date_uploaded: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-4', 'kf-9', 'kf-7', 'kf-3'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-3', 'lp-5'],
+        duration: 240
+      }
+    ],
+    dailyPrayers: [
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
+      { day: 'Wednesday', completed: false },
+      { day: 'Thursday', completed: false },
+      { day: 'Friday', completed: false },
+      { day: 'Saturday', completed: false },
+      { day: 'Sunday', completed: false }
+    ]
+  },
+  {
+    id: '15',
+    title: 'Week 3 - Day 5: Authority & Justice',
+    week_number: 3,
+    day_of_week: 'Friday',
+    content: '',
+    date_uploaded: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-5', 'kf-2', 'kf-6', 'kf-10'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-1', 'lp-7'],
+        duration: 240
+      }
+    ],
+    dailyPrayers: [
+      { day: 'Monday', completed: false },
+      { day: 'Tuesday', completed: false },
       { day: 'Wednesday', completed: false },
       { day: 'Thursday', completed: false },
       { day: 'Friday', completed: false },
