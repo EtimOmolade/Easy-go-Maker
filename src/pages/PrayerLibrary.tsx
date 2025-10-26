@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const CATEGORIES: PrayerPointCategory[] = ['Kingdom Focused', 'Personal Supplication', 'Listening Prayer', 'Reflection Prompts'];
+const CATEGORIES: PrayerPointCategory[] = ['Kingdom Focused', 'Listening Prayer'];
 
 const PrayerLibrary = () => {
   const { user } = useAuth();
@@ -107,8 +107,8 @@ const PrayerLibrary = () => {
   const getCategoryColor = (cat: PrayerPointCategory) => {
     switch (cat) {
       case 'Kingdom Focused': return 'bg-primary/10 text-primary border-primary/20';
-      case 'Personal Supplication': return 'bg-accent/10 text-accent-foreground border-accent/20';
       case 'Listening Prayer': return 'bg-secondary/10 text-secondary-foreground border-secondary/20';
+      case 'Personal Supplication': return 'bg-accent/10 text-accent-foreground border-accent/20';
       case 'Reflection Prompts': return 'bg-muted text-muted-foreground border-border';
     }
   };
