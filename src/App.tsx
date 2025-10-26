@@ -16,6 +16,7 @@ import Journal from "./pages/Journal";
 import Testimonies from "./pages/Testimonies";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
+import PrayerLibrary from "./pages/PrayerLibrary";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -92,6 +93,14 @@ const App = () => (
               element={
                 <ProtectedRoute requireAdmin>
                   <Admin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/prayer-library"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <PrayerLibrary />
                 </ProtectedRoute>
               }
             />

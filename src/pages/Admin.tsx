@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Plus, Check, X, Trash2, Megaphone, Shield, UserPlus, UserMinus, Clock, AlertTriangle, Search, Edit } from "lucide-react";
+import { ArrowLeft, Plus, Check, X, Trash2, Megaphone, Shield, UserPlus, UserMinus, Clock, AlertTriangle, Search, Edit, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -712,15 +712,23 @@ const Admin = () => {
     <TooltipProvider>
       <div className="min-h-screen gradient-subtle">
         <div className="max-w-6xl mx-auto p-4 md:p-8">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" className="mb-6" onClick={() => navigate("/dashboard")}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Return to Dashboard</TooltipContent>
-          </Tooltip>
+          <div className="flex items-center justify-between mb-6">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Return to Dashboard</TooltipContent>
+            </Tooltip>
+            
+            <Button onClick={() => navigate('/prayer-library')}>
+              <BookOpen className="mr-2 h-4 w-4" />
+              <span className="hidden md:inline">Prayer Library</span>
+              <span className="md:hidden">Library</span>
+            </Button>
+          </div>
 
         <h1 className="text-4xl font-heading font-bold gradient-primary bg-clip-text text-transparent mb-8">
           Admin Dashboard

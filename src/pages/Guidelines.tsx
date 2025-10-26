@@ -106,9 +106,6 @@ const Guidelines = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-foreground/90 leading-relaxed mb-4 whitespace-pre-wrap line-clamp-3">
-                    {guideline.content}
-                  </p>
                   <div className="flex gap-2 flex-col md:flex-row">
                     <Button variant="outline" onClick={() => navigate(`/guideline/${guideline.id}`)}>
                       <Calendar className="mr-2 h-4 w-4 hidden md:inline" />

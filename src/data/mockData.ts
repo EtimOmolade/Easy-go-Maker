@@ -59,12 +59,34 @@ export interface DailyPrayer {
   completedAt?: string;
 }
 
+export type PrayerPointCategory = 'Kingdom Focused' | 'Personal Supplication' | 'Listening Prayer' | 'Reflection Prompts';
+
+export interface PrayerPoint {
+  id: string;
+  title: string;
+  content: string;
+  category: PrayerPointCategory;
+  audio_url?: string;
+  created_at: string;
+}
+
+export interface PrayerStep {
+  id: string;
+  title: string;
+  prayer_points: string[]; // IDs of prayer points from library
+  duration: number; // in seconds
+  custom_audio?: string;
+  custom_instruction?: string;
+}
+
 export interface MockGuideline {
   id: string;
   title: string;
   week_number: number;
   content: string;
   date_uploaded: string;
+  day_of_week: string; // Monday-Sunday
+  steps: PrayerStep[]; // Ordered sequence of prayer steps
   dailyPrayers?: DailyPrayer[]; // For weekly prayer tracking
 }
 
@@ -164,6 +186,7 @@ export const mockGuidelines: MockGuideline[] = [
     id: '1',
     title: 'Week of Faith and Trust',
     week_number: 3,
+    day_of_week: 'Monday',
     content: `Monday: Trust in the Lord
 Proverbs 3:5-6
 Pray for complete trust in God's plan for your life.
@@ -190,12 +213,14 @@ Pray for steadfast faith in God's promises.
 
 Sunday: Rest and Reflection
 Reflect on how God has strengthened your faith this week.`,
-    date_uploaded: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    date_uploaded: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: []
   },
   {
     id: '2',
     title: 'Week of Gratitude',
     week_number: 2,
+    day_of_week: 'Monday',
     content: `Monday: Thankful Heart
 Psalm 100:4
 Begin the week with thanksgiving for God's blessings.
@@ -222,12 +247,14 @@ Live today with constant awareness of God's goodness.
 
 Sunday: Reflection on Blessings
 Meditate on God's faithfulness in your life.`,
-    date_uploaded: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+    date_uploaded: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: []
   },
   {
     id: '3',
     title: 'Week of Prayer for Others',
     week_number: 1,
+    day_of_week: 'Monday',
     content: `Monday: Family Members
 Pray for each family member by name and their specific needs.
 
@@ -249,7 +276,8 @@ Pray for the salvation of those who don't know Christ.
 
 Sunday: World Missions
 Pray for missionaries and the spread of the Gospel worldwide.`,
-    date_uploaded: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString()
+    date_uploaded: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: []
   }
 ];
 
@@ -276,6 +304,7 @@ export const STORAGE_KEYS = {
   POPUP_SHOWN: 'prayerjournal_popup_shown',
   NOTIFICATIONS: 'prayerjournal_notifications',
   LAST_POPUP_DATE: 'prayerjournal_last_popup_date',
+  PRAYER_POINTS: 'prayerjournal_prayer_points',
   USERS: 'prayerjournal_users',
   USER_PROGRESS: 'prayerjournal_user_progress',
   USER_ROLES: 'prayerjournal_user_roles',
