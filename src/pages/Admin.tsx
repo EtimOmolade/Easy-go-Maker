@@ -761,43 +761,17 @@ const Admin = () => {
             <Card className="shadow-medium">
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>Prayer Guidelines Management</CardTitle>
-                  <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                    setIsDialogOpen(open);
-                    if (!open) {
-                      setEditingGuideline(null);
-                      setTitle("");
-                      setWeekNumber("");
-                      setContent("");
-                    }
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Plus className="sm:mr-2 h-4 w-4" />
-                        <span className="hidden sm:inline">New Guideline</span>
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>{editingGuideline ? 'Edit' : 'Create'} Prayer Guideline</DialogTitle>
-                      </DialogHeader>
-                      <form onSubmit={handleCreateGuideline} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="title">Title</Label>
-                          <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Prayers for Peace" required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="week">Week Number</Label>
-                          <Input id="week" type="number" value={weekNumber} onChange={(e) => setWeekNumber(e.target.value)} placeholder="1" required min="1" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="content">Content</Label>
-                          <Textarea id="content" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Enter the prayer guideline content..." rows={12} required />
-                        </div>
-                        <Button type="submit" className="w-full">{editingGuideline ? 'Update' : 'Create'} Guideline</Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
+                  <div>
+                    <CardTitle>Prayer Guidelines Management</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Build structured, gym-style guided prayer sessions from your prayer library
+                    </p>
+                  </div>
+                  <Button onClick={() => navigate('/create-guideline')}>
+                    <Plus className="sm:mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">Build Guideline</span>
+                    <span className="sm:hidden">New</span>
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">

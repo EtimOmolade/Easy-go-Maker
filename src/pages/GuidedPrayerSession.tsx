@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
+import { STORAGE_KEYS, getFromStorage, setToStorage, PrayerPoint } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -66,62 +66,47 @@ const GuidedPrayerSession = () => {
     const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
     const foundGuideline = guidelines.find((g: any) => g.id === id);
 
-    if (foundGuideline) {
-      // Create default steps structure
-      const steps: PrayerStep[] = [
-        {
-          id: 'kingdom-1',
-          type: 'kingdom',
-          title: 'Kingdom Prayer Point 1',
-          content: foundGuideline.kingdom_point_1 || 'Pray for the advancement of God\'s kingdom.',
-          duration: 180,
-          points: foundGuideline.kingdom_points || []
-        },
-        {
-          id: 'kingdom-2',
-          type: 'kingdom',
-          title: 'Kingdom Prayer Point 2',
-          content: foundGuideline.kingdom_point_2 || 'Pray for revival and spiritual awakening.',
-          duration: 180
-        },
-        {
-          id: 'kingdom-3',
-          type: 'kingdom',
-          title: 'Kingdom Prayer Point 3',
-          content: foundGuideline.kingdom_point_3 || 'Pray for unity among believers.',
-          duration: 180
-        },
-        {
-          id: 'kingdom-4',
-          type: 'kingdom',
-          title: 'Kingdom Prayer Point 4',
-          content: foundGuideline.kingdom_point_4 || 'Pray for missions and evangelism.',
-          duration: 180
-        },
-        {
-          id: 'personal',
-          type: 'personal',
-          title: 'Personal Supplication',
-          content: 'Bring your personal requests to God. Share what\'s on your heart.',
-          duration: 300
-        },
-        {
-          id: 'listening',
-          type: 'listening',
-          title: 'Listening Prayer - Bible Reading',
-          content: foundGuideline.scripture || 'Take a moment to meditate on God\'s Word.',
-          duration: 240
-        },
-        {
-          id: 'reflection',
-          type: 'reflection',
-          title: 'Reflection & Journaling',
-          content: 'Write down what you sense or learned during prayer.',
-          duration: 0
+    if (foundGuideline && foundGuideline.steps) {
+      // New structure with library-based steps
+      const prayerPoints = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
+      
+      const enrichedSteps = foundGuideline.steps.map((step: any) => {
+        const points = prayerPoints.filter(p => step.prayer_point_ids?.includes(p.id));
+        
+        let content = '';
+        let title = '';
+        
+        switch (step.type) {
+          case 'kingdom':
+            title = `Kingdom Focused Prayer`;
+            content = points.map(p => `${p.title}\n${p.content}`).join('\n\n');
+            break;
+          case 'personal':
+            title = 'Personal Supplication';
+            content = 'Bring your personal requests to God. Share what\'s on your heart.';
+            break;
+          case 'listening':
+            title = 'Listening Prayer - Bible Reading';
+            content = points.map(p => `${p.title}\n\n${p.content}`).join('\n\n---\n\n');
+            break;
+          case 'reflection':
+            title = 'Reflection & Journaling';
+            content = 'Write down what you sense or learned during prayer.';
+            break;
         }
-      ];
 
-      setGuideline({ ...foundGuideline, steps });
+        return {
+          id: step.id,
+          type: step.type,
+          title,
+          content,
+          duration: step.duration,
+          audioUrl: step.custom_audio_url,
+          points: points.map(p => p.title)
+        };
+      });
+
+      setGuideline({ ...foundGuideline, steps: enrichedSteps });
     }
     setLoading(false);
   };

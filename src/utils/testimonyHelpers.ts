@@ -162,6 +162,21 @@ const createAdminNotificationForResubmission = (testimony: any) => {
 // const createAnnouncementForNewTestimony was here but removed to prevent
 // premature announcements before admin approval
 
+export const createAnnouncementForGuideline = (guideline: any) => {
+  const announcements = getFromStorage(STORAGE_KEYS.ANNOUNCEMENTS, [] as any[]);
+  const newAnnouncement = {
+    id: `announcement-${Date.now()}`,
+    type: 'guideline',
+    title: '📖 New Prayer Guideline',
+    content: `${guideline.title}`,
+    link: `/guideline/${guideline.id}`,
+    created_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 48 hours
+  };
+  announcements.push(newAnnouncement);
+  setToStorage(STORAGE_KEYS.ANNOUNCEMENTS, announcements);
+};
+
 const createAnnouncementForTestimony = (testimony: any) => {
   const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, [] as any[]);
   const title = testimony?.title || 'Untitled';

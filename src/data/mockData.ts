@@ -72,11 +72,20 @@ export interface PrayerPoint {
 
 export interface PrayerStep {
   id: string;
-  title: string;
-  prayer_points: string[]; // IDs of prayer points from library
+  type: 'kingdom' | 'personal' | 'listening' | 'reflection';
+  prayer_point_ids: string[]; // IDs from prayer library
   duration: number; // in seconds
-  custom_audio?: string;
-  custom_instruction?: string;
+  custom_audio_url?: string;
+}
+
+export interface PrayerGuideline {
+  id: string;
+  title: string;
+  week_number: number;
+  day: string;
+  steps: PrayerStep[];
+  date_uploaded: string;
+  created_by?: string;
 }
 
 export interface MockGuideline {
@@ -299,16 +308,17 @@ export const STORAGE_KEYS = {
   PROFILES: 'prayerjournal_profiles',
   JOURNAL_ENTRIES: 'prayerjournal_entries',
   TESTIMONIES: 'prayerjournal_testimonies',
-  GUIDELINES: 'prayerjournal_guidelines',
+  GUIDELINES: 'prayerjourney_guidelines_v2',
   ENCOURAGEMENT: 'prayerjournal_encouragement',
   POPUP_SHOWN: 'prayerjournal_popup_shown',
   NOTIFICATIONS: 'prayerjournal_notifications',
   LAST_POPUP_DATE: 'prayerjournal_last_popup_date',
-  PRAYER_POINTS: 'prayerjournal_prayer_points',
+  PRAYER_POINTS: 'prayerjourney_prayer_points',
   USERS: 'prayerjournal_users',
   USER_PROGRESS: 'prayerjournal_user_progress',
   USER_ROLES: 'prayerjournal_user_roles',
   SHOWN_CELEBRATIONS: 'prayerjournal_shown_celebrations',
+  ANNOUNCEMENTS: 'prayerjourney_announcements',
 };
 
 // Milestone achievement system - Streak-based
