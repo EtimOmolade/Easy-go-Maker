@@ -66,11 +66,11 @@ const GuidedPrayerSession = () => {
     const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
     const foundGuideline = guidelines.find((g: any) => g.id === id);
 
-    if (foundGuideline && foundGuideline.steps && foundGuideline.steps.length > 0) {
+    if (foundGuideline && foundGuideline.steps) {
       // New structure with library-based steps
       const prayerPoints = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
       
-      const enrichedSteps = foundGuideline.steps.map((step: any, index: number) => {
+      const enrichedSteps = foundGuideline.steps.map((step: any) => {
         const points = prayerPoints.filter(p => step.prayer_point_ids?.includes(p.id));
         
         let content = '';
@@ -79,9 +79,7 @@ const GuidedPrayerSession = () => {
         switch (step.type) {
           case 'kingdom':
             title = `Kingdom Focused Prayer`;
-            content = points.length > 0 
-              ? points.map(p => `${p.title}\n${p.content}`).join('\n\n')
-              : 'Pray for kingdom purposes - the spread of the Gospel, church growth, and God\'s will on earth.';
+            content = points.map(p => `${p.title}\n${p.content}`).join('\n\n');
             break;
           case 'personal':
             title = 'Personal Supplication';
@@ -89,9 +87,7 @@ const GuidedPrayerSession = () => {
             break;
           case 'listening':
             title = 'Listening Prayer - Bible Reading';
-            content = points.length > 0
-              ? points.map(p => `${p.title}\n\n${p.content}`).join('\n\n---\n\n')
-              : 'Take time to listen to God. Meditate on His word and be still in His presence.';
+            content = points.map(p => `${p.title}\n\n${p.content}`).join('\n\n---\n\n');
             break;
           case 'reflection':
             title = 'Reflection & Journaling';

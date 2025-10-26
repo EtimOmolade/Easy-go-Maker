@@ -190,143 +190,104 @@ export const mockTestimonies: MockTestimony[] = [
 ];
 
 // Sample guidelines
-// Default Prayer Points for Library
-export const DEFAULT_PRAYER_POINTS: PrayerPoint[] = [
-  // Kingdom Focused
+export const mockGuidelines: MockGuideline[] = [
   {
-    id: 'kp1',
-    title: 'Global Missions & Evangelism',
-    content: 'Pray for missionaries around the world. Ask God to open doors for the Gospel in unreached nations and provide protection and provision for those serving on the front lines.',
-    category: 'Kingdom Focused',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'kp2',
-    title: 'Church Growth & Unity',
-    content: 'Pray for the growth of God\'s church. Ask for unity among believers, effective church leadership, and for the body of Christ to be a light in the community.',
-    category: 'Kingdom Focused',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'kp3',
-    title: 'Revival & Spiritual Awakening',
-    content: 'Pray for a spiritual awakening in your nation. Ask God to pour out His Spirit, bring conviction of sin, and draw hearts back to Him in repentance and faith.',
-    category: 'Kingdom Focused',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'kp4',
-    title: 'Persecuted Church',
-    content: 'Lift up believers facing persecution worldwide. Pray for their courage, protection, and that their testimony would strengthen faith and draw others to Christ.',
-    category: 'Kingdom Focused',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'kp5',
-    title: 'Kingdom Justice & Righteousness',
-    content: 'Pray for God\'s justice to prevail on earth. Ask Him to raise up leaders who honor Him, to break systems of oppression, and establish righteousness in communities.',
-    category: 'Kingdom Focused',
-    created_at: new Date().toISOString(),
-  },
-  // Listening Prayer
-  {
-    id: 'lp1',
-    title: 'Matthew 6:33',
-    content: '"But seek first His kingdom and His righteousness, and all these things will be given to you as well."\n\nMeditate on what it means to seek God\'s kingdom first in your daily life.',
-    category: 'Listening Prayer',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'lp2',
-    title: 'Psalm 46:10',
-    content: '"Be still, and know that I am God; I will be exalted among the nations, I will be exalted in the earth."\n\nTake a moment of stillness. Listen for God\'s voice in the quiet.',
-    category: 'Listening Prayer',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'lp3',
-    title: 'Isaiah 40:31',
-    content: '"But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint."\n\nReflect on God\'s promise to renew your strength as you wait on Him.',
-    category: 'Listening Prayer',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'lp4',
-    title: 'John 15:4-5',
-    content: '"Remain in me, as I also remain in you. No branch can bear fruit by itself; it must remain in the vine. Neither can you bear fruit unless you remain in me. I am the vine; you are the branches."\n\nConsider how you are abiding in Christ today.',
-    category: 'Listening Prayer',
-    created_at: new Date().toISOString(),
-  },
-];
+    id: '1',
+    title: 'Week of Faith and Trust',
+    week_number: 3,
+    day_of_week: 'Monday',
+    content: `Monday: Trust in the Lord
+Proverbs 3:5-6
+Pray for complete trust in God's plan for your life.
 
-// Sample new structured guidelines
-export const mockGuidelines: PrayerGuideline[] = [
-  {
-    id: 'guideline-1',
-    title: 'Week of Kingdom Focus',
-    week_number: 1,
-    day: 'Monday',
-    date_uploaded: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    steps: [
-      {
-        id: 'step-1',
-        type: 'kingdom',
-        prayer_point_ids: ['kp1', 'kp2', 'kp3', 'kp4'],
-        duration: 180, // 3 minutes per point = 12 minutes total
-      },
-      {
-        id: 'step-2',
-        type: 'personal',
-        prayer_point_ids: [],
-        duration: 300, // 5 minutes
-      },
-      {
-        id: 'step-3',
-        type: 'listening',
-        prayer_point_ids: ['lp1', 'lp2'],
-        duration: 180, // 3 minutes
-      },
-      {
-        id: 'step-4',
-        type: 'reflection',
-        prayer_point_ids: [],
-        duration: 0,
-      },
-    ],
+Tuesday: Faith Over Fear
+2 Timothy 1:7
+Ask God to replace your fears with faith and courage.
+
+Wednesday: Walking by Faith
+2 Corinthians 5:7
+Pray for guidance to walk by faith, not by sight.
+
+Thursday: Strengthening Faith
+Romans 10:17
+Thank God for His word that builds your faith.
+
+Friday: Faith in Action
+James 2:17
+Ask God to help you demonstrate your faith through actions.
+
+Saturday: Unwavering Faith
+Hebrews 11:1
+Pray for steadfast faith in God's promises.
+
+Sunday: Rest and Reflection
+Reflect on how God has strengthened your faith this week.`,
+    date_uploaded: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: []
   },
   {
-    id: 'guideline-2',
-    title: 'Week of Kingdom Focus',
-    week_number: 1,
-    day: 'Tuesday',
-    date_uploaded: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    steps: [
-      {
-        id: 'step-1',
-        type: 'kingdom',
-        prayer_point_ids: ['kp2', 'kp5', 'kp3'],
-        duration: 180,
-      },
-      {
-        id: 'step-2',
-        type: 'personal',
-        prayer_point_ids: [],
-        duration: 300,
-      },
-      {
-        id: 'step-3',
-        type: 'listening',
-        prayer_point_ids: ['lp3', 'lp4'],
-        duration: 180,
-      },
-      {
-        id: 'step-4',
-        type: 'reflection',
-        prayer_point_ids: [],
-        duration: 0,
-      },
-    ],
+    id: '2',
+    title: 'Week of Gratitude',
+    week_number: 2,
+    day_of_week: 'Monday',
+    content: `Monday: Thankful Heart
+Psalm 100:4
+Begin the week with thanksgiving for God's blessings.
+
+Tuesday: Count Your Blessings
+1 Thessalonians 5:18
+List and pray over all the ways God has blessed you.
+
+Wednesday: Grateful in Trials
+James 1:2-4
+Thank God for growth through challenges.
+
+Thursday: Worship Through Thanks
+Psalm 95:2
+Worship God with a grateful heart today.
+
+Friday: Sharing Gratitude
+Colossians 3:17
+Thank God and share your gratitude with others.
+
+Saturday: Grateful Living
+Ephesians 5:20
+Live today with constant awareness of God's goodness.
+
+Sunday: Reflection on Blessings
+Meditate on God's faithfulness in your life.`,
+    date_uploaded: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: []
   },
+  {
+    id: '3',
+    title: 'Week of Prayer for Others',
+    week_number: 1,
+    day_of_week: 'Monday',
+    content: `Monday: Family Members
+Pray for each family member by name and their specific needs.
+
+Tuesday: Friends and Community
+Lift up friends and community members in prayer.
+
+Wednesday: Church Leaders
+Pray for wisdom and strength for church leaders.
+
+Thursday: Those in Authority
+1 Timothy 2:1-2
+Pray for government leaders and those in authority.
+
+Friday: The Sick and Suffering
+Pray for healing and comfort for those who are ill.
+
+Saturday: Lost and Unsaved
+Pray for the salvation of those who don't know Christ.
+
+Sunday: World Missions
+Pray for missionaries and the spread of the Gospel worldwide.`,
+    date_uploaded: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
+    steps: []
+  }
 ];
 
 // Sample encouragement messages
@@ -572,14 +533,8 @@ export const initializeMockData = () => {
   if (!localStorage.getItem(STORAGE_KEYS.TESTIMONIES)) {
     localStorage.setItem(STORAGE_KEYS.TESTIMONIES, JSON.stringify(mockTestimonies));
   }
-  // Clear old guidelines and set new structured ones
-  localStorage.removeItem('prayerjournal_guidelines'); // Remove old storage key
   if (!localStorage.getItem(STORAGE_KEYS.GUIDELINES)) {
     localStorage.setItem(STORAGE_KEYS.GUIDELINES, JSON.stringify(mockGuidelines));
-  }
-  // Initialize prayer points library
-  if (!localStorage.getItem(STORAGE_KEYS.PRAYER_POINTS)) {
-    localStorage.setItem(STORAGE_KEYS.PRAYER_POINTS, JSON.stringify(DEFAULT_PRAYER_POINTS));
   }
   if (!localStorage.getItem(STORAGE_KEYS.ENCOURAGEMENT)) {
     localStorage.setItem(STORAGE_KEYS.ENCOURAGEMENT, JSON.stringify(mockEncouragementMessages));
