@@ -20,6 +20,9 @@ const GuidelineDetails = () => {
   const [loading, setLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
   const [accessStatus, setAccessStatus] = useState<'locked' | 'current' | 'past'>('current');
+  
+  const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const currentDay = DAYS[new Date().getDay()];
 
   useEffect(() => {
     if (id && user) {
@@ -44,17 +47,33 @@ const GuidelineDetails = () => {
     
     if (!foundGuideline) return;
 
-    // Get current date info
+    // Date-aware access control
     const now = new Date();
-    const currentWeek = Math.ceil((now.getDate()) / 7); // Simple week calculation
+    const currentWeek = Math.ceil((now.getDate()) / 7);
     const guidelineWeek = foundGuideline.week_number;
+    const guidelineDay = foundGuideline.day_of_week || foundGuideline.day;
 
+    // Check if week is in the future
     if (guidelineWeek > currentWeek) {
       setAccessStatus('locked');
-    } else if (guidelineWeek < currentWeek) {
+      return;
+    }
+    
+    // Check if week is in the past
+    if (guidelineWeek < currentWeek) {
       setAccessStatus('past');
-    } else {
+      return;
+    }
+    
+    // Same week - check day
+    if (guidelineDay === currentDay) {
       setAccessStatus('current');
+    } else if (DAYS.indexOf(guidelineDay) > DAYS.indexOf(currentDay)) {
+      // Future day in current week
+      setAccessStatus('locked');
+    } else {
+      // Past day in current week
+      setAccessStatus('past');
     }
   };
 
@@ -80,7 +99,11 @@ const GuidelineDetails = () => {
 
   const handleStartGuidedSession = () => {
     if (accessStatus === 'locked') {
-      toast.error("This prayer guideline will unlock on its scheduled week");
+      toast.error("This prayer will unlock on its scheduled day");
+      return;
+    }
+    if (isCompleted) {
+      toast.info("You've already completed this prayer session");
       return;
     }
     navigate(`/guided-session/${id}`);
@@ -107,31 +130,31 @@ const GuidelineDetails = () => {
 
   return (
     <div className="min-h-screen gradient-subtle">
-      <div className="max-w-4xl mx-auto p-4 md:p-8">
+      <div className="max-w-4xl mx-auto p-4 md:p-6 lg:p-8">
         <Button
           variant="ghost"
-          className="mb-6"
+          className="mb-4 md:mb-6"
           onClick={() => navigate('/guidelines')}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Guidelines
         </Button>
 
-        <Card className="shadow-medium mb-6">
-          <CardHeader>
-            <Badge variant="secondary" className="mb-2 w-fit">
+        <Card className="shadow-medium mb-4 md:mb-6">
+          <CardHeader className="p-4 md:p-6">
+            <Badge variant="secondary" className="mb-2 w-fit text-xs">
               Week {guideline.week_number}
             </Badge>
-            <CardTitle className="text-2xl md:text-3xl">{guideline.title}</CardTitle>
-            <p className="text-muted-foreground mt-2">
+            <CardTitle className="text-xl md:text-2xl lg:text-3xl">{guideline.title}</CardTitle>
+            <p className="text-sm md:text-base text-muted-foreground mt-2">
               Track your daily prayer progress throughout the week
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6">
             <div className="mb-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium">Weekly Progress</span>
-                <span className="text-sm text-muted-foreground">{completedCount}/{DAYS.length} days</span>
+                <span className="text-xs md:text-sm font-medium">Weekly Progress</span>
+                <span className="text-xs md:text-sm text-muted-foreground">{completedCount}/{DAYS.length} days</span>
               </div>
               <div className="w-full bg-accent/20 rounded-full h-2">
                 <div 
@@ -141,14 +164,14 @@ const GuidelineDetails = () => {
               </div>
             </div>
             
-            {isCompleted && accessStatus === 'current' ? (
+            {isCompleted ? (
               <div className="space-y-3">
                 <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg text-center">
                   <p className="text-sm font-medium text-primary">
                     ✓ You've already completed this prayer session
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    You can revisit your reflection in your Journal
+                    You can revisit your reflections in your Journal
                   </p>
                 </div>
                 <Button 
@@ -162,7 +185,10 @@ const GuidelineDetails = () => {
             ) : accessStatus === 'locked' ? (
               <div className="p-4 bg-muted/50 border border-border rounded-lg text-center">
                 <p className="text-sm font-medium text-muted-foreground">
-                  🔒 You'll unlock this prayer on its scheduled week
+                  🔒 This prayer will unlock on its scheduled day
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {guideline.day_of_week || guideline.day} - Week {guideline.week_number}
                 </p>
               </div>
             ) : (
@@ -170,12 +196,11 @@ const GuidelineDetails = () => {
                 <Button 
                   onClick={handleStartGuidedSession} 
                   className="w-full"
-                  disabled={isCompleted && accessStatus === 'current'}
                 >
                   <Calendar className="mr-2 h-4 w-4" />
                   Start Guided Prayer Session
                 </Button>
-                {accessStatus === 'past' && (
+                {accessStatus === 'past' && !isCompleted && (
                   <p className="text-xs text-muted-foreground text-center mt-2">
                     This is a past prayer. Completing it won't count toward your daily streak.
                   </p>
@@ -186,32 +211,32 @@ const GuidelineDetails = () => {
         </Card>
 
         <Card className="shadow-medium">
-          <CardHeader>
-            <CardTitle>Daily Prayer Tracker</CardTitle>
-            <p className="text-sm text-muted-foreground">
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="text-lg md:text-xl">Daily Prayer Tracker</CardTitle>
+            <p className="text-xs md:text-sm text-muted-foreground">
               Complete each day's guided prayer to mark it as done
             </p>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <CardContent className="p-4 md:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
               {dailyPrayers.map((prayer) => (
                 <div
                   key={prayer.day}
-                  className={`flex items-center justify-between p-4 rounded-lg border-2 ${
+                  className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 ${
                     prayer.completed
                       ? 'bg-primary/10 border-primary'
                       : 'bg-card border-border'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className={`w-5 h-5 md:w-6 md:h-6 rounded-full border-2 flex items-center justify-center ${
                       prayer.completed
                         ? 'bg-primary border-primary'
                         : 'border-border'
                     }`}>
-                      {prayer.completed && <Check className="h-4 w-4 text-primary-foreground" />}
+                      {prayer.completed && <Check className="h-3 w-3 md:h-4 md:w-4 text-primary-foreground" />}
                     </div>
-                    <span className="font-medium">{prayer.day}</span>
+                    <span className="font-medium text-sm md:text-base">{prayer.day}</span>
                   </div>
                   {prayer.completedAt && (
                     <span className="text-xs text-muted-foreground">

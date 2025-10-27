@@ -153,15 +153,21 @@ const GuidedPrayerSession = () => {
     if (!user || !guideline) return;
 
     try {
-      // Determine if this is current day prayer
+      // Determine if this is current day prayer (date-aware)
       const now = new Date();
       const currentWeek = Math.ceil((now.getDate()) / 7);
+      const guidelineDay = guideline.day_of_week || guideline.day;
+      const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const currentDay = DAYS[now.getDay()];
+      
       const isCurrentWeek = guideline.week_number === currentWeek;
+      const isCurrentDay = guidelineDay === currentDay;
+      const isCurrentPrayer = isCurrentWeek && isCurrentDay;
       
       let newStreak = 0;
       
-      // Only update streak for current week prayers
-      if (isCurrentWeek) {
+      // Only update streak for current day prayers
+      if (isCurrentPrayer) {
         const { markPrayerCompleted } = await import('@/utils/prayerHelpers');
         const result = markPrayerCompleted(user.id);
         newStreak = result.newStreak;
@@ -198,13 +204,17 @@ const GuidedPrayerSession = () => {
         setToStorage(STORAGE_KEYS.COMPLETED_GUIDELINES, completedGuidelines);
       }
 
-      // Create journal entry
+      // Create journal entry with appropriate message
       const allEntries = getFromStorage(STORAGE_KEYS.JOURNAL_ENTRIES, [] as any[]);
+      const journalContent = isCurrentPrayer 
+        ? 'Completed prayer session (edit journal to add reflections)'
+        : 'Completed guided prayer session (Past prayer - edit to add reflections)';
+        
       const newEntry = {
         id: `prayer-${Date.now()}`,
         user_id: user.id,
-        title: `${guideline.title} - ${currentDay}`,
-        content: `Completed guided prayer session${isCurrentWeek ? '' : ' (Past prayer - not counted toward streak)'}`,
+        title: `${guideline.title}`,
+        content: journalContent,
         date: new Date().toISOString().split('T')[0],
         created_at: new Date().toISOString(),
         is_answered: false,
@@ -217,7 +227,7 @@ const GuidedPrayerSession = () => {
         playVoicePrompt(VOICE_PROMPTS.SESSION_COMPLETE);
       }
 
-      const message = isCurrentWeek 
+      const message = isCurrentPrayer 
         ? `🎉 Prayer session complete! ${newStreak}-day streak!`
         : '🎉 Prayer session complete! Saved to your journal.';
       
@@ -296,14 +306,15 @@ const GuidedPrayerSession = () => {
 
   return (
     <div className="min-h-screen gradient-subtle">
-      <div className="max-w-4xl mx-auto p-4 md:p-8">
-        <div className="flex items-center justify-between mb-6">
+      <div className="max-w-4xl mx-auto p-3 md:p-6 lg:p-8">
+        <div className="flex items-center justify-between mb-4 md:mb-6">
           <Button
             variant="ghost"
+            size="sm"
             onClick={() => navigate(`/guideline/${id}`)}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            <span className="hidden md:inline">Back</span>
+            <span className="hidden sm:inline">Back</span>
           </Button>
 
           <div className="flex gap-2">
@@ -324,16 +335,16 @@ const GuidedPrayerSession = () => {
           </div>
         </div>
 
-        <Card className="shadow-medium mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between mb-4">
-              <Badge variant="secondary">{currentDay}</Badge>
-              <span className="text-sm text-muted-foreground">
+        <Card className="shadow-medium mb-4 md:mb-6">
+          <CardHeader className="p-4 md:p-6">
+            <div className="flex items-center justify-between mb-3 md:mb-4">
+              <Badge variant="secondary" className="text-xs">{currentDay}</Badge>
+              <span className="text-xs md:text-sm text-muted-foreground">
                 Step {currentStepIndex + 1} of {guideline.steps.length}
               </span>
             </div>
-            <CardTitle className="text-2xl">{guideline.title}</CardTitle>
-            <Progress value={progress} className="h-2 mt-4" />
+            <CardTitle className="text-lg md:text-xl lg:text-2xl">{guideline.title}</CardTitle>
+            <Progress value={progress} className="h-2 mt-3 md:mt-4" />
           </CardHeader>
         </Card>
 
@@ -488,7 +499,7 @@ const GuidedPrayerSession = () => {
 
               {currentStep.type === 'reflection' && (
                 <>
-                  <div className="p-6 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg border border-primary/20">
+                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
                     <h4 className="font-semibold text-lg mb-3">Reflection & Journaling</h4>
                     <p className="text-foreground/90 leading-relaxed">
                       Take time to reflect on what you've prayed and what God has spoken to you. Write down your thoughts, insights, and what you sense God is saying.

@@ -130,12 +130,13 @@ const CreateGuideline = () => {
 
       // Create announcement notification for new guideline
       const { createNotification } = await import('@/data/mockData');
+      const weekInfo = `Week ${weekNumber}${title ? ': ' + title : ''}`;
       createNotification(
         'guideline',
         '🕊️ New Prayer Guideline Available!',
-        `"${title}" is now ready for Week ${weekNumber}. Start your prayer journey today!`,
+        `${weekInfo} is now ready. Start your prayer journey today!`,
         undefined, // undefined userId means for all users
-        undefined,
+        guideline.id,
         '🕊️'
       );
 

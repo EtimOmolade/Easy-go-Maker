@@ -77,6 +77,26 @@ const Guidelines = () => {
     });
   });
 
+  // Get current date info for access control
+  const now = new Date();
+  const currentWeek = Math.ceil((now.getDate()) / 7);
+  const currentDayName = dayOrder[now.getDay()];
+  
+  // Function to check if a guideline is accessible
+  const getAccessStatus = (guideline: any): 'locked' | 'current' | 'past' => {
+    const guidelineWeek = guideline.week_number;
+    const guidelineDay = guideline.day_of_week || guideline.day;
+    
+    // Check week status
+    if (guidelineWeek > currentWeek) return 'locked';
+    if (guidelineWeek < currentWeek) return 'past';
+    
+    // Same week - check day
+    if (guidelineDay === currentDayName) return 'current';
+    if (dayOrder.indexOf(guidelineDay) > dayOrder.indexOf(currentDayName)) return 'locked';
+    return 'past';
+  };
+
   return (
     <TooltipProvider>
       <div className="min-h-screen gradient-subtle">
@@ -141,50 +161,62 @@ const Guidelines = () => {
                   {isExpanded && (
                     <CardContent className="border-t pt-4">
                       <div className="space-y-3">
-                        {weekGuidelines.map((guideline: any) => (
-                          <Card key={guideline.id} className="shadow-sm">
-                            <CardContent className="p-4">
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <Badge variant="outline" className="text-xs">
-                                      {guideline.day_of_week}
-                                    </Badge>
-                                    <h4 className="font-medium text-sm">
-                                      {guideline.title?.replace(`Week ${weekNum} - ${guideline.day_of_week}: `, '') || guideline.day_of_week}
-                                    </h4>
+                        {weekGuidelines.map((guideline: any) => {
+                          const accessStatus = getAccessStatus(guideline);
+                          const isLocked = accessStatus === 'locked';
+                          
+                          return (
+                            <Card key={guideline.id} className="shadow-sm">
+                              <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <Badge variant="outline" className="text-xs">
+                                        {guideline.day_of_week}
+                                      </Badge>
+                                      <h4 className="font-medium text-sm">
+                                        {guideline.title?.replace(`Week ${weekNum} - ${guideline.day_of_week}: `, '') || guideline.day_of_week}
+                                      </h4>
+                                      {isLocked && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          🔒 Locked
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                      {guideline.steps?.length || 0} steps
+                                    </p>
                                   </div>
-                                  <p className="text-xs text-muted-foreground">
-                                    {guideline.steps?.length || 0} steps
-                                  </p>
+                                  <div className="flex gap-2">
+                                    {!isLocked && (
+                                      <Button 
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigate(`/guided-session/${guideline.id}`);
+                                        }}
+                                      >
+                                        <span className="md:hidden">Start</span>
+                                        <span className="hidden md:inline">Start Prayer</span>
+                                      </Button>
+                                    )}
+                                    <Button 
+                                      size="sm"
+                                      variant="outline" 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/guideline/${guideline.id}`);
+                                      }}
+                                    >
+                                      <BookMarked className="h-4 w-4 md:mr-2" />
+                                      <span className="hidden md:inline">Tracker</span>
+                                    </Button>
+                                  </div>
                                 </div>
-                                <div className="flex gap-2">
-                                  <Button 
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigate(`/guided-session/${guideline.id}`);
-                                    }}
-                                  >
-                                    <span className="md:hidden">Start</span>
-                                    <span className="hidden md:inline">Start Prayer</span>
-                                  </Button>
-                                  <Button 
-                                    size="sm"
-                                    variant="outline" 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigate(`/guideline/${guideline.id}`);
-                                    }}
-                                  >
-                                    <BookMarked className="h-4 w-4 md:mr-2" />
-                                    <span className="hidden md:inline">Tracker</span>
-                                  </Button>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
                       </div>
                     </CardContent>
                   )}
