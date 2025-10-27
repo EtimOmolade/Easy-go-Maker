@@ -316,10 +316,10 @@ export const mockPrayerPoints: PrayerPoint[] = [
 
 // Sample guidelines with new structure
 export const mockGuidelines: MockGuideline[] = [
-  // WEEK 1
+  // ==================== WEEK 1 ====================
   {
-    id: '1',
-    title: 'Week 1 - Day 1: Foundation of Seeking',
+    id: 'w1-mon',
+    title: 'Week 1 - Monday: Foundation of Seeking',
     week_number: 1,
     day_of_week: 'Monday',
     content: '',
@@ -342,21 +342,18 @@ export const mockGuidelines: MockGuideline[] = [
         type: 'listening',
         prayer_point_ids: ['lp-1', 'lp-2'],
         duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
       }
-    ],
-    dailyPrayers: [
-      { day: 'Monday', completed: false },
-      { day: 'Tuesday', completed: false },
-      { day: 'Wednesday', completed: false },
-      { day: 'Thursday', completed: false },
-      { day: 'Friday', completed: false },
-      { day: 'Saturday', completed: false },
-      { day: 'Sunday', completed: false }
     ]
   },
   {
-    id: '2',
-    title: 'Week 1 - Day 2: Unity in Prayer',
+    id: 'w1-tue',
+    title: 'Week 1 - Tuesday: Unity in Prayer',
     week_number: 1,
     day_of_week: 'Tuesday',
     content: '',
@@ -379,21 +376,18 @@ export const mockGuidelines: MockGuideline[] = [
         type: 'listening',
         prayer_point_ids: ['lp-3', 'lp-4'],
         duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
       }
-    ],
-    dailyPrayers: [
-      { day: 'Monday', completed: false },
-      { day: 'Tuesday', completed: false },
-      { day: 'Wednesday', completed: false },
-      { day: 'Thursday', completed: false },
-      { day: 'Friday', completed: false },
-      { day: 'Saturday', completed: false },
-      { day: 'Sunday', completed: false }
     ]
   },
   {
-    id: '3',
-    title: 'Week 1 - Day 3: Revival Fire',
+    id: 'w1-wed',
+    title: 'Week 1 - Wednesday: Revival Fire',
     week_number: 1,
     day_of_week: 'Wednesday',
     content: '',
@@ -416,21 +410,18 @@ export const mockGuidelines: MockGuideline[] = [
         type: 'listening',
         prayer_point_ids: ['lp-5', 'lp-6'],
         duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
       }
-    ],
-    dailyPrayers: [
-      { day: 'Monday', completed: false },
-      { day: 'Tuesday', completed: false },
-      { day: 'Wednesday', completed: false },
-      { day: 'Thursday', completed: false },
-      { day: 'Friday', completed: false },
-      { day: 'Saturday', completed: false },
-      { day: 'Sunday', completed: false }
     ]
   },
   {
-    id: '4',
-    title: 'Week 1 - Day 4: Kingdom Resources',
+    id: 'w1-thu',
+    title: 'Week 1 - Thursday: Kingdom Resources',
     week_number: 1,
     day_of_week: 'Thursday',
     content: '',
@@ -453,21 +444,18 @@ export const mockGuidelines: MockGuideline[] = [
         type: 'listening',
         prayer_point_ids: ['lp-7', 'lp-1'],
         duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
       }
-    ],
-    dailyPrayers: [
-      { day: 'Monday', completed: false },
-      { day: 'Tuesday', completed: false },
-      { day: 'Wednesday', completed: false },
-      { day: 'Thursday', completed: false },
-      { day: 'Friday', completed: false },
-      { day: 'Saturday', completed: false },
-      { day: 'Sunday', completed: false }
     ]
   },
   {
-    id: '5',
-    title: 'Week 1 - Day 5: Leadership Prayer',
+    id: 'w1-fri',
+    title: 'Week 1 - Friday: Leadership & Authority',
     week_number: 1,
     day_of_week: 'Friday',
     content: '',
@@ -490,16 +478,561 @@ export const mockGuidelines: MockGuideline[] = [
         type: 'listening',
         prayer_point_ids: ['lp-2', 'lp-3'],
         duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
       }
-    ],
-    dailyPrayers: [
-      { day: 'Monday', completed: false },
-      { day: 'Tuesday', completed: false },
-      { day: 'Wednesday', completed: false },
-      { day: 'Thursday', completed: false },
-      { day: 'Friday', completed: false },
-      { day: 'Saturday', completed: false },
-      { day: 'Sunday', completed: false }
+    ]
+  },
+  {
+    id: 'w1-sat',
+    title: 'Week 1 - Saturday: Persecution & Breakthrough',
+    week_number: 1,
+    day_of_week: 'Saturday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-6', 'kf-10', 'kf-8', 'kf-3'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-4', 'lp-5'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
+    ]
+  },
+  {
+    id: 'w1-sun',
+    title: 'Week 1 - Sunday: Multiplication & Harvest',
+    week_number: 1,
+    day_of_week: 'Sunday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-7', 'kf-9', 'kf-1', 'kf-4'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-6', 'lp-7'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
+    ]
+  },
+
+  // ==================== WEEK 2 ====================
+  {
+    id: 'w2-mon',
+    title: 'Week 2 - Monday: Global Vision',
+    week_number: 2,
+    day_of_week: 'Monday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-1', 'kf-10', 'kf-7', 'kf-8'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-1', 'lp-7'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
+    ]
+  },
+  {
+    id: 'w2-tue',
+    title: 'Week 2 - Tuesday: Strength & Renewal',
+    week_number: 2,
+    day_of_week: 'Tuesday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-3', 'kf-4', 'kf-9', 'kf-2'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-2', 'lp-6'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
+    ]
+  },
+  {
+    id: 'w2-wed',
+    title: 'Week 2 - Wednesday: Peace & Surrender',
+    week_number: 2,
+    day_of_week: 'Wednesday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-2', 'kf-6', 'kf-5', 'kf-1'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-3', 'lp-4'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
+    ]
+  },
+  {
+    id: 'w2-thu',
+    title: 'Week 2 - Thursday: Hope & Future',
+    week_number: 2,
+    day_of_week: 'Thursday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-4', 'kf-7', 'kf-9', 'kf-10'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-5', 'lp-1'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
+    ]
+  },
+  {
+    id: 'w2-fri',
+    title: 'Week 2 - Friday: All Things Together',
+    week_number: 2,
+    day_of_week: 'Friday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-8', 'kf-3', 'kf-2', 'kf-6'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-6', 'lp-2'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
+    ]
+  },
+  {
+    id: 'w2-sat',
+    title: 'Week 2 - Saturday: Abiding in Christ',
+    week_number: 2,
+    day_of_week: 'Saturday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-1', 'kf-9', 'kf-7', 'kf-4'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-7', 'lp-3'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
+    ]
+  },
+  {
+    id: 'w2-sun',
+    title: 'Week 2 - Sunday: Kingdom Priorities',
+    week_number: 2,
+    day_of_week: 'Sunday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-5', 'kf-10', 'kf-8', 'kf-3'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-1', 'lp-4'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
+    ]
+  },
+
+  // ==================== WEEK 3 ====================
+  {
+    id: 'w3-mon',
+    title: 'Week 3 - Monday: Revival & Awakening',
+    week_number: 3,
+    day_of_week: 'Monday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-3', 'kf-8', 'kf-7', 'kf-1'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-1', 'lp-5'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
+    ]
+  },
+  {
+    id: 'w3-tue',
+    title: 'Week 3 - Tuesday: Unity & Love',
+    week_number: 3,
+    day_of_week: 'Tuesday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-2', 'kf-5', 'kf-6', 'kf-9'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-2', 'lp-7'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
+    ]
+  },
+  {
+    id: 'w3-wed',
+    title: 'Week 3 - Wednesday: Provision & Blessing',
+    week_number: 3,
+    day_of_week: 'Wednesday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-4', 'kf-9', 'kf-1', 'kf-10'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-3', 'lp-6'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
+    ]
+  },
+  {
+    id: 'w3-thu',
+    title: 'Week 3 - Thursday: Stillness & Presence',
+    week_number: 3,
+    day_of_week: 'Thursday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-6', 'kf-2', 'kf-8', 'kf-3'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-4', 'lp-1'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
+    ]
+  },
+  {
+    id: 'w3-fri',
+    title: 'Week 3 - Friday: Laborers & Harvest',
+    week_number: 3,
+    day_of_week: 'Friday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-7', 'kf-1', 'kf-9', 'kf-4'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-5', 'lp-2'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
+    ]
+  },
+  {
+    id: 'w3-sat',
+    title: 'Week 3 - Saturday: Breakthrough & Open Doors',
+    week_number: 3,
+    day_of_week: 'Saturday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-10', 'kf-6', 'kf-8', 'kf-5'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-6', 'lp-3'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
+    ]
+  },
+  {
+    id: 'w3-sun',
+    title: 'Week 3 - Sunday: Fruitfulness & Impact',
+    week_number: 3,
+    day_of_week: 'Sunday',
+    content: '',
+    date_uploaded: new Date().toISOString(),
+    steps: [
+      {
+        id: 'step-1',
+        type: 'kingdom',
+        prayer_point_ids: ['kf-9', 'kf-7', 'kf-2', 'kf-3'],
+        duration: 180
+      },
+      {
+        id: 'step-2',
+        type: 'personal',
+        prayer_point_ids: [],
+        duration: 300
+      },
+      {
+        id: 'step-3',
+        type: 'listening',
+        prayer_point_ids: ['lp-7', 'lp-4'],
+        duration: 240
+      },
+      {
+        id: 'step-4',
+        type: 'reflection',
+        prayer_point_ids: [],
+        duration: 0
+      }
     ]
   },
 
