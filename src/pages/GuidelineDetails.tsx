@@ -18,12 +18,45 @@ const GuidelineDetails = () => {
   const [guideline, setGuideline] = useState<any>(null);
   const [dailyPrayers, setDailyPrayers] = useState<DailyPrayer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [accessStatus, setAccessStatus] = useState<'locked' | 'current' | 'past'>('current');
 
   useEffect(() => {
     if (id && user) {
       fetchGuideline();
+      checkCompletion();
+      checkAccessStatus();
     }
   }, [id, user]);
+
+  const checkCompletion = () => {
+    if (!id || !user) return;
+    const completedGuidelines = getFromStorage(STORAGE_KEYS.COMPLETED_GUIDELINES, {} as any);
+    const userCompleted = completedGuidelines[user.id] || [];
+    setIsCompleted(userCompleted.includes(id));
+  };
+
+  const checkAccessStatus = () => {
+    if (!id) return;
+    
+    const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
+    const foundGuideline = guidelines.find((g: any) => g.id === id);
+    
+    if (!foundGuideline) return;
+
+    // Get current date info
+    const now = new Date();
+    const currentWeek = Math.ceil((now.getDate()) / 7); // Simple week calculation
+    const guidelineWeek = foundGuideline.week_number;
+
+    if (guidelineWeek > currentWeek) {
+      setAccessStatus('locked');
+    } else if (guidelineWeek < currentWeek) {
+      setAccessStatus('past');
+    } else {
+      setAccessStatus('current');
+    }
+  };
 
   const fetchGuideline = async () => {
     if (!id) return;
@@ -46,6 +79,10 @@ const GuidelineDetails = () => {
 
 
   const handleStartGuidedSession = () => {
+    if (accessStatus === 'locked') {
+      toast.error("This prayer guideline will unlock on its scheduled week");
+      return;
+    }
     navigate(`/guided-session/${id}`);
   };
 
@@ -104,13 +141,47 @@ const GuidelineDetails = () => {
               </div>
             </div>
             
-            <Button 
-              onClick={handleStartGuidedSession} 
-              className="w-full"
-            >
-              <Calendar className="mr-2 h-4 w-4" />
-              Start Guided Prayer Session
-            </Button>
+            {isCompleted && accessStatus === 'current' ? (
+              <div className="space-y-3">
+                <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg text-center">
+                  <p className="text-sm font-medium text-primary">
+                    ✓ You've already completed this prayer session
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    You can revisit your reflection in your Journal
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => navigate('/journal')} 
+                  variant="outline"
+                  className="w-full"
+                >
+                  View Journal
+                </Button>
+              </div>
+            ) : accessStatus === 'locked' ? (
+              <div className="p-4 bg-muted/50 border border-border rounded-lg text-center">
+                <p className="text-sm font-medium text-muted-foreground">
+                  🔒 You'll unlock this prayer on its scheduled week
+                </p>
+              </div>
+            ) : (
+              <>
+                <Button 
+                  onClick={handleStartGuidedSession} 
+                  className="w-full"
+                  disabled={isCompleted && accessStatus === 'current'}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Start Guided Prayer Session
+                </Button>
+                {accessStatus === 'past' && (
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    This is a past prayer. Completing it won't count toward your daily streak.
+                  </p>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
 

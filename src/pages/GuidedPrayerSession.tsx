@@ -153,40 +153,61 @@ const GuidedPrayerSession = () => {
     if (!user || !guideline) return;
 
     try {
-      const { markPrayerCompleted } = await import('@/utils/prayerHelpers');
-      const { newStreak } = markPrayerCompleted(user.id);
+      // Determine if this is current day prayer
+      const now = new Date();
+      const currentWeek = Math.ceil((now.getDate()) / 7);
+      const isCurrentWeek = guideline.week_number === currentWeek;
+      
+      let newStreak = 0;
+      
+      // Only update streak for current week prayers
+      if (isCurrentWeek) {
+        const { markPrayerCompleted } = await import('@/utils/prayerHelpers');
+        const result = markPrayerCompleted(user.id);
+        newStreak = result.newStreak;
 
-      // Update the guideline's daily tracker for current day
-      const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
-      const updatedGuidelines = guidelines.map((g: any) => {
-        if (g.id === guideline.id) {
-          const dailyPrayers = g.dailyPrayers || DAYS.map((day: string) => ({
-            day,
-            completed: false
-          }));
-          
-          const updatedDailyPrayers = dailyPrayers.map((p: any) => 
-            p.day === currentDay 
-              ? { ...p, completed: true, completedAt: new Date().toISOString() }
-              : p
-          );
-          
-          return { ...g, dailyPrayers: updatedDailyPrayers };
-        }
-        return g;
-      });
-      setToStorage(STORAGE_KEYS.GUIDELINES, updatedGuidelines);
+        // Update the guideline's daily tracker for current day
+        const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
+        const updatedGuidelines = guidelines.map((g: any) => {
+          if (g.id === guideline.id) {
+            const dailyPrayers = g.dailyPrayers || DAYS.map((day: string) => ({
+              day,
+              completed: false
+            }));
+            
+            const updatedDailyPrayers = dailyPrayers.map((p: any) => 
+              p.day === currentDay 
+                ? { ...p, completed: true, completedAt: new Date().toISOString() }
+                : p
+            );
+            
+            return { ...g, dailyPrayers: updatedDailyPrayers };
+          }
+          return g;
+        });
+        setToStorage(STORAGE_KEYS.GUIDELINES, updatedGuidelines);
+      }
+
+      // Mark guideline as completed (prevents re-completion)
+      const completedGuidelines = getFromStorage(STORAGE_KEYS.COMPLETED_GUIDELINES, {} as any);
+      if (!completedGuidelines[user.id]) {
+        completedGuidelines[user.id] = [];
+      }
+      if (!completedGuidelines[user.id].includes(guideline.id)) {
+        completedGuidelines[user.id].push(guideline.id);
+        setToStorage(STORAGE_KEYS.COMPLETED_GUIDELINES, completedGuidelines);
+      }
 
       // Create journal entry
       const allEntries = getFromStorage(STORAGE_KEYS.JOURNAL_ENTRIES, [] as any[]);
       const newEntry = {
         id: `prayer-${Date.now()}`,
         user_id: user.id,
-        title: `[PRAYER_TRACK] ${guideline.id} - ${currentDay}`,
-        content: `Completed guided prayer session for ${guideline.title} - ${currentDay}`,
+        title: `${guideline.title} - ${currentDay}`,
+        content: `Completed guided prayer session${isCurrentWeek ? '' : ' (Past prayer - not counted toward streak)'}`,
         date: new Date().toISOString().split('T')[0],
         created_at: new Date().toISOString(),
-        is_answered: true,
+        is_answered: false,
         is_shared: false
       };
       allEntries.push(newEntry);
@@ -196,7 +217,11 @@ const GuidedPrayerSession = () => {
         playVoicePrompt(VOICE_PROMPTS.SESSION_COMPLETE);
       }
 
-      toast.success(`🎉 Prayer session complete! ${newStreak}-day streak!`);
+      const message = isCurrentWeek 
+        ? `🎉 Prayer session complete! ${newStreak}-day streak!`
+        : '🎉 Prayer session complete! Saved to your journal.';
+      
+      toast.success(message);
       
       setTimeout(() => {
         navigate('/journal');
@@ -463,22 +488,19 @@ const GuidedPrayerSession = () => {
 
               {currentStep.type === 'reflection' && (
                 <>
-                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
-                    <p className="text-foreground/90">
+                  <div className="p-6 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg border border-primary/20">
+                    <h4 className="font-semibold text-lg mb-3">Reflection & Journaling</h4>
+                    <p className="text-foreground/90 leading-relaxed">
                       Take time to reflect on what you've prayed and what God has spoken to you. Write down your thoughts, insights, and what you sense God is saying.
                     </p>
                   </div>
                   
-                  <Button
-                    variant="secondary"
+                  <Button 
+                    onClick={handleSessionComplete} 
                     className="w-full"
-                    onClick={() => navigate('/journal')}
+                    size="lg"
                   >
-                    Open Journal
-                  </Button>
-                  
-                  <Button onClick={handleStepComplete} variant="outline" className="w-full">
-                    Complete Session
+                    Complete Session → Open Journal
                   </Button>
                 </>
               )}

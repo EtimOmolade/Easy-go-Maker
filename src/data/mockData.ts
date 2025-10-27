@@ -1066,6 +1066,7 @@ export const STORAGE_KEYS = {
   USER_ROLES: 'prayerjournal_user_roles',
   SHOWN_CELEBRATIONS: 'prayerjournal_shown_celebrations',
   ANNOUNCEMENTS: 'prayerjourney_announcements',
+  COMPLETED_GUIDELINES: 'prayerjourney_completed_guidelines',
 };
 
 // Milestone achievement system - Streak-based
@@ -1290,6 +1291,11 @@ export const initializeMockData = () => {
   
   // Always reinitialize prayer points library
   localStorage.setItem(STORAGE_KEYS.PRAYER_POINTS, JSON.stringify(mockPrayerPoints));
+  
+  // Initialize completed guidelines tracking
+  if (!localStorage.getItem(STORAGE_KEYS.COMPLETED_GUIDELINES)) {
+    localStorage.setItem(STORAGE_KEYS.COMPLETED_GUIDELINES, JSON.stringify({}));
+  }
 };
 
 // Helper functions for localStorage operations

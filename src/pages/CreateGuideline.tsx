@@ -97,35 +97,49 @@ const CreateGuideline = () => {
     }
 
     try {
+      // Auto-append reflection step if not already present
+      const hasReflection = steps.some(s => s.type === 'reflection');
+      const finalSteps = hasReflection ? steps : [
+        ...steps,
+        {
+          id: `step-reflection-${Date.now()}`,
+          type: 'reflection' as const,
+          duration: 0,
+          prayer_point_ids: [],
+          custom_audio_url: ''
+        }
+      ];
+
       const guideline = {
         id: `guideline-${Date.now()}`,
         title,
         week_number: weekNumber,
         day,
-        steps,
+        steps: finalSteps,
         created_by: user.id,
         date_uploaded: new Date().toISOString(),
+        dailyPrayers: DAYS.map((dayName: string) => ({
+          day: dayName,
+          completed: false
+        }))
       };
 
       const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
       guidelines.push(guideline);
       setToStorage(STORAGE_KEYS.GUIDELINES, guidelines);
 
-      // Create announcement for new guideline
-      const announcements = getFromStorage(STORAGE_KEYS.ANNOUNCEMENTS, [] as any[]);
-      const newAnnouncement = {
-        id: `announcement-${Date.now()}`,
-        type: 'guideline',
-        title: '🕊 New Prayer Week Added',
-        content: `Week ${weekNumber}: ${title} - ${day}. Start praying today!`,
-        link: `/guided-session/${guideline.id}`,
-        created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-      };
-      announcements.push(newAnnouncement);
-      setToStorage(STORAGE_KEYS.ANNOUNCEMENTS, announcements);
+      // Create announcement notification for new guideline
+      const { createNotification } = await import('@/data/mockData');
+      createNotification(
+        'guideline',
+        '🕊️ New Prayer Guideline Available!',
+        `"${title}" is now ready for Week ${weekNumber}. Start your prayer journey today!`,
+        undefined, // undefined userId means for all users
+        undefined,
+        '🕊️'
+      );
 
-      toast.success("Prayer guideline created successfully");
+      toast.success("Prayer guideline created and announcement sent!");
       navigate('/admin');
     } catch (error: any) {
       console.error("Error creating guideline:", error);
