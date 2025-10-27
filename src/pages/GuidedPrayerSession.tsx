@@ -122,15 +122,17 @@ const GuidedPrayerSession = () => {
     const nextPointIndex = currentPointIndex + 1;
     
     if (currentStep.type === 'kingdom' && nextPointIndex < (currentStep.prayer_point_ids?.length || 0)) {
+      // Move to next prayer point and trigger a re-render to reset timer
       setCurrentPointIndex(nextPointIndex);
       
-      // Play next point prompt
+      // Play next point prompt after short delay
       if (voiceEnabled) {
         setTimeout(() => {
           playVoicePrompt(VOICE_PROMPTS.KINGDOM_NEXT);
         }, 500);
       }
     } else {
+      // All kingdom points complete or not a kingdom step, move to next step
       handleStepComplete();
     }
   };
@@ -357,10 +359,10 @@ const GuidedPrayerSession = () => {
                     <p className="text-foreground/90 whitespace-pre-wrap">{currentPoint.content}</p>
                   </div>
                   
-                  {currentStep.audioUrl && (
+                  {currentStep.custom_audio_url && (
                     <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
                       <audio controls className="w-full">
-                        <source src={currentStep.audioUrl} type="audio/mpeg" />
+                        <source src={currentStep.custom_audio_url} type="audio/mpeg" />
                         Your browser does not support the audio element.
                       </audio>
                     </div>
@@ -368,6 +370,7 @@ const GuidedPrayerSession = () => {
                   
                   {isGuidedMode && !completedSteps.includes(currentStepIndex) ? (
                     <PrayerTimer
+                      key={`kingdom-${currentStepIndex}-${currentPointIndex}`}
                       duration={180}
                       onComplete={handlePointComplete}
                       autoStart={true}
@@ -389,10 +392,10 @@ const GuidedPrayerSession = () => {
                     </p>
                   </div>
                   
-                  {currentStep.audioUrl && (
+                  {currentStep.custom_audio_url && (
                     <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
                       <audio controls className="w-full">
-                        <source src={currentStep.audioUrl} type="audio/mpeg" />
+                        <source src={currentStep.custom_audio_url} type="audio/mpeg" />
                         Your browser does not support the audio element.
                       </audio>
                     </div>
@@ -400,6 +403,7 @@ const GuidedPrayerSession = () => {
                   
                   {isGuidedMode && !completedSteps.includes(currentStepIndex) ? (
                     <PrayerTimer
+                      key={`personal-${currentStepIndex}`}
                       duration={300}
                       onComplete={handleStepComplete}
                       autoStart={true}
@@ -420,10 +424,10 @@ const GuidedPrayerSession = () => {
                     <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{currentPoint.content}</p>
                   </div>
                   
-                  {currentStep.audioUrl && (
+                  {currentStep.custom_audio_url && (
                     <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
                       <audio controls className="w-full">
-                        <source src={currentStep.audioUrl} type="audio/mpeg" />
+                        <source src={currentStep.custom_audio_url} type="audio/mpeg" />
                         Your browser does not support the audio element.
                       </audio>
                     </div>

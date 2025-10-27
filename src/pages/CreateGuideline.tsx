@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const STEP_TYPES = [
   { value: 'kingdom', label: 'Kingdom Focused Prayer', defaultDuration: 180 },
   { value: 'personal', label: 'Personal Supplication', defaultDuration: 300 },
@@ -111,9 +111,19 @@ const CreateGuideline = () => {
       guidelines.push(guideline);
       setToStorage(STORAGE_KEYS.GUIDELINES, guidelines);
 
-      // Create announcement
-      const { createAnnouncementForGuideline } = await import('@/utils/testimonyHelpers');
-      createAnnouncementForGuideline(guideline);
+      // Create announcement for new guideline
+      const announcements = getFromStorage(STORAGE_KEYS.ANNOUNCEMENTS, [] as any[]);
+      const newAnnouncement = {
+        id: `announcement-${Date.now()}`,
+        type: 'guideline',
+        title: '🕊 New Prayer Week Added',
+        content: `Week ${weekNumber}: ${title} - ${day}. Start praying today!`,
+        link: `/guided-session/${guideline.id}`,
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+      };
+      announcements.push(newAnnouncement);
+      setToStorage(STORAGE_KEYS.ANNOUNCEMENTS, announcements);
 
       toast.success("Prayer guideline created successfully");
       navigate('/admin');

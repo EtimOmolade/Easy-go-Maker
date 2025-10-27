@@ -149,6 +149,20 @@ const Testimonies = () => {
       testimonies.push(newTestimony);
       setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
 
+      // Create announcement for new testimony submission (internal notification)
+      const announcements = getFromStorage(STORAGE_KEYS.ANNOUNCEMENTS, [] as any[]);
+      const testimonyAnnouncement = {
+        id: `announcement-testimony-${Date.now()}`,
+        type: 'testimony_pending',
+        title: '📝 New Testimony Submitted',
+        content: `${alias} has submitted a testimony awaiting approval.`,
+        link: `/admin`,
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      };
+      announcements.push(testimonyAnnouncement);
+      setToStorage(STORAGE_KEYS.ANNOUNCEMENTS, announcements);
+
       // Update journal entry if this was shared from journal
       if (journalEntryId) {
         const journalEntries = getFromStorage(STORAGE_KEYS.JOURNAL_ENTRIES, [] as any[]);
