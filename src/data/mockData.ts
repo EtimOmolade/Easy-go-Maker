@@ -1280,15 +1280,16 @@ export const initializeMockData = () => {
   if (!localStorage.getItem(STORAGE_KEYS.TESTIMONIES)) {
     localStorage.setItem(STORAGE_KEYS.TESTIMONIES, JSON.stringify(mockTestimonies));
   }
-  if (!localStorage.getItem(STORAGE_KEYS.GUIDELINES)) {
-    localStorage.setItem(STORAGE_KEYS.GUIDELINES, JSON.stringify(mockGuidelines));
-  }
+  
+  // Always reinitialize guidelines to ensure latest structure
+  localStorage.setItem(STORAGE_KEYS.GUIDELINES, JSON.stringify(mockGuidelines));
+  
   if (!localStorage.getItem(STORAGE_KEYS.ENCOURAGEMENT)) {
     localStorage.setItem(STORAGE_KEYS.ENCOURAGEMENT, JSON.stringify(mockEncouragementMessages));
   }
-  if (!localStorage.getItem(STORAGE_KEYS.PRAYER_POINTS)) {
-    localStorage.setItem(STORAGE_KEYS.PRAYER_POINTS, JSON.stringify(mockPrayerPoints));
-  }
+  
+  // Always reinitialize prayer points library
+  localStorage.setItem(STORAGE_KEYS.PRAYER_POINTS, JSON.stringify(mockPrayerPoints));
 };
 
 // Helper functions for localStorage operations
