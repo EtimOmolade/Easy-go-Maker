@@ -5,11 +5,10 @@ import { STORAGE_KEYS, getFromStorage, setToStorage, PrayerPoint } from "@/data/
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Check, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, Check, Volume2, VolumeX, Play, Pause } from "lucide-react";
 import { toast } from "sonner";
 import { PrayerTimer } from "@/components/PrayerTimer";
 import { playVoicePrompt, stopVoicePrompt, VOICE_PROMPTS } from "@/utils/voicePrompts";
-import { AudioPlayer } from "@/components/AudioPlayer";
 import { Progress } from "@/components/ui/progress";
 
 interface PrayerStep {
@@ -38,10 +37,13 @@ const GuidedPrayerSession = () => {
   
   const [guideline, setGuideline] = useState<any>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [currentPointIndex, setCurrentPointIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isGuidedMode, setIsGuidedMode] = useState(true);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
   const currentDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
 
@@ -52,13 +54,13 @@ const GuidedPrayerSession = () => {
   }, [id, user]);
 
   useEffect(() => {
-    if (voiceEnabled && isGuidedMode && guideline) {
+    if (voiceEnabled && isGuidedMode && guideline && hasStarted) {
       const step = guideline.steps[currentStepIndex];
       if (step && !completedSteps.includes(currentStepIndex)) {
         playStepVoicePrompt(step.type);
       }
     }
-  }, [currentStepIndex, voiceEnabled, isGuidedMode]);
+  }, [currentStepIndex, voiceEnabled, isGuidedMode, hasStarted]);
 
   const fetchGuideline = async () => {
     if (!id) return;
@@ -130,9 +132,28 @@ const GuidedPrayerSession = () => {
     if (prompt) playVoicePrompt(prompt);
   };
 
+  const handlePointComplete = () => {
+    const currentStep = guideline.steps[currentStepIndex];
+    const nextPointIndex = currentPointIndex + 1;
+    
+    if (currentStep.type === 'kingdom' && nextPointIndex < (currentStep.prayer_point_ids?.length || 0)) {
+      setCurrentPointIndex(nextPointIndex);
+      
+      // Play next point prompt
+      if (voiceEnabled) {
+        setTimeout(() => {
+          playVoicePrompt(VOICE_PROMPTS.KINGDOM_NEXT);
+        }, 500);
+      }
+    } else {
+      handleStepComplete();
+    }
+  };
+
   const handleStepComplete = () => {
     const newCompleted = [...completedSteps, currentStepIndex];
     setCompletedSteps(newCompleted);
+    setCurrentPointIndex(0); // Reset point index for next step
 
     if (currentStepIndex < guideline.steps.length - 1) {
       setCurrentStepIndex(currentStepIndex + 1);
@@ -185,6 +206,42 @@ const GuidedPrayerSession = () => {
     setVoiceEnabled(!voiceEnabled);
   };
 
+  const toggleAudioReading = () => {
+    if (isPlayingAudio) {
+      window.speechSynthesis.cancel();
+      setIsPlayingAudio(false);
+    } else {
+      const currentStep = guideline.steps[currentStepIndex];
+      const prayerPoints = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
+      const point = prayerPoints.find(p => p.id === currentStep.prayer_point_ids?.[currentPointIndex]);
+      
+      if (point && currentStep.type === 'listening') {
+        const utterance = new SpeechSynthesisUtterance(point.content);
+        utterance.rate = 0.85;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        utterance.onend = () => {
+          setIsPlayingAudio(false);
+        };
+        window.speechSynthesis.speak(utterance);
+        setIsPlayingAudio(true);
+      }
+    }
+  };
+
+  const handleBeginSession = () => {
+    setHasStarted(true);
+    if (voiceEnabled) {
+      setTimeout(() => {
+        playVoicePrompt("Welcome to today's prayer session. Let's begin by seeking first the Kingdom of God.");
+      }, 500);
+      
+      setTimeout(() => {
+        playVoicePrompt(VOICE_PROMPTS.KINGDOM_START);
+      }, 4000);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen gradient-subtle flex items-center justify-center">
@@ -203,6 +260,10 @@ const GuidedPrayerSession = () => {
 
   const currentStep = guideline.steps[currentStepIndex];
   const progress = ((completedSteps.length) / guideline.steps.length) * 100;
+  const prayerPoints = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
+  const currentPoint = currentStep?.prayer_point_ids?.[currentPointIndex] 
+    ? prayerPoints.find(p => p.id === currentStep.prayer_point_ids[currentPointIndex])
+    : null;
 
   return (
     <div className="min-h-screen gradient-subtle">
@@ -247,72 +308,173 @@ const GuidedPrayerSession = () => {
           </CardHeader>
         </Card>
 
-        {currentStep && (
+        {!hasStarted ? (
+          <Card className="shadow-medium">
+            <CardHeader>
+              <CardTitle className="text-2xl text-center">Ready to Begin?</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <p className="text-center text-muted-foreground">
+                This guided prayer session will take you through {guideline.steps.length} steps including kingdom focused prayers, personal supplication, listening prayer, and reflection.
+              </p>
+              <Button 
+                onClick={handleBeginSession} 
+                className="w-full"
+                size="lg"
+              >
+                <Play className="mr-2 h-5 w-5" />
+                Begin Prayer Session
+              </Button>
+            </CardContent>
+          </Card>
+        ) : currentStep && (
           <Card className="shadow-medium">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl">{currentStep.title}</CardTitle>
+                <CardTitle className="text-xl">
+                  {currentStep.type === 'kingdom' && 'Kingdom Focused Prayer'}
+                  {currentStep.type === 'personal' && 'Personal Supplication'}
+                  {currentStep.type === 'listening' && 'Listening Prayer - Bible Reading'}
+                  {currentStep.type === 'reflection' && 'Reflection & Journaling'}
+                </CardTitle>
                 {completedSteps.includes(currentStepIndex) && (
                   <Check className="h-6 w-6 text-primary" />
                 )}
               </div>
+              {currentStep.type === 'kingdom' && currentStep.prayer_point_ids && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Point {currentPointIndex + 1} of {currentStep.prayer_point_ids.length}
+                </p>
+              )}
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="prose prose-sm max-w-none">
-                <p className="text-foreground/90 whitespace-pre-wrap">{currentStep.content}</p>
-              </div>
-
-              {currentStep.points && currentStep.points.length > 0 && (
-                <ul className="space-y-2 list-disc list-inside">
-                  {currentStep.points.map((point, idx) => (
-                    <li key={idx} className="text-foreground/80">{point}</li>
-                  ))}
-                </ul>
-              )}
-
-              {currentStep.audioUrl && (
-                <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
-                  <audio controls className="w-full">
-                    <source src={currentStep.audioUrl} type="audio/mpeg" />
-                    Your browser does not support the audio element.
-                  </audio>
-                </div>
-              )}
-
-              {isGuidedMode && currentStep.duration > 0 && !completedSteps.includes(currentStepIndex) ? (
-                <PrayerTimer
-                  duration={currentStep.duration}
-                  onComplete={handleStepComplete}
-                  label={`${Math.floor(currentStep.duration / 60)} minute${currentStep.duration >= 120 ? 's' : ''}`}
-                />
-              ) : (
-                <div className="flex gap-2 flex-col md:flex-row">
-                  {!completedSteps.includes(currentStepIndex) && (
-                    <Button onClick={handleStepComplete} className="flex-1">
-                      <Check className="h-4 w-4 mr-2" />
-                      Mark Complete
+              {currentStep.type === 'kingdom' && currentPoint && (
+                <>
+                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
+                    <h4 className="font-semibold mb-2">{currentPoint.title}</h4>
+                    <p className="text-foreground/90 whitespace-pre-wrap">{currentPoint.content}</p>
+                  </div>
+                  
+                  {currentStep.audioUrl && (
+                    <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
+                      <audio controls className="w-full">
+                        <source src={currentStep.audioUrl} type="audio/mpeg" />
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  )}
+                  
+                  {isGuidedMode && !completedSteps.includes(currentStepIndex) ? (
+                    <PrayerTimer
+                      duration={180}
+                      onComplete={handlePointComplete}
+                      autoStart={false}
+                      label="3 minutes"
+                    />
+                  ) : (
+                    <Button onClick={handlePointComplete} className="w-full">
+                      Next Prayer Point
                     </Button>
                   )}
-                  {currentStepIndex < guideline.steps.length - 1 && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setCurrentStepIndex(currentStepIndex + 1)}
+                </>
+              )}
+
+              {currentStep.type === 'personal' && (
+                <>
+                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
+                    <p className="text-foreground/90">
+                      Now is the time to bring your personal requests to God. Share what's on your heart - your needs, your family, your work, your health. God is listening.
+                    </p>
+                  </div>
+                  
+                  {currentStep.audioUrl && (
+                    <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
+                      <audio controls className="w-full">
+                        <source src={currentStep.audioUrl} type="audio/mpeg" />
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  )}
+                  
+                  {isGuidedMode && !completedSteps.includes(currentStepIndex) ? (
+                    <PrayerTimer
+                      duration={300}
+                      onComplete={handleStepComplete}
+                      autoStart={false}
+                      label="5 minutes"
+                    />
+                  ) : (
+                    <Button onClick={handleStepComplete} className="w-full">
+                      Complete Personal Prayer
+                    </Button>
+                  )}
+                </>
+              )}
+
+              {currentStep.type === 'listening' && currentPoint && (
+                <>
+                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
+                    <h4 className="font-semibold mb-3">{currentPoint.title}</h4>
+                    <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{currentPoint.content}</p>
+                  </div>
+                  
+                  {currentStep.audioUrl && (
+                    <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
+                      <audio controls className="w-full">
+                        <source src={currentStep.audioUrl} type="audio/mpeg" />
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-3">
+                    <Button 
+                      onClick={toggleAudioReading}
+                      variant={isPlayingAudio ? "secondary" : "default"}
                       className="flex-1"
                     >
-                      Next Step
+                      {isPlayingAudio ? (
+                        <>
+                          <Pause className="mr-2 h-4 w-4" />
+                          Pause Audio
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="mr-2 h-4 w-4" />
+                          Listen to Scripture
+                        </>
+                      )}
                     </Button>
-                  )}
-                </div>
+                    <Button 
+                      onClick={handlePointComplete}
+                      variant="outline"
+                    >
+                      {currentStep.prayer_point_ids && currentPointIndex < currentStep.prayer_point_ids.length - 1 ? 'Next Passage' : 'Complete'}
+                    </Button>
+                  </div>
+                </>
               )}
 
               {currentStep.type === 'reflection' && (
-                <Button
-                  variant="secondary"
-                  className="w-full"
-                  onClick={() => navigate('/journal')}
-                >
-                  Open Journal
-                </Button>
+                <>
+                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
+                    <p className="text-foreground/90">
+                      Take time to reflect on what you've prayed and what God has spoken to you. Write down your thoughts, insights, and what you sense God is saying.
+                    </p>
+                  </div>
+                  
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => navigate('/journal')}
+                  >
+                    Open Journal
+                  </Button>
+                  
+                  <Button onClick={handleStepComplete} variant="outline" className="w-full">
+                    Complete Session
+                  </Button>
+                </>
               )}
             </CardContent>
           </Card>

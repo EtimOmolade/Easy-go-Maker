@@ -107,11 +107,6 @@ const Guidelines = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2 flex-col md:flex-row">
-                    <Button variant="outline" onClick={() => navigate(`/guideline/${guideline.id}`)}>
-                      <Calendar className="mr-2 h-4 w-4 hidden md:inline" />
-                      <span className="md:hidden">Tracker</span>
-                      <span className="hidden md:inline">Daily Tracker</span>
-                    </Button>
                     <Button onClick={() => navigate(`/guided-session/${guideline.id}`)}>
                       <Calendar className="mr-2 h-4 w-4 hidden md:inline" />
                       <span className="md:hidden">Start</span>
