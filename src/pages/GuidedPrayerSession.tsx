@@ -68,47 +68,32 @@ const GuidedPrayerSession = () => {
     const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
     const foundGuideline = guidelines.find((g: any) => g.id === id);
 
-    if (foundGuideline && foundGuideline.steps) {
-      // New structure with library-based steps
-      const prayerPoints = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
-      
-      const enrichedSteps = foundGuideline.steps.map((step: any) => {
-        const points = prayerPoints.filter(p => step.prayer_point_ids?.includes(p.id));
+    if (foundGuideline) {
+      // Check if guideline has steps (new structure)
+      if (foundGuideline.steps && foundGuideline.steps.length > 0) {
+        // New structure with library-based steps
+        const prayerPoints = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
         
-        let content = '';
-        let title = '';
-        
-        switch (step.type) {
-          case 'kingdom':
-            title = `Kingdom Focused Prayer`;
-            content = points.map(p => `${p.title}\n${p.content}`).join('\n\n');
-            break;
-          case 'personal':
-            title = 'Personal Supplication';
-            content = 'Bring your personal requests to God. Share what\'s on your heart.';
-            break;
-          case 'listening':
-            title = 'Listening Prayer - Bible Reading';
-            content = points.map(p => `${p.title}\n\n${p.content}`).join('\n\n---\n\n');
-            break;
-          case 'reflection':
-            title = 'Reflection & Journaling';
-            content = 'Write down what you sense or learned during prayer.';
-            break;
-        }
+        const enrichedSteps = foundGuideline.steps.map((step: any) => {
+          const points = prayerPoints.filter(p => step.prayer_point_ids?.includes(p.id));
+          
+          return {
+            id: step.id,
+            type: step.type,
+            title: step.type,
+            content: '',
+            duration: step.duration,
+            audioUrl: step.custom_audio_url,
+            prayer_point_ids: step.prayer_point_ids,
+            points: points.map(p => p.title)
+          };
+        });
 
-        return {
-          id: step.id,
-          type: step.type,
-          title,
-          content,
-          duration: step.duration,
-          audioUrl: step.custom_audio_url,
-          points: points.map(p => p.title)
-        };
-      });
-
-      setGuideline({ ...foundGuideline, steps: enrichedSteps });
+        setGuideline({ ...foundGuideline, steps: enrichedSteps });
+      } else {
+        // Fallback: No steps defined, show message
+        setGuideline(null);
+      }
     }
     setLoading(false);
   };
