@@ -44,26 +44,6 @@ const GuidelineDetails = () => {
     setLoading(false);
   };
 
-  const handleDayClick = (day: string) => {
-    const updatedPrayers = dailyPrayers.map(p => 
-      p.day === day 
-        ? { ...p, completed: !p.completed, completedAt: !p.completed ? new Date().toISOString() : undefined }
-        : p
-    );
-    
-    setDailyPrayers(updatedPrayers);
-    
-    // Save to localStorage
-    const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
-    const updatedGuidelines = guidelines.map((g: any) => 
-      g.id === id 
-        ? { ...g, dailyPrayers: updatedPrayers }
-        : g
-    );
-    setToStorage(STORAGE_KEYS.GUIDELINES, updatedGuidelines);
-    
-    toast.success(`${day} marked as ${!dailyPrayers.find(p => p.day === day)?.completed ? 'complete' : 'incomplete'}`);
-  };
 
   const handleStartGuidedSession = () => {
     navigate(`/guided-session/${id}`);
@@ -138,19 +118,18 @@ const GuidelineDetails = () => {
           <CardHeader>
             <CardTitle>Daily Prayer Tracker</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Click on each day to mark it as complete
+              Complete each day's guided prayer to mark it as done
             </p>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {dailyPrayers.map((prayer) => (
-                <button
+                <div
                   key={prayer.day}
-                  onClick={() => handleDayClick(prayer.day)}
-                  className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
+                  className={`flex items-center justify-between p-4 rounded-lg border-2 ${
                     prayer.completed
-                      ? 'bg-primary/10 border-primary hover:bg-primary/20'
-                      : 'bg-card border-border hover:border-accent'
+                      ? 'bg-primary/10 border-primary'
+                      : 'bg-card border-border'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -168,7 +147,7 @@ const GuidelineDetails = () => {
                       {new Date(prayer.completedAt).toLocaleDateString()}
                     </span>
                   )}
-                </button>
+                </div>
               ))}
             </div>
           </CardContent>

@@ -28,7 +28,7 @@ interface GuidelineSession {
   steps: PrayerStep[];
 }
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const GuidedPrayerSession = () => {
   const { id } = useParams();
@@ -45,7 +45,7 @@ const GuidedPrayerSession = () => {
   const [hasStarted, setHasStarted] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
-  const currentDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+  const currentDay = DAYS[new Date().getDay()];
 
   useEffect(() => {
     if (id && user) {
@@ -154,6 +154,27 @@ const GuidedPrayerSession = () => {
       const { markPrayerCompleted } = await import('@/utils/prayerHelpers');
       const { newStreak } = markPrayerCompleted(user.id);
 
+      // Update the guideline's daily tracker for current day
+      const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
+      const updatedGuidelines = guidelines.map((g: any) => {
+        if (g.id === guideline.id) {
+          const dailyPrayers = g.dailyPrayers || DAYS.map((day: string) => ({
+            day,
+            completed: false
+          }));
+          
+          const updatedDailyPrayers = dailyPrayers.map((p: any) => 
+            p.day === currentDay 
+              ? { ...p, completed: true, completedAt: new Date().toISOString() }
+              : p
+          );
+          
+          return { ...g, dailyPrayers: updatedDailyPrayers };
+        }
+        return g;
+      });
+      setToStorage(STORAGE_KEYS.GUIDELINES, updatedGuidelines);
+
       // Create journal entry
       const allEntries = getFromStorage(STORAGE_KEYS.JOURNAL_ENTRIES, [] as any[]);
       const newEntry = {
@@ -218,12 +239,8 @@ const GuidedPrayerSession = () => {
     setHasStarted(true);
     if (voiceEnabled) {
       setTimeout(() => {
-        playVoicePrompt("Welcome to today's prayer session. Let's begin by seeking first the Kingdom of God.");
-      }, 500);
-      
-      setTimeout(() => {
         playVoicePrompt(VOICE_PROMPTS.KINGDOM_START);
-      }, 4000);
+      }, 500);
     }
   };
 
@@ -353,7 +370,7 @@ const GuidedPrayerSession = () => {
                     <PrayerTimer
                       duration={180}
                       onComplete={handlePointComplete}
-                      autoStart={false}
+                      autoStart={true}
                       label="3 minutes"
                     />
                   ) : (
@@ -385,7 +402,7 @@ const GuidedPrayerSession = () => {
                     <PrayerTimer
                       duration={300}
                       onComplete={handleStepComplete}
-                      autoStart={false}
+                      autoStart={true}
                       label="5 minutes"
                     />
                   ) : (

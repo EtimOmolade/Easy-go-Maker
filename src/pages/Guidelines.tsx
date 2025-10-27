@@ -21,6 +21,7 @@ interface Guideline {
 const Guidelines = () => {
   const [guidelines, setGuidelines] = useState<Guideline[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedWeek, setExpandedWeek] = useState<number | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,7 +36,7 @@ const Guidelines = () => {
   const fetchGuidelines = async () => {
     // Prototype mode: Fetch from localStorage
     const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
-    const sortedGuidelines = guidelines.sort((a: any, b: any) => b.week_number - a.week_number);
+    const sortedGuidelines = guidelines.sort((a: any, b: any) => a.week_number - b.week_number);
     setGuidelines(sortedGuidelines);
     setLoading(false);
 
@@ -43,7 +44,7 @@ const Guidelines = () => {
     // const { data, error } = await supabase
     //   .from("guidelines")
     //   .select("*")
-    //   .order("week_number", { ascending: false });
+    //   .order("week_number", { ascending: true });
     //
     // if (error) {
     //   console.error("Error fetching guidelines:", error);
@@ -53,6 +54,18 @@ const Guidelines = () => {
     // }
     // setLoading(false);
   };
+
+  // Group guidelines by week
+  const groupedByWeek = guidelines.reduce((acc, guideline) => {
+    const week = guideline.week_number;
+    if (!acc[week]) {
+      acc[week] = [];
+    }
+    acc[week].push(guideline);
+    return acc;
+  }, {} as Record<number, Guideline[]>);
+
+  const weeks = Object.keys(groupedByWeek).map(Number).sort((a, b) => a - b);
 
   return (
     <TooltipProvider>
@@ -89,44 +102,66 @@ const Guidelines = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-6">
-            {guidelines.map((guideline) => (
-              <Card key={guideline.id} className="shadow-medium hover:shadow-glow transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <Badge variant="secondary" className="mb-2">
-                        Week {guideline.week_number} - {formatGuidelineDate(guideline.date_uploaded)}
-                      </Badge>
-                      <CardTitle className="text-2xl">{guideline.title}</CardTitle>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Posted {new Date(guideline.date_uploaded).toLocaleDateString()}
-                      </p>
+          <div className="space-y-4">
+            {weeks.map((weekNum) => {
+              const weekGuidelines = groupedByWeek[weekNum];
+              const isExpanded = expandedWeek === weekNum;
+              
+              return (
+                <Card key={weekNum} className="shadow-medium">
+                  <CardHeader 
+                    className="cursor-pointer hover:bg-accent/5 transition-colors"
+                    onClick={() => setExpandedWeek(isExpanded ? null : weekNum)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Badge variant="secondary">Week {weekNum}</Badge>
+                        <CardTitle className="text-xl">
+                          {weekGuidelines[0]?.title || `Week ${weekNum} Prayer Guide`}
+                        </CardTitle>
+                      </div>
+                      <Calendar className={`h-5 w-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4 whitespace-pre-wrap">
-                    {guideline.content}
-                  </p>
-                  <div className="flex gap-2 flex-col md:flex-row">
-                    <Button onClick={() => navigate(`/guided-session/${guideline.id}`)}>
-                      <Calendar className="mr-2 h-4 w-4 hidden md:inline" />
-                      <span className="md:hidden">Start</span>
-                      <span className="hidden md:inline">Start Guided Prayer</span>
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => navigate(`/guideline/${guideline.id}`)}
-                    >
-                      <BookMarked className="mr-2 h-4 w-4 hidden md:inline" />
-                      <span className="md:hidden">Tracker</span>
-                      <span className="hidden md:inline">Daily Tracker</span>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {formatGuidelineDate(weekGuidelines[0]?.date_uploaded)}
+                    </p>
+                  </CardHeader>
+                  
+                  {isExpanded && (
+                    <CardContent className="border-t">
+                      <p className="text-muted-foreground mb-4 whitespace-pre-wrap">
+                        {weekGuidelines[0]?.content}
+                      </p>
+                      <div className="flex gap-2 flex-col md:flex-row">
+                        <Button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/guided-session/${weekGuidelines[0].id}`);
+                          }}
+                          className="flex-1"
+                        >
+                          <Calendar className="mr-2 h-4 w-4 md:inline hidden" />
+                          <span className="md:hidden">Start Prayer</span>
+                          <span className="hidden md:inline">Start Guided Prayer</span>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/guideline/${weekGuidelines[0].id}`);
+                          }}
+                          className="flex-1"
+                        >
+                          <BookMarked className="mr-2 h-4 w-4 md:inline hidden" />
+                          <span className="md:hidden">View Tracker</span>
+                          <span className="hidden md:inline">Daily Tracker</span>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
