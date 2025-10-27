@@ -764,7 +764,7 @@ const Admin = () => {
                   <div>
                     <CardTitle>Prayer Guidelines Management</CardTitle>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Build structured, gym-style guided prayer sessions from your prayer library
+                      Build structured, guided prayer sessions from your prayer library
                     </p>
                   </div>
                   <Button onClick={() => navigate('/create-guideline')}>
