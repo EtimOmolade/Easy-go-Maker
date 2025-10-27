@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { STORAGE_KEYS, getFromStorage, setToStorage, PrayerPoint, PrayerStep } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,8 @@ const STEP_TYPES = [
 const CreateGuideline = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const editingGuideline = location.state?.guideline;
   const [prayerPoints, setPrayerPoints] = useState<PrayerPoint[]>([]);
   const [title, setTitle] = useState("");
   const [weekNumber, setWeekNumber] = useState(1);
@@ -35,6 +37,14 @@ const CreateGuideline = () => {
 
   useEffect(() => {
     fetchPrayerPoints();
+
+    // Load editing data if available
+    if (editingGuideline) {
+      setTitle(editingGuideline.title || "");
+      setWeekNumber(editingGuideline.week_number || 1);
+      setDay(editingGuideline.day_of_week || "Monday");
+      setSteps(editingGuideline.steps || []);
+    }
   }, []);
 
   const fetchPrayerPoints = () => {
@@ -110,41 +120,71 @@ const CreateGuideline = () => {
         }
       ];
 
-      const guideline = {
-        id: `guideline-${Date.now()}`,
-        title,
-        week_number: weekNumber,
-        day,
-        steps: finalSteps,
-        created_by: user.id,
-        date_uploaded: new Date().toISOString(),
-        dailyPrayers: DAYS.map((dayName: string) => ({
-          day: dayName,
-          completed: false
-        }))
-      };
-
       const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
-      guidelines.push(guideline);
-      setToStorage(STORAGE_KEYS.GUIDELINES, guidelines);
 
-      // Create announcement notification for new guideline
-      const { createNotification } = await import('@/data/mockData');
-      const weekInfo = `Week ${weekNumber}${title ? ': ' + title : ''}`;
-      createNotification(
-        'guideline',
-        '🕊️ New Prayer Guideline Available!',
-        `${weekInfo} is now ready. Start your prayer journey today!`,
-        undefined, // undefined userId means for all users
-        guideline.id,
-        '🕊️'
-      );
+      if (editingGuideline) {
+        // Update existing guideline
+        const guidelineIndex = guidelines.findIndex((g: any) => g.id === editingGuideline.id);
+        if (guidelineIndex !== -1) {
+          guidelines[guidelineIndex] = {
+            ...guidelines[guidelineIndex],
+            title,
+            week_number: weekNumber,
+            day_of_week: day,
+            steps: finalSteps,
+            updated_at: new Date().toISOString()
+          };
+        }
+        setToStorage(STORAGE_KEYS.GUIDELINES, guidelines);
+        toast.success("Prayer guideline updated successfully!");
+      } else {
+        // Create new guideline
+        const guideline = {
+          id: `guideline-${Date.now()}`,
+          title,
+          week_number: weekNumber,
+          day_of_week: day,
+          steps: finalSteps,
+          created_by: user.id,
+          date_uploaded: new Date().toISOString(),
+          dailyPrayers: DAYS.map((dayName: string) => ({
+            day: dayName,
+            completed: false
+          }))
+        };
 
-      toast.success("Prayer guideline created and announcement sent!");
+        guidelines.push(guideline);
+        setToStorage(STORAGE_KEYS.GUIDELINES, guidelines);
+
+        // Create announcement for new guideline (encouragement message)
+        const encouragementMessages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, [] as any[]);
+        encouragementMessages.push({
+          id: `announce-guideline-${Date.now()}`,
+          content: `🕊️ New Prayer Guideline Available!\n\nWeek ${weekNumber} - ${day}: ${title}\n\nCheck the Guidelines page to start your prayer journey!`,
+          created_at: new Date().toISOString(),
+          created_by: user.id
+        });
+        setToStorage(STORAGE_KEYS.ENCOURAGEMENT, encouragementMessages);
+
+        // Create notification for new guideline
+        const { createNotification } = await import('@/data/mockData');
+        const weekInfo = `Week ${weekNumber} - ${day}: ${title}`;
+        createNotification(
+          'guideline',
+          '🕊️ New Prayer Guideline Available!',
+          `${weekInfo} is now ready. Start your prayer journey today!`,
+          undefined, // undefined userId means for all users
+          guideline.id,
+          '🕊️'
+        );
+
+        toast.success("Prayer guideline created and announcement sent!");
+      }
+
       navigate('/admin');
     } catch (error: any) {
-      console.error("Error creating guideline:", error);
-      toast.error(error.message || "Failed to create guideline");
+      console.error("Error creating/updating guideline:", error);
+      toast.error(error.message || "Failed to save guideline");
     }
   };
 
@@ -167,7 +207,7 @@ const CreateGuideline = () => {
         </Button>
 
         <h1 className="text-4xl font-heading font-bold gradient-primary bg-clip-text text-transparent mb-8">
-          Create Prayer Guideline
+          {editingGuideline ? 'Edit Prayer Guideline' : 'Create Prayer Guideline'}
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -354,7 +394,7 @@ const CreateGuideline = () => {
               Cancel
             </Button>
             <Button type="submit" className="flex-1" disabled={steps.length === 0}>
-              Create Guideline
+              {editingGuideline ? 'Update Guideline' : 'Create Guideline'}
             </Button>
           </div>
         </form>

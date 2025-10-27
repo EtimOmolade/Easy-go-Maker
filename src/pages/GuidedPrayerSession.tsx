@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { PrayerTimer } from "@/components/PrayerTimer";
 import { playVoicePrompt, stopVoicePrompt, VOICE_PROMPTS } from "@/utils/voicePrompts";
 import { Progress } from "@/components/ui/progress";
+import { MilestoneAchievementModal } from "@/components/MilestoneAchievementModal";
 
 interface PrayerStep {
   id: string;
@@ -44,6 +45,8 @@ const GuidedPrayerSession = () => {
   const [loading, setLoading] = useState(true);
   const [hasStarted, setHasStarted] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [achievedMilestone, setAchievedMilestone] = useState<any>(null);
+  const [showMilestoneModal, setShowMilestoneModal] = useState(false);
 
   const currentDay = DAYS[new Date().getDay()];
 
@@ -52,6 +55,16 @@ const GuidedPrayerSession = () => {
       fetchGuideline();
     }
   }, [id, user]);
+
+  // Auto-disable voice when switching to free mode
+  useEffect(() => {
+    if (!isGuidedMode) {
+      if (voiceEnabled) {
+        stopVoicePrompt();
+      }
+      setVoiceEnabled(false);
+    }
+  }, [isGuidedMode]);
 
   useEffect(() => {
     if (voiceEnabled && isGuidedMode && guideline && hasStarted) {
@@ -165,12 +178,20 @@ const GuidedPrayerSession = () => {
       const isCurrentPrayer = isCurrentWeek && isCurrentDay;
       
       let newStreak = 0;
-      
+      let milestone = null;
+
       // Only update streak for current day prayers
       if (isCurrentPrayer) {
         const { markPrayerCompleted } = await import('@/utils/prayerHelpers');
         const result = markPrayerCompleted(user.id);
         newStreak = result.newStreak;
+        milestone = result.milestone;
+
+        // Show milestone modal if achieved
+        if (milestone) {
+          setAchievedMilestone(milestone);
+          setShowMilestoneModal(true);
+        }
 
         // Update the guideline's daily tracker for current day
         const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
@@ -227,15 +248,18 @@ const GuidedPrayerSession = () => {
         playVoicePrompt(VOICE_PROMPTS.SESSION_COMPLETE);
       }
 
-      const message = isCurrentPrayer 
+      const message = isCurrentPrayer
         ? `🎉 Prayer session complete! ${newStreak}-day streak!`
         : '🎉 Prayer session complete! Saved to your journal.';
-      
+
       toast.success(message);
-      
-      setTimeout(() => {
-        navigate('/journal');
-      }, 2000);
+
+      // Only redirect to journal in guided mode
+      if (isGuidedMode) {
+        setTimeout(() => {
+          navigate('/journal');
+        }, 2000);
+      }
     } catch (error) {
       console.error('Error completing session:', error);
       toast.error('Failed to save progress');
@@ -322,6 +346,8 @@ const GuidedPrayerSession = () => {
               variant="outline"
               size="sm"
               onClick={toggleVoice}
+              disabled={!isGuidedMode}
+              className={!isGuidedMode ? 'opacity-50 cursor-not-allowed' : ''}
             >
               {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
@@ -538,6 +564,18 @@ const GuidedPrayerSession = () => {
           ))}
         </div>
       </div>
+
+      {/* Milestone Achievement Modal */}
+      {achievedMilestone && (
+        <MilestoneAchievementModal
+          milestoneLevel={achievedMilestone.level}
+          isOpen={showMilestoneModal}
+          onClose={() => {
+            setShowMilestoneModal(false);
+            setAchievedMilestone(null);
+          }}
+        />
+      )}
     </div>
   );
 };

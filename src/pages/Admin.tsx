@@ -325,11 +325,8 @@ const Admin = () => {
   };
 
   const handleEditGuideline = (guideline: Guideline) => {
-    setEditingGuideline(guideline);
-    setTitle(guideline.title);
-    setWeekNumber(String(guideline.week_number));
-    setContent(guideline.content);
-    setIsDialogOpen(true);
+    // Navigate to CreateGuideline page with the guideline data for editing
+    navigate('/create-guideline', { state: { guideline } });
   };
 
   const handleDeleteGuideline = async (id: string) => {
@@ -785,9 +782,14 @@ const Admin = () => {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <Badge variant="secondary">Week {guideline.week_number}</Badge>
+                              {(guideline as any).day_of_week && (
+                                <Badge variant="outline">{(guideline as any).day_of_week}</Badge>
+                              )}
                             </div>
                             <h3 className="font-semibold text-lg mb-2">{guideline.title}</h3>
-                            <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-3">{guideline.content}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {(guideline as any).steps?.length || 0} prayer steps
+                            </p>
                             <p className="text-xs text-muted-foreground mt-4">
                               Uploaded {new Date(guideline.date_uploaded).toLocaleDateString()}
                             </p>
