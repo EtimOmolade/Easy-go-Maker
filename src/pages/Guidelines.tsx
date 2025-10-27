@@ -106,11 +106,22 @@ const Guidelines = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
+                  <p className="text-muted-foreground mb-4 whitespace-pre-wrap">
+                    {guideline.content}
+                  </p>
                   <div className="flex gap-2 flex-col md:flex-row">
                     <Button onClick={() => navigate(`/guided-session/${guideline.id}`)}>
                       <Calendar className="mr-2 h-4 w-4 hidden md:inline" />
                       <span className="md:hidden">Start</span>
                       <span className="hidden md:inline">Start Guided Prayer</span>
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate(`/guideline/${guideline.id}`)}
+                    >
+                      <BookMarked className="mr-2 h-4 w-4 hidden md:inline" />
+                      <span className="md:hidden">Tracker</span>
+                      <span className="hidden md:inline">Daily Tracker</span>
                     </Button>
                   </div>
                 </CardContent>
