@@ -54,6 +54,12 @@ const GuidedPrayerSession = () => {
     if (id && user) {
       fetchGuideline();
     }
+
+    // Cleanup: Stop voice when component unmounts (user leaves page)
+    return () => {
+      stopVoicePrompt();
+      window.speechSynthesis.cancel(); // Also stop any audio reading
+    };
   }, [id, user]);
 
   // Auto-disable voice when switching to free mode
@@ -187,10 +193,15 @@ const GuidedPrayerSession = () => {
         newStreak = result.newStreak;
         milestone = result.milestone;
 
+        console.log('Prayer completed! Result:', { newStreak, milestone });
+
         // Show milestone modal if achieved
         if (milestone) {
+          console.log('Setting milestone modal:', milestone);
           setAchievedMilestone(milestone);
           setShowMilestoneModal(true);
+        } else {
+          console.log('No milestone achieved this time. Current streak:', newStreak);
         }
 
         // Update the guideline's daily tracker for current day
@@ -254,12 +265,10 @@ const GuidedPrayerSession = () => {
 
       toast.success(message);
 
-      // Only redirect to journal in guided mode
-      if (isGuidedMode) {
-        setTimeout(() => {
-          navigate('/journal');
-        }, 2000);
-      }
+      // Redirect to journal after 2 seconds (both modes)
+      setTimeout(() => {
+        navigate('/journal');
+      }, 2000);
     } catch (error) {
       console.error('Error completing session:', error);
       toast.error('Failed to save progress');
@@ -298,11 +307,7 @@ const GuidedPrayerSession = () => {
 
   const handleBeginSession = () => {
     setHasStarted(true);
-    if (voiceEnabled) {
-      setTimeout(() => {
-        playVoicePrompt(VOICE_PROMPTS.KINGDOM_START);
-      }, 500);
-    }
+    // Voice prompt will be triggered by useEffect when hasStarted becomes true
   };
 
   if (loading) {

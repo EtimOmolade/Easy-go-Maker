@@ -482,8 +482,8 @@ const Testimonies = () => {
                       onCheckedChange={(checked) => setConsentChecked(checked as boolean)}
                     />
                     <label htmlFor="consent" className="text-sm leading-relaxed cursor-pointer">
-                      By submitting, I confirm this story is true to the best of my knowledge and that it doesn't reveal another person's private information. 
-                      I grant M6V33 a non-exclusive right to display and lightly edit my testimony for clarity and encouragement.
+                      By submitting, I confirm this story is true to the best of my knowledge and that it doesn't reveal another person's private information.
+                      I grant Spirit Connect a non-exclusive right to display and lightly edit my testimony for clarity and encouragement.
                     </label>
                   </div>
 
@@ -662,8 +662,8 @@ const Testimonies = () => {
           <Card className="mt-8 border-muted">
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground leading-relaxed">
-                <strong>Disclaimer:</strong> Testimonies reflect personal experiences and are not verified claims. 
-                M6V33 does not offer medical, financial, or legal advice and is not responsible for outcomes mentioned. 
+                <strong>Disclaimer:</strong> Testimonies reflect personal experiences and are not verified claims.
+                Spirit Connect does not offer medical, financial, or legal advice and is not responsible for outcomes mentioned.
                 All stories are reviewed for tone and privacy before publication.
               </p>
             </CardContent>
@@ -755,8 +755,8 @@ const Testimonies = () => {
                   onCheckedChange={(checked) => setConsentChecked(checked as boolean)}
                 />
                 <label htmlFor="edit-consent" className="text-sm leading-relaxed cursor-pointer">
-                  By submitting, I confirm this story is true to the best of my knowledge and that it doesn't reveal another person's private information. 
-                  I grant M6V33 a non-exclusive right to display and lightly edit my testimony for clarity and encouragement.
+                  By submitting, I confirm this story is true to the best of my knowledge and that it doesn't reveal another person's private information.
+                  I grant Spirit Connect a non-exclusive right to display and lightly edit my testimony for clarity and encouragement.
                 </label>
               </div>
 

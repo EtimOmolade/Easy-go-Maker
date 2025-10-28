@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 // Backend integration - Supabase COMMENTED OUT (Prototype mode)
@@ -58,11 +58,17 @@ const Dashboard = () => {
           checkForNewMilestones();
         }
       };
-      
+
       document.addEventListener('visibilitychange', handleVisibilityChange);
-      
+
+      // Poll for updates every second
+      const interval = setInterval(() => {
+        fetchProfile();
+      }, 1000);
+
       return () => {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
+        clearInterval(interval);
       };
 
       // Backend integration - Supabase real-time COMMENTED OUT (Prototype mode)
@@ -115,12 +121,8 @@ const Dashboard = () => {
   const checkForNewMilestones = () => {
     if (!user) return;
 
-    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
-    const userProfile = profiles[user.id];
-    const currentStreak = userProfile?.streak_count || 0;
-
-    // Check if there's a new milestone to celebrate
-    const milestone = checkMilestoneAchievement(user.id, currentStreak);
+    // Check if there's a new milestone to celebrate (based on total prayers)
+    const milestone = checkMilestoneAchievement(user.id);
     if (milestone) {
       setAchievedMilestoneLevel(milestone.level);
       setShowMilestoneModal(true);
@@ -130,9 +132,16 @@ const Dashboard = () => {
   const fetchProfile = async () => {
     if (!user) return;
 
-    // Prototype mode: Fetch from localStorage
-    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
-    const userProfile = profiles[user.id];
+    // Prototype mode: Fetch from localStorage (profiles is an ARRAY)
+    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, [] as any[]);
+    const userProfile = profiles.find((p: any) => p.id === user.id);
+
+    console.log('[fetchProfile] Reading from localStorage:', {
+      userId: user.id,
+      profilesCount: profiles.length,
+      userProfile,
+      streak_count: userProfile?.streak_count
+    });
 
     if (userProfile) {
       if (profile) {
@@ -141,12 +150,13 @@ const Dashboard = () => {
       setProfile(userProfile);
     } else {
       // Create default profile and save to localStorage
-      const defaultProfile: Profile = {
+      const defaultProfile: any = {
+        id: user.id,
         name: user.user_metadata?.name || 'Friend',
         streak_count: 0,
         reminders_enabled: false
       };
-      profiles[user.id] = defaultProfile;
+      profiles.push(defaultProfile);
       setToStorage(STORAGE_KEYS.PROFILES, profiles);
       setProfile(defaultProfile);
     }
@@ -216,37 +226,67 @@ const Dashboard = () => {
     // }
   };
 
-  const getMilestoneProgress = () => {
-    if (!user) return { current: MILESTONES[0], progress: 0, currentStreak: 0, nextMilestone: MILESTONES[1] };
-    
-    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
-    const userProfile = profiles[user.id];
+  const milestoneData = useMemo(() => {
+    if (!user) return { current: MILESTONES[0], progress: 0, currentStreak: 0, nextMilestone: MILESTONES[0], daysToNext: 1 };
+
+    // Read profiles as ARRAY
+    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, [] as any[]);
+    const userProfile = profiles.find((p: any) => p.id === user.id);
     const currentStreak = userProfile?.streak_count || 0;
-    const currentMilestoneLevel = userProfile?.current_milestone || 0;
-    
-    // Find current and next milestone based on streak
-    let current = MILESTONES[0];
-    let nextMilestone = MILESTONES[1];
-    
-    for (let i = MILESTONES.length - 1; i >= 0; i--) {
+
+    console.log('[Dashboard] Computing milestone data for streak:', currentStreak);
+
+    // Find the NEXT milestone to work towards (not yet achieved)
+    let nextMilestone = MILESTONES[0]; // Default to first milestone
+    let lastAchieved = null; // Track last achieved milestone
+
+    for (let i = 0; i < MILESTONES.length; i++) {
       if (currentStreak >= MILESTONES[i].streak_needed) {
-        current = MILESTONES[i];
-        nextMilestone = MILESTONES[i + 1] || MILESTONES[i]; // Stay at max if completed all
+        // This milestone is achieved
+        lastAchieved = MILESTONES[i];
+        console.log('[Dashboard] Milestone achieved:', MILESTONES[i].name);
+      } else {
+        // This is the first milestone not yet achieved - this is our NEXT goal
+        nextMilestone = MILESTONES[i];
+        console.log('[Dashboard] Next milestone to achieve:', MILESTONES[i].name);
         break;
       }
     }
-    
-    // Calculate progress to next milestone
-    const streakToNext = nextMilestone.streak_needed - currentStreak;
-    const previousMilestoneStreak = current.streak_needed;
-    const milestoneRange = nextMilestone.streak_needed - previousMilestoneStreak;
-    const progressInRange = currentStreak - previousMilestoneStreak;
-    const progress = milestoneRange > 0 ? (progressInRange / milestoneRange) * 100 : 100;
-    
-    return { current, progress: Math.min(progress, 100), currentStreak, nextMilestone, streakToNext };
-  };
 
-  const milestoneData = getMilestoneProgress();
+    // If all milestones achieved, stay at the last one
+    if (currentStreak >= MILESTONES[MILESTONES.length - 1].streak_needed) {
+      nextMilestone = MILESTONES[MILESTONES.length - 1];
+      lastAchieved = MILESTONES[MILESTONES.length - 1];
+      console.log('[Dashboard] All milestones achieved!');
+    }
+
+    // Calculate progress to NEXT milestone
+    const daysToNext = Math.max(0, nextMilestone.streak_needed - currentStreak);
+
+    // Progress is simply: current streak out of next milestone's requirement
+    // Example: streak = 1, next = 7 days → progress = 1/7 = ~14%
+    // Example: streak = 5, next = 7 days → progress = 5/7 = ~71%
+    const progress = nextMilestone.streak_needed > 0
+      ? (currentStreak / nextMilestone.streak_needed) * 100
+      : 100;
+
+    console.log('[Dashboard] Progress:', {
+      currentStreak,
+      nextMilestone: nextMilestone.name,
+      nextMilestoneRequired: nextMilestone.streak_needed,
+      daysToNext,
+      progress: Math.min(progress, 100)
+    });
+
+    return {
+      nextMilestone, // The goal to work towards
+      progress: Math.min(progress, 100),
+      currentStreak,
+      daysToNext,
+      lastAchieved, // Last milestone achieved (can be null)
+      isMaxLevel: currentStreak >= MILESTONES[MILESTONES.length - 1].streak_needed
+    };
+  }, [user, profile]);
 
   const quickActions = [
     {
@@ -367,43 +407,47 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {/* Current Milestone */}
+              {/* Next Milestone Goal */}
               <div className="text-center">
-                <div className="text-6xl mb-3">{milestoneData.current.emoji}</div>
+                <div className="text-6xl mb-3">{milestoneData.nextMilestone.emoji}</div>
                 <h3 className="text-2xl font-bold text-foreground mb-2">
-                  {milestoneData.current.name}
+                  {milestoneData.nextMilestone.name}
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   {milestoneData.currentStreak} day{milestoneData.currentStreak !== 1 ? 's' : ''} streak
                 </p>
                 <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
                   <p className="text-sm italic text-foreground/90">
-                    "{milestoneData.current.scripture}"
+                    "{milestoneData.nextMilestone.scripture}"
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    - {milestoneData.current.scripture_ref}
+                    - {milestoneData.nextMilestone.scripture_ref}
                   </p>
                 </div>
               </div>
 
-              {/* Progress to Next */}
-              {milestoneData.current.level < MILESTONES[MILESTONES.length - 1].level && (
+              {/* Progress to Goal */}
+              {!milestoneData.isMaxLevel && (
                 <div className="pt-4 border-t">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Next: {milestoneData.nextMilestone.name}</span>
+                    <span className="text-sm font-medium">
+                      {milestoneData.daysToNext === 0 ? 'Achieved!' : `${milestoneData.daysToNext} day${milestoneData.daysToNext !== 1 ? 's' : ''} to go`}
+                    </span>
                     <span className="text-sm text-muted-foreground">
-                      {milestoneData.streakToNext} more day{milestoneData.streakToNext !== 1 ? 's' : ''}
+                      {milestoneData.currentStreak} / {milestoneData.nextMilestone.streak_needed}
                     </span>
                   </div>
                   <Progress value={milestoneData.progress} className="h-2" />
-                  <p className="text-xs text-muted-foreground mt-2 text-center">
-                    {milestoneData.currentStreak} / {milestoneData.nextMilestone.streak_needed} days
-                  </p>
+                  {milestoneData.lastAchieved && (
+                    <p className="text-xs text-muted-foreground mt-2 text-center">
+                      Last unlocked: {milestoneData.lastAchieved.name} {milestoneData.lastAchieved.emoji}
+                    </p>
+                  )}
                 </div>
               )}
 
               {/* Max Level Achieved */}
-              {milestoneData.current.level === MILESTONES[MILESTONES.length - 1].level && (
+              {milestoneData.isMaxLevel && (
                 <div className="pt-4 border-t text-center">
                   <p className="text-sm font-medium text-accent">
                     🎉 Maximum level achieved! Keep praying!

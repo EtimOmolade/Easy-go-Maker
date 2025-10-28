@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 // Backend integration - Supabase COMMENTED OUT (Prototype mode)
 // import { supabase } from "@/lib/supabase";
@@ -34,12 +34,21 @@ const Profile = () => {
     fetchProfile();
   }, [user]);
 
+  // Refetch profile when component mounts or when navigating back to this page
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchProfile();
+    }, 1000); // Refresh every second to catch updates
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   const fetchProfile = async () => {
     if (!user) return;
 
-    // Prototype mode: Fetch from localStorage
-    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
-    const userProfile = profiles[user.id];
+    // Prototype mode: Fetch from localStorage (profiles is an ARRAY)
+    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, [] as any[]);
+    const userProfile = profiles.find((p: any) => p.id === user.id);
 
     if (userProfile) {
       const profileData = {
@@ -87,13 +96,17 @@ const Profile = () => {
 
     setLoading(true);
 
-    // Prototype mode: Update in localStorage
-    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
-    if (!profiles[user.id]) {
-      profiles[user.id] = {};
+    // Prototype mode: Update in localStorage (profiles is an ARRAY)
+    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, [] as any[]);
+    let userProfile = profiles.find((p: any) => p.id === user.id);
+
+    if (!userProfile) {
+      userProfile = { id: user.id };
+      profiles.push(userProfile);
     }
-    profiles[user.id].name = name;
-    profiles[user.id].reminders_enabled = reminders;
+
+    userProfile.name = name;
+    userProfile.reminders_enabled = reminders;
     setToStorage(STORAGE_KEYS.PROFILES, profiles);
 
     toast.success("Profile updated successfully");
@@ -116,28 +129,27 @@ const Profile = () => {
     // setLoading(false);
   };
 
-  const getAchievementStatus = () => {
-    if (!user) return { unlocked: [], locked: MILESTONES, totalPrayers: 0 };
-    
-    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {} as any);
-    const userProfile = profiles[user.id];
+  const { unlocked, locked, currentStreak } = useMemo(() => {
+    if (!user) return { unlocked: [], locked: MILESTONES, currentStreak: 0 };
+
+    // Read profiles as ARRAY
+    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, [] as any[]);
+    const userProfile = profiles.find((p: any) => p.id === user.id);
     const currentStreak = userProfile?.streak_count || 0;
     const unlockedDates = userProfile?.milestone_unlocked_dates || {};
-    
+
     const unlocked = MILESTONES.filter(m => currentStreak >= m.streak_needed).map(m => ({
       ...m,
       unlockedDate: unlockedDates[m.level] || 'Recently unlocked'
     }));
-    
+
     const locked = MILESTONES.filter(m => currentStreak < m.streak_needed).map(m => ({
       ...m,
-      streakNeeded: m.streak_needed - currentStreak
+      daysNeeded: m.streak_needed - currentStreak
     }));
-    
-    return { unlocked, locked, currentStreak };
-  };
 
-  const { unlocked, locked, currentStreak } = getAchievementStatus();
+    return { unlocked, locked, currentStreak };
+  }, [user, profile]);
 
   return (
     <div className="min-h-screen gradient-subtle">
@@ -166,7 +178,7 @@ const Profile = () => {
           <CardContent className="space-y-6">
             <div className="text-center p-4 bg-accent/10 rounded-lg">
               <p className="text-sm text-muted-foreground mb-1">Current Prayer Streak</p>
-              <p className="text-3xl font-bold text-accent">{currentStreak} Days</p>
+              <p className="text-3xl font-bold text-accent">{currentStreak} Day{currentStreak !== 1 ? 's' : ''}</p>
             </div>
 
             {/* Unlocked Achievements */}
@@ -206,10 +218,10 @@ const Profile = () => {
                       <div className="flex-1">
                         <h4 className="font-semibold text-muted-foreground">{milestone.name}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {milestone.streakNeeded} more day{milestone.streakNeeded !== 1 ? 's' : ''} to unlock
+                          {milestone.daysNeeded} more day{milestone.daysNeeded !== 1 ? 's' : ''} to unlock
                         </p>
                         <p className="text-xs italic text-muted-foreground mt-1">
-                          Requires {milestone.streak_needed}-day streak
+                          Requires {milestone.streak_needed}-day prayer streak
                         </p>
                       </div>
                     </div>
@@ -303,7 +315,7 @@ const Profile = () => {
                   </div>
                   <div>
                     <p className="font-semibold text-foreground mb-1">Consent:</p>
-                    <p>By submitting, you grant M6V33 a non-exclusive right to display and lightly edit your story for clarity and encouragement.</p>
+                    <p>By submitting, you grant Spirit Connect a non-exclusive right to display and lightly edit your story for clarity and encouragement.</p>
                   </div>
                 </div>
               </CollapsibleContent>
@@ -321,10 +333,10 @@ const Profile = () => {
               <CollapsibleContent className="mt-3 p-4 border rounded-lg bg-muted/30">
                 <div className="space-y-3 text-sm text-muted-foreground">
                   <p>By using this app, you agree to share only true experiences and respect others' privacy.</p>
-                  <p>M6V33 reserves the right to review and moderate content before publication.</p>
+                  <p>Spirit Connect reserves the right to review and moderate content before publication.</p>
                   <p>Testimonies are personal experiences and not verified claims.</p>
                   <p className="text-xs italic text-foreground/70 pt-2 border-t">
-                    © M6V33 — All rights reserved.
+                    © Spirit Connect — All rights reserved.
                   </p>
                 </div>
               </CollapsibleContent>

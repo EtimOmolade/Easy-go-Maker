@@ -329,6 +329,7 @@ const CreateGuideline = () => {
                   </p>
                 </div>
 
+                {/* TODO: Implement audio playback in prayer sessions
                 <div>
                   <Label htmlFor="custom_audio">Custom Audio URL (Optional)</Label>
                   <Input
@@ -338,6 +339,7 @@ const CreateGuideline = () => {
                     placeholder="https://example.com/audio.mp3"
                   />
                 </div>
+                */}
 
                 <Button type="button" onClick={handleAddStep} variant="secondary" className="w-full">
                   <Plus className="mr-2 h-4 w-4" />
