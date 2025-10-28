@@ -574,7 +574,7 @@ const Journal = () => {
           </div>
 
           <h1 className="text-4xl font-heading font-bold gradient-primary bg-clip-text text-transparent mb-2">
-            My Prayer Journal
+            My SpiritConnect Journal
           </h1>
           <p className="text-muted-foreground mb-4">
             Your private space for prayers and reflections

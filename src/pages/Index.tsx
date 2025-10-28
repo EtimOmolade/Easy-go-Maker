@@ -25,7 +25,7 @@ const Index = () => {
             </div>
           </div>
           <h1 className="text-5xl md:text-7xl font-heading font-bold text-white mb-6">
-            Prayer Journal
+            SpiritConnect
           </h1>
           <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-2xl mx-auto">
             Track your prayers, follow weekly guidelines, and share testimonies in a faith-centered community

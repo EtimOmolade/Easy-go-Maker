@@ -1551,7 +1551,7 @@ export const checkAndShowDailyReminder = (userId: string): boolean => {
     
     const messages = [
       "🌅 Good morning! Take a moment to say a prayer and write in your journal.",
-      "🙏 Start your day with reflection — open your prayer journal now.",
+      "🙏 Start your day with reflection — open SpiritConnect now.",
       "💭 God's waiting to hear from you today. Spend a few minutes in prayer."
     ];
     

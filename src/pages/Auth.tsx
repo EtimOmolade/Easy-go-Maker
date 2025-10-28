@@ -115,7 +115,7 @@ const Auth = () => {
         signIn(userForAuth);
 
         if (!isAdminEmail) {
-          toast.success("Account created! Welcome to Prayer Journal.");
+          toast.success("Account created! Welcome to SpiritConnect.");
         }
         navigate("/dashboard");
       }
@@ -186,7 +186,7 @@ const Auth = () => {
               <BookOpen className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-heading">Prayer Journal</CardTitle>
+          <CardTitle className="text-3xl font-heading">SpiritConnect</CardTitle>
           <CardDescription>
             {isLogin ? "Welcome back! Sign in to continue your journey" : "Begin your prayer journey today"}
           </CardDescription>
