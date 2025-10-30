@@ -1,8 +1,8 @@
-## Project: Spirit Scribe Path - Prayer Journal Web App
+## Project: Spirit Scribe Path - Prayer Journal Web-App
 
 ## Team:
 - Me: Developer
-- Team Lead: Project manager
+- Team Lead: Project managers
 - Client: Approved 5 new features + backend activation
 
 ## Tech Stack:
