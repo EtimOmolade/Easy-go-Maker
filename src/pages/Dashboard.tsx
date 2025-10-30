@@ -1,8 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-// Backend integration - Supabase COMMENTED OUT (Prototype mode)
-// import { supabase } from "@/lib/supabase";
+// Backend integration - Supabase ACTIVATED
+import { supabase } from "@/lib/supabase";
 import { STORAGE_KEYS, MILESTONES, getFromStorage, setToStorage } from "@/data/mockData";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,7 @@ const Dashboard = () => {
       const handleVisibilityChange = () => {
         if (!document.hidden) {
           fetchProfile();
+          fetchEncouragementMessage();
           checkForNewMilestones();
         }
       };
@@ -64,6 +65,7 @@ const Dashboard = () => {
       // Poll for updates every second
       const interval = setInterval(() => {
         fetchProfile();
+        fetchEncouragementMessage();
       }, 1000);
 
       return () => {
@@ -180,33 +182,28 @@ const Dashboard = () => {
   };
 
   const fetchEncouragementMessage = async () => {
-    // Prototype mode: Fetch from localStorage
-    const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, [] as any[]);
+    // Backend integration - Supabase ACTIVATED
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Filter messages from last 48 hours
-    const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
-    const recentMessages = messages
-      .filter((msg: any) => new Date(msg.created_at).getTime() > twoDaysAgo)
-      .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 3);
+    const { data, error } = await supabase
+      .from("encouragement_messages")
+      .select("*")
+      .gte("created_at", twoDaysAgo)
+      .order("created_at", { ascending: false })
+      .limit(3);
 
-    setEncouragementMessages(recentMessages);
+    if (error) {
+      console.error("Error fetching encouragement messages:", error);
+      toast.error("Failed to load announcements");
+    } else {
+      console.log("Fetched announcements:", data);
+      console.log("Number of announcements:", data?.length || 0);
+      setEncouragementMessages(data || []);
 
-    // Backend integration - Supabase COMMENTED OUT
-    // const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
-    //
-    // const { data, error } = await supabase
-    //   .from("encouragement_messages")
-    //   .select("*")
-    //   .gte("created_at", twoDaysAgo)
-    //   .order("created_at", { ascending: false })
-    //   .limit(3);
-    //
-    // if (error) {
-    //   console.error("Error fetching encouragement:", error);
-    // } else if (data) {
-    //   setEncouragementMessages(data);
-    // }
+      if (!data || data.length === 0) {
+        console.warn("No announcements found in the last 48 hours");
+      }
+    }
   };
 
   const fetchPendingTestimonies = async () => {

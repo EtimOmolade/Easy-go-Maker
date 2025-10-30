@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-// Backend integration - Supabase COMMENTED OUT (Prototype mode)
-// import { supabase } from "@/lib/supabase";
+import { useNavigate, useLocation } from "react-router-dom";
+// Backend integration - Supabase ACTIVATED
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-import { mockUsers, STORAGE_KEYS, setToStorage, getFromStorage } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +11,9 @@ import { toast } from "sonner";
 import { Loader2, BookOpen, Eye, EyeOff } from "lucide-react";
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const location = useLocation();
+  const initialMode = location.state?.mode === 'signup' ? false : true;
+  const [isLogin, setIsLogin] = useState(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -45,29 +46,17 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      // Prototype mode: Mock authentication with localStorage
+      // Backend integration - Supabase ACTIVATED
       if (isLogin) {
-        const users = getFromStorage(STORAGE_KEYS.USERS, mockUsers);
-        const foundUser = users.find((u: any) => u.email === email && u.password === password);
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-        if (!foundUser) {
-          toast.error("Invalid email or password");
-          setLoading(false);
-          return;
-        }
-
-        const userForAuth = {
-          id: foundUser.id,
-          email: foundUser.email,
-          user_metadata: { name: foundUser.name }
-        };
-
-        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(userForAuth));
-        signIn(userForAuth);
+        if (error) throw error;
         toast.success("Welcome back!");
         navigate("/dashboard");
       } else {
-        // Signup: validate password
         const passwordValidation = validatePassword(password);
         if (!passwordValidation.valid) {
           toast.error(passwordValidation.message);
@@ -75,82 +64,19 @@ const Auth = () => {
           return;
         }
 
-        const users = getFromStorage(STORAGE_KEYS.USERS, mockUsers);
-        const existingUser = users.find((u: any) => u.email === email);
-
-        if (existingUser) {
-          toast.error("Email already registered");
-          setLoading(false);
-          return;
-        }
-
-        const newUser = {
-          id: `user-${Date.now()}`,
+        const { error } = await supabase.auth.signUp({
           email,
           password,
-          name,
-          isAdmin: false,
-          createdAt: new Date().toISOString()
-        };
+          options: {
+            data: { name },
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+          },
+        });
 
-        users.push(newUser);
-        setToStorage(STORAGE_KEYS.USERS, users);
-
-        // Check if email contains @admin to grant admin access
-        const isAdminEmail = email.toLowerCase().includes('@admin');
-        if (isAdminEmail) {
-          const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
-          userRoles[newUser.id] = 'admin';
-          setToStorage(STORAGE_KEYS.USER_ROLES, userRoles);
-          toast.success("🛡️ Admin account created! You have full access.");
-        }
-
-        const userForAuth = {
-          id: newUser.id,
-          email: newUser.email,
-          user_metadata: { name: newUser.name }
-        };
-
-        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(userForAuth));
-        signIn(userForAuth);
-
-        if (!isAdminEmail) {
-          toast.success("Account created! Welcome to SpiritConnect.");
-        }
+        if (error) throw error;
+        toast.success("Account created! Welcome to SpiritConnect.");
         navigate("/dashboard");
       }
-
-      // Backend integration - Supabase COMMENTED OUT
-      // if (isLogin) {
-      //   const { error } = await supabase.auth.signInWithPassword({
-      //     email,
-      //     password,
-      //   });
-      //
-      //   if (error) throw error;
-      //   toast.success("Welcome back!");
-      //   navigate("/dashboard");
-      // } else {
-      //   const passwordValidation = validatePassword(password);
-      //   if (!passwordValidation.valid) {
-      //     toast.error(passwordValidation.message);
-      //     setLoading(false);
-      //     return;
-      //   }
-      //
-      //   const { error } = await supabase.auth.signUp({
-      //     email,
-      //     password,
-      //     options: {
-      //       data: { name },
-      //       emailRedirectTo: `${window.location.origin}/dashboard`,
-      //     },
-      //   });
-      //
-      //   if (error) throw error;
-      //   toast.success("Account created! Check your email to verify.");
-      //   navigate("/dashboard");
-      // }
     } catch (error: any) {
       toast.error(error.message || "An error occurred");
     } finally {
@@ -159,22 +85,19 @@ const Auth = () => {
   };
 
   const handleGoogleSignIn = async () => {
-    // Prototype mode: Google OAuth not available
-    toast.info("Google sign-in will be available in production version");
+    // Backend integration - Supabase ACTIVATED
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
 
-    // Backend integration - Supabase COMMENTED OUT
-    // try {
-    //   const { error } = await supabase.auth.signInWithOAuth({
-    //     provider: "google",
-    //     options: {
-    //       redirectTo: `${window.location.origin}/dashboard`,
-    //     },
-    //   });
-    //
-    //   if (error) throw error;
-    // } catch (error: any) {
-    //   toast.error(error.message || "Google sign-in not configured yet");
-    // }
+      if (error) throw error;
+    } catch (error: any) {
+      toast.error(error.message || "Google sign-in not configured yet");
+    }
   };
 
   return (
@@ -216,11 +139,6 @@ const Auth = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
-              {!isLogin && (
-                <p className="text-xs text-muted-foreground">
-                  💡 Tip: Use an email with "@admin" (e.g., user@admin.com) to get admin access
-                </p>
-              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-// Backend integration - Supabase COMMENTED OUT (Prototype mode)
-// import { supabase } from "@/lib/supabase";
+// Backend integration - Supabase ACTIVATED
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -129,59 +129,34 @@ const Admin = () => {
 
   const fetchUsers = async () => {
     try {
-      // Prototype mode: Fetch from localStorage
-      const profiles = getFromStorage(STORAGE_KEYS.PROFILES, {});
-      const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
+      // Backend integration - Supabase ACTIVATED
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, name, email');
 
-      // Convert profiles object to array
-      const allProfiles = Object.keys(profiles).map(id => ({
-        id,
-        name: profiles[id].name || 'Unknown',
-        email: profiles[id].email || ''
-      }));
-      setAllUsers(allProfiles);
+      if (profilesError) throw profilesError;
+      setAllUsers(profiles || []);
 
-      // Get admins
-      const admins: AdminUser[] = Object.keys(userRoles)
-        .filter(userId => userRoles[userId] === 'admin')
-        .map(userId => ({
-          id: userId,
-          name: profiles[userId]?.name || 'Unknown',
-          email: profiles[userId]?.email || '',
+      const { data: adminRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, created_at')
+        .eq('role', 'admin')
+        .order('created_at', { ascending: true });
+
+      if (rolesError) throw rolesError;
+
+      const admins: AdminUser[] = (adminRoles || []).map(role => {
+        const profile = profiles?.find(p => p.id === role.user_id);
+        return {
+          id: role.user_id,
+          name: profile?.name || 'Unknown',
+          email: profile?.email || '',
           isAdmin: true,
-          adminSince: new Date().toISOString() // Prototype doesn't track this
-        }));
+          adminSince: role.created_at
+        };
+      });
 
       setAdminUsers(admins);
-
-      // Backend integration - Supabase COMMENTED OUT
-      // const { data: profiles, error: profilesError } = await supabase
-      //   .from('profiles')
-      //   .select('id, name, email');
-      //
-      // if (profilesError) throw profilesError;
-      // setAllUsers(profiles || []);
-      //
-      // const { data: adminRoles, error: rolesError } = await supabase
-      //   .from('user_roles')
-      //   .select('user_id, created_at')
-      //   .eq('role', 'admin')
-      //   .order('created_at', { ascending: true });
-      //
-      // if (rolesError) throw rolesError;
-      //
-      // const admins: AdminUser[] = (adminRoles || []).map(role => {
-      //   const profile = profiles?.find(p => p.id === role.user_id);
-      //   return {
-      //     id: role.user_id,
-      //     name: profile?.name || 'Unknown',
-      //     email: profile?.email || '',
-      //     isAdmin: true,
-      //     adminSince: role.created_at
-      //   };
-      // });
-      //
-      // setAdminUsers(admins);
     } catch (error: any) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
@@ -212,26 +187,19 @@ const Admin = () => {
   };
 
   const fetchEncouragementMessages = async () => {
-    // Prototype mode: Fetch from localStorage
-    const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, [] as any[]);
-    const sortedMessages = messages
-      .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 10);
-    setEncouragementMessages(sortedMessages);
+    // Backend integration - Supabase ACTIVATED
+    const { data, error } = await supabase
+      .from('encouragement_messages')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10);
 
-    // Backend integration - Supabase COMMENTED OUT
-    // const { data, error } = await supabase
-    //   .from('encouragement_messages')
-    //   .select('*')
-    //   .order('created_at', { ascending: false })
-    //   .limit(10);
-    //
-    // if (error) {
-    //   console.error('Error fetching encouragement messages:', error);
-    //   toast.error('Failed to load encouragement messages');
-    // } else {
-    //   setEncouragementMessages(data || []);
-    // }
+    if (error) {
+      console.error('Error fetching encouragement messages:', error);
+      toast.error('Failed to load encouragement messages');
+    } else {
+      setEncouragementMessages(data || []);
+    }
   };
 
   const handleCreateGuideline = async (e: React.FormEvent) => {
@@ -360,35 +328,20 @@ const Admin = () => {
     if (!user) return;
 
     try {
-      // Prototype mode: Save to localStorage
-      const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, []);
-      const newMessage = {
-        id: `encourage-${Date.now()}`,
-        content: encouragementContent,
-        created_at: new Date().toISOString(),
-        created_by: user.id
-      };
-      messages.push(newMessage);
-      setToStorage(STORAGE_KEYS.ENCOURAGEMENT, messages);
-      
+      // Backend integration - Supabase ACTIVATED
+      const { error } = await supabase
+        .from('encouragement_messages')
+        .insert({
+          content: encouragementContent,
+          created_by: user.id,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
       toast.success("✨ New daily encouragement posted!");
       setEncouragementContent("");
       setIsEncouragementDialogOpen(false);
       await fetchEncouragementMessages();
-
-      // Backend integration - Supabase COMMENTED OUT
-      // const { error } = await supabase
-      //   .from('encouragement_messages')
-      //   .insert({
-      //     content: encouragementContent,
-      //     created_at: new Date().toISOString()
-      //   });
-      //
-      // if (error) throw error;
-      // toast.success("✨ New daily encouragement posted!");
-      // setEncouragementContent("");
-      // setIsEncouragementDialogOpen(false);
-      // await fetchEncouragementMessages();
     } catch (error: any) {
       console.error('Error posting encouragement:', error);
       toast.error(error.message || 'Failed to post encouragement message');
@@ -399,22 +352,15 @@ const Admin = () => {
     if (!confirm("Are you sure you want to delete this encouragement message?")) return;
 
     try {
-      // Prototype mode: Delete from localStorage
-      const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, []);
-      const filtered = messages.filter((m: any) => m.id !== id);
-      setToStorage(STORAGE_KEYS.ENCOURAGEMENT, filtered);
+      // Backend integration - Supabase ACTIVATED
+      const { error } = await supabase
+        .from('encouragement_messages')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
       toast.success("Message deleted");
       await fetchEncouragementMessages();
-
-      // Backend integration - Supabase COMMENTED OUT
-      // const { error } = await supabase
-      //   .from('encouragement_messages')
-      //   .delete()
-      //   .eq('id', id);
-      //
-      // if (error) throw error;
-      // toast.success("Message deleted");
-      // await fetchEncouragementMessages();
     } catch (error: any) {
       console.error('Error deleting encouragement:', error);
       toast.error(error.message || 'Failed to delete message');
@@ -581,46 +527,45 @@ const Admin = () => {
     try {
       const targetUser = allUsers.find(u => u.id === userId);
 
-      // Prototype mode: Update in localStorage
-      const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
-      
-      if (userRoles[userId] === 'admin') {
+      // Backend integration - Supabase ACTIVATED
+      // Check if user already has admin role
+      const { data: existingRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (existingRole) {
         toast.error('User is already an admin');
         return;
       }
 
-      userRoles[userId] = 'admin';
-      setToStorage(STORAGE_KEYS.USER_ROLES, userRoles);
+      // Try to update existing role first
+      const { data: updated, error: updateError } = await supabase
+        .from('user_roles')
+        .update({ role: 'admin' })
+        .eq('user_id', userId)
+        .select();
+
+      // If no rows were updated (user has no existing role), insert a new one
+      if (!updateError && (!updated || updated.length === 0)) {
+        const { error: insertError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: userId,
+            role: 'admin'
+          });
+
+        if (insertError) throw insertError;
+      } else if (updateError) {
+        throw updateError;
+      }
 
       toast.success(`${targetUser?.name || 'User'} has been promoted to admin`);
       setShowPromoteDialog(false);
       setSearchEmail("");
       await fetchUsers();
-
-      // Backend integration - Supabase COMMENTED OUT
-      // const { data: existingRole } = await supabase
-      //   .from('user_roles')
-      //   .select('role')
-      //   .eq('user_id', userId)
-      //   .eq('role', 'admin')
-      //   .maybeSingle();
-      //
-      // if (existingRole) {
-      //   toast.error('User is already an admin');
-      //   return;
-      // }
-      //
-      // const { error } = await supabase
-      //   .from('user_roles')
-      //   .update({ role: 'admin' })
-      //   .eq('user_id', userId)
-      //   .eq('role', 'user');
-      //
-      // if (error) throw error;
-      // toast.success(`${targetUser?.name || 'User'} has been promoted to admin`);
-      // setShowPromoteDialog(false);
-      // setSearchEmail("");
-      // await fetchUsers();
     } catch (error: any) {
       console.error('Error promoting user:', error);
       toast.error(error.message || 'Failed to promote user');
@@ -638,26 +583,17 @@ const Admin = () => {
         return;
       }
 
-      // Prototype mode: Update in localStorage
-      const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
-      delete userRoles[demoteTarget.id];
-      setToStorage(STORAGE_KEYS.USER_ROLES, userRoles);
+      // Backend integration - Supabase ACTIVATED
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role: 'user' })
+        .eq('user_id', demoteTarget.id)
+        .eq('role', 'admin');
 
+      if (error) throw error;
       toast.success(`${demoteTarget.name} has been demoted to regular user`);
       setDemoteTarget(null);
       await fetchUsers();
-
-      // Backend integration - Supabase COMMENTED OUT
-      // const { error } = await supabase
-      //   .from('user_roles')
-      //   .update({ role: 'user' })
-      //   .eq('user_id', demoteTarget.id)
-      //   .eq('role', 'admin');
-      //
-      // if (error) throw error;
-      // toast.success(`${demoteTarget.name} has been demoted to regular user`);
-      // setDemoteTarget(null);
-      // await fetchUsers();
     } catch (error: any) {
       console.error('Error demoting admin:', error);
       toast.error(error.message || 'Failed to demote admin');
