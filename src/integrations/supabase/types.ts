@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          table_name: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      daily_prayers: {
+        Row: {
+          completed_at: string
+          created_at: string
+          day_of_week: string
+          guideline_id: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          day_of_week: string
+          guideline_id?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          day_of_week?: string
+          guideline_id?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_prayers_guideline_id_fkey"
+            columns: ["guideline_id"]
+            isOneToOne: false
+            referencedRelation: "guidelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       encouragement_messages: {
         Row: {
           content: string
@@ -82,6 +150,7 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          voice_note_url: string | null
         }
         Insert: {
           content: string
@@ -94,6 +163,7 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          voice_note_url?: string | null
         }
         Update: {
           content?: string
@@ -106,6 +176,7 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          voice_note_url?: string | null
         }
         Relationships: [
           {
@@ -116,6 +187,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      prayer_library: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          created_by: string | null
+          day_of_week: string | null
+          id: string
+          is_used: boolean | null
+          title: string
+          week_number: number | null
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          day_of_week?: string | null
+          id?: string
+          is_used?: boolean | null
+          title: string
+          week_number?: number | null
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          day_of_week?: string | null
+          id?: string
+          is_used?: boolean | null
+          title?: string
+          week_number?: number | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -149,33 +256,79 @@ export type Database = {
       }
       testimonies: {
         Row: {
+          admin_note: string | null
           approved: boolean
+          approved_at: string | null
+          approved_by: string | null
+          audio_duration: number | null
+          audio_note: string | null
+          consent_given: boolean | null
           content: string
           created_at: string
           date: string
           id: string
+          journal_entry_id: string | null
+          rejected: boolean | null
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          resubmitted_at: string | null
+          status: string | null
           title: string
           user_id: string
         }
         Insert: {
+          admin_note?: string | null
           approved?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
+          audio_duration?: number | null
+          audio_note?: string | null
+          consent_given?: boolean | null
           content: string
           created_at?: string
           date?: string
           id?: string
+          journal_entry_id?: string | null
+          rejected?: boolean | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          resubmitted_at?: string | null
+          status?: string | null
           title: string
           user_id: string
         }
         Update: {
+          admin_note?: string | null
           approved?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
+          audio_duration?: number | null
+          audio_note?: string | null
+          consent_given?: boolean | null
           content?: string
           created_at?: string
           date?: string
           id?: string
+          journal_entry_id?: string | null
+          rejected?: boolean | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          resubmitted_at?: string | null
+          status?: string | null
           title?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "testimonies_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "testimonies_user_id_fkey"
             columns: ["user_id"]
