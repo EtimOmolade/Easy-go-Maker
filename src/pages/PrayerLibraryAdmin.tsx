@@ -1,0 +1,376 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { ArrowLeft, Plus, Edit, Trash2, RefreshCw, Upload } from "lucide-react";
+
+
+export default function PrayerLibraryAdmin() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [prayers, setPrayers] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [currentPrayer, setCurrentPrayer] = useState<any>(null);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    title: "",
+    content: "",
+    category: "Kingdom Focus",
+    day_of_week: "",
+    week_number: 1,
+    audio_url: "",
+  });
+
+  useEffect(() => {
+    fetchPrayers();
+  }, [selectedCategory]);
+
+  const fetchPrayers = async () => {
+    try {
+      let query = supabase
+        .from('prayer_library')
+        .select('*')
+        .order('week_number', { ascending: true })
+        .order('day_of_week', { ascending: true });
+
+      if (selectedCategory !== 'all') {
+        query = query.eq('category', selectedCategory);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      setPrayers(data || []);
+    } catch (error: any) {
+      toast.error("Failed to load prayers");
+      console.error(error);
+    }
+  };
+
+  const handleGenerateProverbsPlan = async () => {
+    if (!user) return;
+
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-proverbs-plan', {
+        body: { cycleNumber: 1, userId: user.id }
+      });
+
+      if (error) throw error;
+
+      toast.success(`Generated ${data.count} days of Proverbs reading plan`);
+      fetchPrayers();
+    } catch (error: any) {
+      toast.error("Failed to generate Proverbs plan");
+      console.error(error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    try {
+      const prayerData = {
+        ...formData,
+        created_by: user.id,
+      };
+
+      if (isEditing && currentPrayer) {
+        const { error } = await supabase
+          .from('prayer_library')
+          .update(prayerData)
+          .eq('id', currentPrayer.id);
+
+        if (error) throw error;
+        toast.success("Prayer updated successfully");
+      } else {
+        const { error } = await supabase
+          .from('prayer_library')
+          .insert([prayerData]);
+
+        if (error) throw error;
+        toast.success("Prayer added successfully");
+      }
+
+      resetForm();
+      setIsDialogOpen(false);
+      fetchPrayers();
+    } catch (error: any) {
+      toast.error("Failed to save prayer");
+      console.error(error);
+    }
+  };
+
+  const handleEdit = (prayer: any) => {
+    setCurrentPrayer(prayer);
+    setFormData({
+      title: prayer.title,
+      content: prayer.content,
+      category: prayer.category,
+      day_of_week: prayer.day_of_week || "",
+      week_number: prayer.week_number || 1,
+      audio_url: prayer.audio_url || "",
+    });
+    setIsEditing(true);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this prayer?")) return;
+
+    try {
+      const { error } = await supabase
+        .from('prayer_library')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success("Prayer deleted successfully");
+      fetchPrayers();
+    } catch (error: any) {
+      toast.error("Failed to delete prayer");
+      console.error(error);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      content: "",
+      category: "Kingdom Focus",
+      day_of_week: "",
+      week_number: 1,
+      audio_url: "",
+    });
+    setIsEditing(false);
+    setCurrentPrayer(null);
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'Kingdom Focus':
+        return 'bg-purple-100 text-purple-800';
+      case 'Listening Prayer':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <Button 
+          onClick={() => navigate("/admin")} 
+          variant="ghost" 
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Admin
+        </Button>
+
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-4xl font-bold">Prayer Library Management</h1>
+            <p className="text-muted-foreground mt-2">
+              Manage Kingdom Focus prayers and Listening Prayer content
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleGenerateProverbsPlan} disabled={isGenerating}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${isGenerating ? 'animate-spin' : ''}`} />
+              {isGenerating ? 'Generating...' : 'Regenerate Proverbs'}
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={resetForm}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Prayer
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{isEditing ? 'Edit Prayer' : 'Add New Prayer'}</DialogTitle>
+                  <DialogDescription>
+                    {isEditing ? 'Update the prayer details below' : 'Enter the details for the new prayer'}
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Kingdom Focus">Kingdom Focus</SelectItem>
+                        <SelectItem value="Listening Prayer">Listening Prayer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="week_number">Week Number</Label>
+                      <Input
+                        id="week_number"
+                        type="number"
+                        min="1"
+                        value={formData.week_number}
+                        onChange={(e) => setFormData({ ...formData, week_number: parseInt(e.target.value) })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="day_of_week">Day of Week</Label>
+                      <Select
+                        value={formData.day_of_week}
+                        onValueChange={(value) => setFormData({ ...formData, day_of_week: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select day" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Monday">Monday</SelectItem>
+                          <SelectItem value="Tuesday">Tuesday</SelectItem>
+                          <SelectItem value="Wednesday">Wednesday</SelectItem>
+                          <SelectItem value="Thursday">Thursday</SelectItem>
+                          <SelectItem value="Friday">Friday</SelectItem>
+                          <SelectItem value="Saturday">Saturday</SelectItem>
+                          <SelectItem value="Sunday">Sunday</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Title</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="content">Content</Label>
+                    <Textarea
+                      id="content"
+                      value={formData.content}
+                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                      required
+                      rows={6}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="audio_url">Audio URL (Optional)</Label>
+                    <Input
+                      id="audio_url"
+                      value={formData.audio_url}
+                      onChange={(e) => setFormData({ ...formData, audio_url: e.target.value })}
+                      placeholder="https://..."
+                    />
+                  </div>
+
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">
+                      {isEditing ? 'Update Prayer' : 'Add Prayer'}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
+          <TabsList>
+            <TabsTrigger value="all">All Prayers</TabsTrigger>
+            <TabsTrigger value="Kingdom Focus">Kingdom Focus</TabsTrigger>
+            <TabsTrigger value="Listening Prayer">Listening Prayer</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value={selectedCategory} className="space-y-4 mt-6">
+            {prayers.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <p className="text-muted-foreground mb-4">No prayers found</p>
+                  <Button onClick={() => setIsDialogOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add First Prayer
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {prayers.map((prayer) => (
+                  <Card key={prayer.id}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center gap-2">
+                            <Badge className={getCategoryColor(prayer.category)}>
+                              {prayer.category}
+                            </Badge>
+                            {prayer.day_of_week && (
+                              <Badge variant="outline">
+                                Week {prayer.week_number} - {prayer.day_of_week}
+                              </Badge>
+                            )}
+                          </div>
+                          <CardTitle className="text-xl">{prayer.title}</CardTitle>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleEdit(prayer)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDelete(prayer.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-sm text-muted-foreground line-clamp-3">
+                        {prayer.content}
+                      </p>
+                      {prayer.audio_url && (
+                        <div className="text-sm text-muted-foreground">
+                          Audio URL: <a href={prayer.audio_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{prayer.audio_url}</a>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}
