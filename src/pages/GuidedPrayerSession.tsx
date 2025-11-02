@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { STORAGE_KEYS, getFromStorage, setToStorage, PrayerPoint } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -84,36 +84,23 @@ const GuidedPrayerSession = () => {
   const fetchGuideline = async () => {
     if (!id) return;
 
-    const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
-    const foundGuideline = guidelines.find((g: any) => g.id === id);
+    try {
+      const { data: guideline, error } = await supabase
+        .from('guidelines')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-    if (foundGuideline) {
-      // Check if guideline has steps (new structure)
-      if (foundGuideline.steps && foundGuideline.steps.length > 0) {
-        // New structure with library-based steps
-        const prayerPoints = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
-        
-        const enrichedSteps = foundGuideline.steps.map((step: any) => {
-          const points = prayerPoints.filter(p => step.prayer_point_ids?.includes(p.id));
-          
-          return {
-            id: step.id,
-            type: step.type,
-            title: step.type,
-            content: '',
-            duration: step.duration,
-            audioUrl: step.custom_audio_url,
-            prayer_point_ids: step.prayer_point_ids,
-            points: points.map(p => p.title)
-          };
-        });
+      if (error) throw error;
 
-        setGuideline({ ...foundGuideline, steps: enrichedSteps });
-      } else {
-        // Fallback: No steps defined, show message
-        setGuideline(null);
+      if (guideline) {
+        setGuideline(guideline);
       }
+    } catch (error) {
+      console.error("Error fetching guideline:", error);
+      toast.error("Failed to load guideline");
     }
+    
     setLoading(false);
   };
 
@@ -137,10 +124,10 @@ const GuidedPrayerSession = () => {
   };
 
   const handlePointComplete = () => {
-    const currentStep = guideline.steps[currentStepIndex];
+    const currentStep = guideline.steps?.[currentStepIndex];
     const nextPointIndex = currentPointIndex + 1;
     
-    if (currentStep.type === 'kingdom' && nextPointIndex < (currentStep.prayer_point_ids?.length || 0)) {
+    if (currentStep?.type === 'kingdom' && nextPointIndex < (currentStep.points?.length || 0)) {
       // Move to next prayer point and trigger a re-render to reset timer
       setCurrentPointIndex(nextPointIndex);
       
@@ -161,7 +148,7 @@ const GuidedPrayerSession = () => {
     setCompletedSteps(newCompleted);
     setCurrentPointIndex(0); // Reset point index for next step
 
-    if (currentStepIndex < guideline.steps.length - 1) {
+    if (currentStepIndex < (guideline.steps?.length || 0) - 1) {
       setCurrentStepIndex(currentStepIndex + 1);
     } else {
       handleSessionComplete();
@@ -174,14 +161,20 @@ const GuidedPrayerSession = () => {
     try {
       // Determine if this is current day prayer (date-aware)
       const now = new Date();
-      const currentWeek = Math.ceil((now.getDate()) / 7);
-      const guidelineDay = guideline.day_of_week || guideline.day;
+      const currentMonthIndex = now.getMonth();
+      const monthsOrder = ['June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const currentMonthName = monthsOrder[currentMonthIndex] || '';
+      const currentDay = now.getDate();
       const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const currentDay = DAYS[now.getDay()];
+      const currentDayName = DAYS[now.getDay()];
       
-      const isCurrentWeek = guideline.week_number === currentWeek;
+      const guidelineMonth = guideline.month;
+      const guidelineDay = guideline.day;
+      const guidelineMonthIndex = monthsOrder.indexOf(guidelineMonth);
+      
+      const isCurrentMonth = guidelineMonthIndex === currentMonthIndex;
       const isCurrentDay = guidelineDay === currentDay;
-      const isCurrentPrayer = isCurrentWeek && isCurrentDay;
+      const isCurrentPrayer = isCurrentMonth && isCurrentDay;
       
       let newStreak = 0;
       let milestone = null;
@@ -200,60 +193,34 @@ const GuidedPrayerSession = () => {
           console.log('Setting milestone modal:', milestone);
           setAchievedMilestone(milestone);
           setShowMilestoneModal(true);
-        } else {
-          console.log('No milestone achieved this time. Current streak:', newStreak);
         }
 
-        // Update the guideline's daily tracker for current day
-        const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
-        const updatedGuidelines = guidelines.map((g: any) => {
-          if (g.id === guideline.id) {
-            const dailyPrayers = g.dailyPrayers || DAYS.map((day: string) => ({
-              day,
-              completed: false
-            }));
-            
-            const updatedDailyPrayers = dailyPrayers.map((p: any) => 
-              p.day === currentDay 
-                ? { ...p, completed: true, completedAt: new Date().toISOString() }
-                : p
-            );
-            
-            return { ...g, dailyPrayers: updatedDailyPrayers };
-          }
-          return g;
-        });
-        setToStorage(STORAGE_KEYS.GUIDELINES, updatedGuidelines);
-      }
-
-      // Mark guideline as completed (prevents re-completion)
-      const completedGuidelines = getFromStorage(STORAGE_KEYS.COMPLETED_GUIDELINES, {} as any);
-      if (!completedGuidelines[user.id]) {
-        completedGuidelines[user.id] = [];
-      }
-      if (!completedGuidelines[user.id].includes(guideline.id)) {
-        completedGuidelines[user.id].push(guideline.id);
-        setToStorage(STORAGE_KEYS.COMPLETED_GUIDELINES, completedGuidelines);
+        // Log daily prayer completion in Supabase
+        await supabase
+          .from('daily_prayers')
+          .insert({
+            user_id: user.id,
+            guideline_id: guideline.id,
+            day_of_week: guideline.day_of_week || currentDayName,
+            completed_at: new Date().toISOString(),
+          });
       }
 
       // Create journal entry with appropriate message
-      const allEntries = getFromStorage(STORAGE_KEYS.JOURNAL_ENTRIES, [] as any[]);
       const journalContent = isCurrentPrayer 
         ? 'Completed prayer session (edit journal to add reflections)'
         : 'Completed guided prayer session (Past prayer - edit to add reflections)';
         
-      const newEntry = {
-        id: `prayer-${Date.now()}`,
-        user_id: user.id,
-        title: `${guideline.title}`,
-        content: journalContent,
-        date: new Date().toISOString().split('T')[0],
-        created_at: new Date().toISOString(),
-        is_answered: false,
-        is_shared: false
-      };
-      allEntries.push(newEntry);
-      setToStorage(STORAGE_KEYS.JOURNAL_ENTRIES, allEntries);
+      await supabase
+        .from('journal_entries')
+        .insert({
+          user_id: user.id,
+          title: guideline.title,
+          content: journalContent,
+          date: new Date().toISOString().split('T')[0],
+          is_answered: false,
+          is_shared: false,
+        });
 
       if (voiceEnabled) {
         playVoicePrompt(VOICE_PROMPTS.SESSION_COMPLETE);
@@ -265,7 +232,7 @@ const GuidedPrayerSession = () => {
 
       toast.success(message);
 
-      // Redirect to journal after 2 seconds (both modes)
+      // Redirect to journal after 2 seconds
       setTimeout(() => {
         navigate('/journal');
       }, 2000);
@@ -288,10 +255,19 @@ const GuidedPrayerSession = () => {
       setIsPlayingAudio(false);
     } else {
       const currentStep = guideline.steps[currentStepIndex];
-      const prayerPoints = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
-      const point = prayerPoints.find(p => p.id === currentStep.prayer_point_ids?.[currentPointIndex]);
       
-      if (point && currentStep.type === 'listening') {
+      if (currentStep && currentStep.type === 'listening' && currentStep.content) {
+        const utterance = new SpeechSynthesisUtterance(currentStep.content);
+        utterance.rate = 0.85;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        utterance.onend = () => {
+          setIsPlayingAudio(false);
+        };
+        window.speechSynthesis.speak(utterance);
+        setIsPlayingAudio(true);
+      } else if (currentStep && currentStep.type === 'kingdom' && currentStep.points?.[currentPointIndex]) {
+        const point = currentStep.points[currentPointIndex];
         const utterance = new SpeechSynthesisUtterance(point.content);
         utterance.rate = 0.85;
         utterance.pitch = 1;
@@ -326,11 +302,10 @@ const GuidedPrayerSession = () => {
     );
   }
 
-  const currentStep = guideline.steps[currentStepIndex];
-  const progress = ((completedSteps.length) / guideline.steps.length) * 100;
-  const prayerPoints = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
-  const currentPoint = currentStep?.prayer_point_ids?.[currentPointIndex] 
-    ? prayerPoints.find(p => p.id === currentStep.prayer_point_ids[currentPointIndex])
+  const currentStep = guideline.steps?.[currentStepIndex];
+  const progress = ((completedSteps.length) / (guideline.steps?.length || 1)) * 100;
+  const currentPoint = currentStep?.type === 'kingdom' && currentStep?.points?.[currentPointIndex] 
+    ? currentStep.points[currentPointIndex]
     : null;
 
   return (
@@ -368,12 +343,12 @@ const GuidedPrayerSession = () => {
 
         <Card className="shadow-medium mb-4 md:mb-6">
           <CardHeader className="p-4 md:p-6">
-            <div className="flex items-center justify-between mb-3 md:mb-4">
-              <Badge variant="secondary" className="text-xs">{currentDay}</Badge>
-              <span className="text-xs md:text-sm text-muted-foreground">
-                Step {currentStepIndex + 1} of {guideline.steps.length}
-              </span>
-            </div>
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <Badge variant="secondary" className="text-xs">{guideline.day_of_week}</Badge>
+                <span className="text-xs md:text-sm text-muted-foreground">
+                  Step {currentStepIndex + 1} of {guideline.steps?.length || 0}
+                </span>
+              </div>
             <CardTitle className="text-lg md:text-xl lg:text-2xl">{guideline.title}</CardTitle>
             <Progress value={progress} className="h-2 mt-3 md:mt-4" />
           </CardHeader>
@@ -386,7 +361,7 @@ const GuidedPrayerSession = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <p className="text-center text-muted-foreground">
-                This guided prayer session will take you through {guideline.steps.length} steps including kingdom focused prayers, personal supplication, listening prayer, and reflection.
+                This guided prayer session will take you through {guideline.steps?.length || 0} steps including kingdom focused prayers, personal supplication, listening prayer, and reflection.
               </p>
               <Button 
                 onClick={handleBeginSession} 
@@ -412,9 +387,9 @@ const GuidedPrayerSession = () => {
                   <Check className="h-6 w-6 text-primary" />
                 )}
               </div>
-              {currentStep.type === 'kingdom' && currentStep.prayer_point_ids && (
+              {currentStep.type === 'kingdom' && currentStep.points && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  Point {currentPointIndex + 1} of {currentStep.prayer_point_ids.length}
+                  Point {currentPointIndex + 1} of {currentStep.points.length}
                 </p>
               )}
             </CardHeader>
@@ -426,10 +401,10 @@ const GuidedPrayerSession = () => {
                     <p className="text-foreground/90 whitespace-pre-wrap">{currentPoint.content}</p>
                   </div>
                   
-                  {currentStep.custom_audio_url && (
+                  {currentStep.audioUrl && (
                     <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
                       <audio controls className="w-full">
-                        <source src={currentStep.custom_audio_url} type="audio/mpeg" />
+                        <source src={currentStep.audioUrl} type="audio/mpeg" />
                         Your browser does not support the audio element.
                       </audio>
                     </div>
@@ -459,10 +434,10 @@ const GuidedPrayerSession = () => {
                     </p>
                   </div>
                   
-                  {currentStep.custom_audio_url && (
+                  {currentStep.audioUrl && (
                     <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
                       <audio controls className="w-full">
-                        <source src={currentStep.custom_audio_url} type="audio/mpeg" />
+                        <source src={currentStep.audioUrl} type="audio/mpeg" />
                         Your browser does not support the audio element.
                       </audio>
                     </div>

@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          related_id: string | null
+          title: string
+          type: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          related_id?: string | null
+          title: string
+          type?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          related_id?: string | null
+          title?: string
+          type?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -108,7 +141,13 @@ export type Database = {
           content: string
           created_by: string | null
           date_uploaded: string
+          day: number | null
+          day_of_week: string | null
           id: string
+          is_auto_generated: boolean | null
+          is_current_week: boolean | null
+          month: string | null
+          steps: Json | null
           title: string
           week_number: number
         }
@@ -116,7 +155,13 @@ export type Database = {
           content: string
           created_by?: string | null
           date_uploaded?: string
+          day?: number | null
+          day_of_week?: string | null
           id?: string
+          is_auto_generated?: boolean | null
+          is_current_week?: boolean | null
+          month?: string | null
+          steps?: Json | null
           title: string
           week_number: number
         }
@@ -124,7 +169,13 @@ export type Database = {
           content?: string
           created_by?: string | null
           date_uploaded?: string
+          day?: number | null
+          day_of_week?: string | null
           id?: string
+          is_auto_generated?: boolean | null
+          is_current_week?: boolean | null
+          month?: string | null
+          steps?: Json | null
           title?: string
           week_number?: number
         }
@@ -145,7 +196,10 @@ export type Database = {
           date: string
           id: string
           is_answered: boolean
+          is_shareable: boolean | null
           is_shared: boolean
+          shareable_id: string | null
+          shared_at: string | null
           testimony_text: string | null
           title: string
           updated_at: string
@@ -158,7 +212,10 @@ export type Database = {
           date?: string
           id?: string
           is_answered?: boolean
+          is_shareable?: boolean | null
           is_shared?: boolean
+          shareable_id?: string | null
+          shared_at?: string | null
           testimony_text?: string | null
           title: string
           updated_at?: string
@@ -171,7 +228,10 @@ export type Database = {
           date?: string
           id?: string
           is_answered?: boolean
+          is_shareable?: boolean | null
           is_shared?: boolean
+          shareable_id?: string | null
+          shared_at?: string | null
           testimony_text?: string | null
           title?: string
           updated_at?: string
@@ -190,37 +250,76 @@ export type Database = {
       }
       prayer_library: {
         Row: {
+          audio_url: string | null
           category: string | null
+          chapter: number | null
           content: string
           created_at: string
           created_by: string | null
+          cycle_number: number | null
+          day: number | null
+          day_number: number | null
           day_of_week: string | null
+          end_verse: number | null
           id: string
+          intercession_number: number | null
+          is_placeholder: boolean | null
           is_used: boolean | null
+          month: string | null
+          read_count: number | null
+          reference_text: string | null
+          start_verse: number | null
           title: string
           week_number: number | null
+          year: number | null
         }
         Insert: {
+          audio_url?: string | null
           category?: string | null
+          chapter?: number | null
           content: string
           created_at?: string
           created_by?: string | null
+          cycle_number?: number | null
+          day?: number | null
+          day_number?: number | null
           day_of_week?: string | null
+          end_verse?: number | null
           id?: string
+          intercession_number?: number | null
+          is_placeholder?: boolean | null
           is_used?: boolean | null
+          month?: string | null
+          read_count?: number | null
+          reference_text?: string | null
+          start_verse?: number | null
           title: string
           week_number?: number | null
+          year?: number | null
         }
         Update: {
+          audio_url?: string | null
           category?: string | null
+          chapter?: number | null
           content?: string
           created_at?: string
           created_by?: string | null
+          cycle_number?: number | null
+          day?: number | null
+          day_number?: number | null
           day_of_week?: string | null
+          end_verse?: number | null
           id?: string
+          intercession_number?: number | null
+          is_placeholder?: boolean | null
           is_used?: boolean | null
+          month?: string | null
+          read_count?: number | null
+          reference_text?: string | null
+          start_verse?: number | null
           title?: string
           week_number?: number | null
+          year?: number | null
         }
         Relationships: []
       }
@@ -267,12 +366,15 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          is_shareable: boolean | null
           journal_entry_id: string | null
           rejected: boolean | null
           rejected_at: string | null
           rejected_by: string | null
           rejection_reason: string | null
           resubmitted_at: string | null
+          shareable_id: string | null
+          shared_at: string | null
           status: string | null
           title: string
           user_id: string
@@ -289,12 +391,15 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          is_shareable?: boolean | null
           journal_entry_id?: string | null
           rejected?: boolean | null
           rejected_at?: string | null
           rejected_by?: string | null
           rejection_reason?: string | null
           resubmitted_at?: string | null
+          shareable_id?: string | null
+          shared_at?: string | null
           status?: string | null
           title: string
           user_id: string
@@ -311,12 +416,15 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          is_shareable?: boolean | null
           journal_entry_id?: string | null
           rejected?: boolean | null
           rejected_at?: string | null
           rejected_by?: string | null
           rejection_reason?: string | null
           resubmitted_at?: string | null
+          shareable_id?: string | null
+          shared_at?: string | null
           status?: string | null
           title?: string
           user_id?: string
@@ -372,6 +480,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_testimony_counts: {
+        Args: never
+        Returns: {
+          approved_count: number
+          pending_count: number
+          rejected_count: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

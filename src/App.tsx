@@ -17,6 +17,7 @@ import Testimonies from "./pages/Testimonies";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import PrayerLibrary from "./pages/PrayerLibrary";
+import PrayerLibraryAdmin from "./pages/PrayerLibraryAdmin";
 import CreateGuideline from "./pages/CreateGuideline";
 import NotFound from "./pages/NotFound";
 
@@ -102,6 +103,14 @@ const App = () => (
               element={
                 <ProtectedRoute requireAdmin>
                   <PrayerLibrary />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/prayer-library-admin"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <PrayerLibraryAdmin />
                 </ProtectedRoute>
               }
             />

@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-// Backend integration - Supabase COMMENTED OUT (Prototype mode)
-// import { supabase } from "@/lib/supabase";
-import { STORAGE_KEYS, getFromStorage } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, BookMarked, Calendar } from "lucide-react";
@@ -13,10 +11,15 @@ import { toast } from "sonner";
 interface Guideline {
   id: string;
   title: string;
-  week_number: number;
+  month: string;
+  day: number;
+  day_of_week: string;
   content: string;
   date_uploaded: string;
+  steps?: any[];
 }
+
+const dayOrder = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const Guidelines = () => {
   const [guidelines, setGuidelines] = useState<Guideline[]>([]);
@@ -34,66 +37,61 @@ const Guidelines = () => {
   };
 
   const fetchGuidelines = async () => {
-    // Prototype mode: Fetch from localStorage
-    const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
-    const sortedGuidelines = guidelines.sort((a: any, b: any) => a.week_number - b.week_number);
-    setGuidelines(sortedGuidelines);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("guidelines")
+        .select("*")
+        .order("month", { ascending: true })
+        .order("day", { ascending: true });
 
-    // Backend integration - Supabase COMMENTED OUT
-    // const { data, error } = await supabase
-    //   .from("guidelines")
-    //   .select("*")
-    //   .order("week_number", { ascending: true });
-    //
-    // if (error) {
-    //   console.error("Error fetching guidelines:", error);
-    //   toast.error("Failed to load guidelines");
-    // } else {
-    //   setGuidelines(data || []);
-    // }
-    // setLoading(false);
+      if (error) throw error;
+      
+      setGuidelines((data as any[]) || []);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching guidelines:", error);
+      toast.error("Failed to load guidelines");
+      setLoading(false);
+    }
   };
 
-  // Group guidelines by week and day
-  const groupedByWeek = guidelines.reduce((acc, guideline: any) => {
-    const week = guideline.week_number;
-    if (!acc[week]) {
-      acc[week] = [];
+  // Group guidelines by month
+  const groupedByMonth = guidelines.reduce((acc, guideline: any) => {
+    const month = guideline.month || 'Unknown';
+    if (!acc[month]) {
+      acc[month] = [];
     }
-    acc[week].push(guideline);
+    acc[month].push(guideline);
     return acc;
-  }, {} as Record<number, any[]>);
+  }, {} as Record<string, any[]>);
 
-  const weeks = Object.keys(groupedByWeek).map(Number).sort((a, b) => a - b);
-
-  // Day order for proper sorting
-  const dayOrder = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const monthsOrder = ['June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const months = monthsOrder.filter(m => groupedByMonth[m] && groupedByMonth[m].length > 0);
   
-  // Sort days within each week
-  Object.keys(groupedByWeek).forEach(weekKey => {
-    groupedByWeek[parseInt(weekKey)].sort((a, b) => {
-      return dayOrder.indexOf(a.day_of_week) - dayOrder.indexOf(b.day_of_week);
-    });
+  // Sort days within each month
+  Object.keys(groupedByMonth).forEach(monthKey => {
+    groupedByMonth[monthKey].sort((a, b) => a.day - b.day);
   });
 
   // Get current date info for access control
   const now = new Date();
-  const currentWeek = Math.ceil((now.getDate()) / 7);
+  const currentMonthIndex = now.getMonth(); // 0-11
+  const currentMonthName = monthsOrder[currentMonthIndex] || '';
+  const currentDay = now.getDate();
   const currentDayName = dayOrder[now.getDay()];
   
   // Function to check if a guideline is accessible
   const getAccessStatus = (guideline: any): 'locked' | 'current' | 'past' => {
-    const guidelineWeek = guideline.week_number;
-    const guidelineDay = guideline.day_of_week || guideline.day;
+    const guidelineMonthIndex = monthsOrder.indexOf(guideline.month);
+    const guidelineDay = guideline.day;
     
-    // Check week status
-    if (guidelineWeek > currentWeek) return 'locked';
-    if (guidelineWeek < currentWeek) return 'past';
+    // Check month status
+    if (guidelineMonthIndex > currentMonthIndex) return 'locked';
+    if (guidelineMonthIndex < currentMonthIndex) return 'past';
     
-    // Same week - check day
-    if (guidelineDay === currentDayName) return 'current';
-    if (dayOrder.indexOf(guidelineDay) > dayOrder.indexOf(currentDayName)) return 'locked';
+    // Same month - check day
+    if (guidelineDay === currentDay) return 'current';
+    if (guidelineDay > currentDay) return 'locked';
     return 'past';
   };
 
@@ -133,35 +131,34 @@ const Guidelines = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            {weeks.map((weekNum) => {
-              const weekGuidelines = groupedByWeek[weekNum];
-              const isExpanded = expandedWeek === weekNum;
-              const firstGuideline = weekGuidelines[0];
+            {months.map((monthName) => {
+              const monthGuidelines = groupedByMonth[monthName];
+              const isExpanded = expandedWeek === monthsOrder.indexOf(monthName);
               
               return (
-                <Card key={weekNum} className="shadow-medium">
+                <Card key={monthName} className="shadow-medium">
                   <CardHeader 
                     className="cursor-pointer hover:bg-accent/5 transition-colors"
-                    onClick={() => setExpandedWeek(isExpanded ? null : weekNum)}
+                    onClick={() => setExpandedWeek(isExpanded ? null : monthsOrder.indexOf(monthName))}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <Badge variant="secondary">Week {weekNum}</Badge>
+                        <Badge variant="secondary">{monthName}</Badge>
                         <CardTitle className="text-xl">
-                          Week {weekNum} Prayer Journey
+                          {monthName} 2025 Prayers
                         </CardTitle>
                       </div>
                       <Calendar className={`h-5 w-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">
-                      {weekGuidelines.length} days • {formatGuidelineDate(firstGuideline?.date_uploaded)}
+                      {monthGuidelines.length} days
                     </p>
                   </CardHeader>
                   
                   {isExpanded && (
                     <CardContent className="border-t pt-4">
                       <div className="space-y-3">
-                        {weekGuidelines.map((guideline: any) => {
+                        {monthGuidelines.map((guideline: any) => {
                           const accessStatus = getAccessStatus(guideline);
                           const isLocked = accessStatus === 'locked';
                           
@@ -172,17 +169,17 @@ const Guidelines = () => {
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-1">
                                       <Badge variant="outline" className="text-xs">
-                                        {guideline.day_of_week}
+                                        {monthName} {guideline.day} - {guideline.day_of_week}
                                       </Badge>
-                                      <h4 className="font-medium text-sm">
-                                        {guideline.title?.replace(`Week ${weekNum} - ${guideline.day_of_week}: `, '') || guideline.day_of_week}
-                                      </h4>
                                       {isLocked && (
                                         <Badge variant="secondary" className="text-xs">
                                           🔒 Locked
                                         </Badge>
                                       )}
                                     </div>
+                                    <h4 className="font-medium text-sm">
+                                      {guideline.title}
+                                    </h4>
                                     <p className="text-xs text-muted-foreground">
                                       {guideline.steps?.length || 0} steps
                                     </p>

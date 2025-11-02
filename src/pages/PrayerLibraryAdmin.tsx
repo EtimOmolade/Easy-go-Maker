@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, Plus, Edit, Trash2, RefreshCw, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, RefreshCw } from "lucide-react";
 
 
 export default function PrayerLibraryAdmin() {
@@ -30,8 +30,10 @@ export default function PrayerLibraryAdmin() {
     title: "",
     content: "",
     category: "Kingdom Focus",
-    day_of_week: "",
-    week_number: 1,
+    month: "June",
+    day: 30,
+    day_of_week: "Monday",
+    intercession_number: 1,
     audio_url: "",
   });
 
@@ -44,8 +46,9 @@ export default function PrayerLibraryAdmin() {
       let query = supabase
         .from('prayer_library')
         .select('*')
-        .order('week_number', { ascending: true })
-        .order('day_of_week', { ascending: true });
+        .order('month', { ascending: true })
+        .order('day', { ascending: true })
+        .order('intercession_number', { ascending: true });
 
       if (selectedCategory !== 'all') {
         query = query.eq('category', selectedCategory);
@@ -124,8 +127,10 @@ export default function PrayerLibraryAdmin() {
       title: prayer.title,
       content: prayer.content,
       category: prayer.category,
-      day_of_week: prayer.day_of_week || "",
-      week_number: prayer.week_number || 1,
+      month: prayer.month || "June",
+      day: prayer.day || 30,
+      day_of_week: prayer.day_of_week || "Monday",
+      intercession_number: prayer.intercession_number || 1,
       audio_url: prayer.audio_url || "",
     });
     setIsEditing(true);
@@ -155,8 +160,10 @@ export default function PrayerLibraryAdmin() {
       title: "",
       content: "",
       category: "Kingdom Focus",
-      day_of_week: "",
-      week_number: 1,
+      month: "June",
+      day: 30,
+      day_of_week: "Monday",
+      intercession_number: 1,
       audio_url: "",
     });
     setIsEditing(false);
@@ -231,15 +238,39 @@ export default function PrayerLibraryAdmin() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="week_number">Week Number</Label>
+                      <Label htmlFor="month">Month</Label>
+                      <Select
+                        value={formData.month}
+                        onValueChange={(value) => setFormData({ ...formData, month: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="June">June</SelectItem>
+                          <SelectItem value="July">July</SelectItem>
+                          <SelectItem value="August">August</SelectItem>
+                          <SelectItem value="September">September</SelectItem>
+                          <SelectItem value="October">October</SelectItem>
+                          <SelectItem value="November">November</SelectItem>
+                          <SelectItem value="December">December</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="day">Day</Label>
                       <Input
-                        id="week_number"
+                        id="day"
                         type="number"
                         min="1"
-                        value={formData.week_number}
-                        onChange={(e) => setFormData({ ...formData, week_number: parseInt(e.target.value) })}
+                        max="31"
+                        value={formData.day}
+                        onChange={(e) => setFormData({ ...formData, day: parseInt(e.target.value) })}
                       />
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="day_of_week">Day of Week</Label>
                       <Select
@@ -250,15 +281,26 @@ export default function PrayerLibraryAdmin() {
                           <SelectValue placeholder="Select day" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="Sunday">Sunday</SelectItem>
                           <SelectItem value="Monday">Monday</SelectItem>
                           <SelectItem value="Tuesday">Tuesday</SelectItem>
                           <SelectItem value="Wednesday">Wednesday</SelectItem>
                           <SelectItem value="Thursday">Thursday</SelectItem>
                           <SelectItem value="Friday">Friday</SelectItem>
                           <SelectItem value="Saturday">Saturday</SelectItem>
-                          <SelectItem value="Sunday">Sunday</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="intercession_number">Intercession #</Label>
+                      <Input
+                        id="intercession_number"
+                        type="number"
+                        min="1"
+                        max="5"
+                        value={formData.intercession_number}
+                        onChange={(e) => setFormData({ ...formData, intercession_number: parseInt(e.target.value) })}
+                      />
                     </div>
                   </div>
 
@@ -331,19 +373,24 @@ export default function PrayerLibraryAdmin() {
                   <Card key={prayer.id}>
                     <CardHeader>
                       <div className="flex justify-between items-start">
-                        <div className="space-y-1 flex-1">
-                          <div className="flex items-center gap-2">
-                            <Badge className={getCategoryColor(prayer.category)}>
-                              {prayer.category}
-                            </Badge>
-                            {prayer.day_of_week && (
-                              <Badge variant="outline">
-                                Week {prayer.week_number} - {prayer.day_of_week}
+                          <div className="space-y-1 flex-1">
+                            <div className="flex items-center gap-2">
+                              <Badge className={getCategoryColor(prayer.category)}>
+                                {prayer.category}
                               </Badge>
-                            )}
+                              {prayer.month && (
+                                <Badge variant="outline">
+                                  {prayer.month} {prayer.day} - {prayer.day_of_week}
+                                </Badge>
+                              )}
+                              {prayer.intercession_number && (
+                                <Badge variant="secondary">
+                                  Int. {prayer.intercession_number}
+                                </Badge>
+                              )}
+                            </div>
+                            <CardTitle className="text-xl">{prayer.title}</CardTitle>
                           </div>
-                          <CardTitle className="text-xl">{prayer.title}</CardTitle>
-                        </div>
                         <div className="flex gap-2">
                           <Button size="sm" variant="outline" onClick={() => handleEdit(prayer)}>
                             <Edit className="h-4 w-4" />

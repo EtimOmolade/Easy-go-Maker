@@ -6,8 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -18,27 +16,49 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { weekNumber, title, userId, dayOfWeek } = await req.json();
+    const { month, day, title, userId } = await req.json();
 
-    if (!weekNumber || !title || !userId || !dayOfWeek) {
-      throw new Error('Missing required fields: weekNumber, title, userId, dayOfWeek');
+    if (!month || !day || !title || !userId) {
+      throw new Error('Missing required fields: month, day, title, userId');
     }
 
-    // Fetch Kingdom Focus prayers for this day
+    // Fetch Kingdom Focus prayers for this day (first 4 intercessions)
     const { data: kingdomPrayers, error: kingdomError } = await supabase
       .from('prayer_library')
       .select('*')
       .eq('category', 'Kingdom Focus')
-      .eq('week_number', weekNumber)
-      .eq('day_of_week', dayOfWeek)
-      .limit(4);
+      .eq('month', month)
+      .eq('day', day)
+      .gte('intercession_number', 1)
+      .lte('intercession_number', 4)
+      .order('intercession_number', { ascending: true });
 
     if (kingdomError) throw kingdomError;
 
-    // Fetch Listening Prayer for the corresponding day in the cycle
-    // Calculate cycle day based on week number and day of week
-    const dayIndex = DAYS_OF_WEEK.indexOf(dayOfWeek);
-    const cycleDay = ((weekNumber - 1) * 7) + dayIndex + 1;
+    // Calculate cycle day for Listening Prayer (based on calendar date)
+    // Start from June 30 (Day 1) and count forward
+    const monthDays: Record<string, number> = {
+      'June': 30, 'July': 31, 'August': 31, 'September': 30,
+      'October': 31, 'November': 30, 'December': 31
+    };
+    
+    let cycleDay = 0;
+    const months = Object.keys(monthDays);
+    const monthIndex = months.indexOf(month);
+    
+    if (monthIndex >= 0) {
+      // Add days from previous months (starting from June 30)
+      if (month === 'June') {
+        cycleDay = day - 29; // June 30 = Day 1
+      } else {
+        cycleDay = 2; // June 30-31 = 2 days
+        for (let i = 1; i < monthIndex; i++) {
+          cycleDay += monthDays[months[i]];
+        }
+        cycleDay += day;
+      }
+    }
+    
     const adjustedCycleDay = ((cycleDay - 1) % 91) + 1; // Loop within 91-day cycle
 
     const { data: listeningPrayer, error: listeningError } = await supabase
@@ -46,11 +66,16 @@ serve(async (req) => {
       .select('*')
       .eq('category', 'Listening Prayer')
       .eq('day_number', adjustedCycleDay)
-      .single();
+      .maybeSingle();
 
     if (listeningError) {
       console.warn('No listening prayer found for day:', adjustedCycleDay);
     }
+
+    // Get day of week from first kingdom prayer
+    const dayOfWeek = kingdomPrayers && kingdomPrayers.length > 0 
+      ? kingdomPrayers[0].day_of_week 
+      : '';
 
     // Build guideline structure
     const steps = [];
@@ -104,20 +129,22 @@ serve(async (req) => {
     const { data: guideline, error: guidelineError } = await supabase
       .from('guidelines')
       .insert({
-        week_number: weekNumber,
+        month: month,
+        day: day,
+        day_of_week: dayOfWeek,
         title: title,
-        content: `Daily prayer guideline for ${dayOfWeek}, Week ${weekNumber}`,
+        content: `Daily prayer guideline for ${month} ${day} (${dayOfWeek})`,
         steps: steps,
         created_by: userId,
         is_auto_generated: true,
-        is_current_week: false, // Will be updated based on date logic
+        is_current_week: false,
       })
       .select()
       .single();
 
     if (guidelineError) throw guidelineError;
 
-    console.log(`Successfully generated guideline for week ${weekNumber}, ${dayOfWeek}`);
+    console.log(`Successfully generated guideline for ${month} ${day}`);
 
     return new Response(
       JSON.stringify({ success: true, guideline }),

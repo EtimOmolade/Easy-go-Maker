@@ -16,7 +16,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { prayers, category } = await req.json();
+    const { prayers, isPlaceholder = false } = await req.json();
 
     if (!prayers || !Array.isArray(prayers)) {
       throw new Error('Invalid prayers data');
@@ -28,9 +28,13 @@ serve(async (req) => {
       .insert(prayers.map((prayer: any) => ({
         title: prayer.title,
         content: prayer.content,
-        category: category || 'Kingdom Focus',
+        category: prayer.category || 'Kingdom Focus',
+        month: prayer.month,
+        day: prayer.day,
+        year: prayer.year || 2025,
         day_of_week: prayer.day_of_week,
-        week_number: prayer.week_number,
+        intercession_number: prayer.intercession_number,
+        is_placeholder: isPlaceholder,
         created_by: prayer.created_by,
         audio_url: prayer.audio_url || null,
       })))
