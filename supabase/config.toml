@@ -1,1 +1,19 @@
 project_id = "wmdtsdicaonrdtcfqyyr"
+
+[functions.populate-prayer-library]
+verify_jwt = false
+
+[functions.generate-proverbs-plan]
+verify_jwt = false
+
+[functions.generate-weekly-guideline]
+verify_jwt = false
+
+[functions.send-prayer-reminder]
+verify_jwt = false
+
+[functions.send-announcement-email]
+verify_jwt = false
+
+[functions.send-weekly-summary]
+verify_jwt = false

@@ -33,14 +33,14 @@ export const VOICE_PROMPTS = {
 };
 
 export const playVoicePrompt = async (text: string) => {
-  // Try Coqui TTS first if available
+  // Always try Coqui TTS first if available
   if (useCoquiTTS) {
     try {
       await speakWithCoqui(text);
       return;
     } catch (error) {
       console.warn('Coqui TTS failed, falling back to browser voice:', error);
-      useCoquiTTS = false; // Disable for future calls
+      // Don't disable permanently, might be temporary network issue
     }
   }
 
