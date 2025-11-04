@@ -327,149 +327,67 @@ All these pages have been **fully migrated to Supabase** and are working correct
 
 ---
 
-## 4. REMAINING MIGRATION: PRAYER LIBRARY TO SUPABASE
+## 4. PRAYER LIBRARY MIGRATION STATUS
 
 ### 📚 Prayer Library (`src/pages/PrayerLibrary.tsx`)
 
-**Current Status**: ⏳ Still Using localStorage
+**Current Status**: ✅ CODE MIGRATED | ⏳ DATA MIGRATION NEEDED
 
-**What Needs to Be Done**:
-1. Run the SQL in Section 1.4 to create `prayer_points` table ✅ (included above)
-2. Migrate `PrayerLibrary.tsx` to use Supabase:
+**Code Migration**: ✅ **COMPLETE**
+- `PrayerLibrary.tsx` has been successfully migrated to use Supabase
+- All localStorage operations replaced with Supabase queries
+- CRUD operations (Create, Read, Update, Delete) working with `prayer_points` table
 
-**Current localStorage Operations** (Need to Replace):
-```typescript
-// Line 3: Import removal needed
-import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
+**Data Migration**: ⏳ **PENDING**
 
-// Line 38, 45, 92, 100: Fetch operations
-const points = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, []);
+### 🔄 HOW TO POPULATE PRAYER LIBRARY DATA
 
-// Line 74, 115: Save operations
-setToStorage(STORAGE_KEYS.PRAYER_POINTS, points);
+The prayer library data is preserved in these files:
+- `src/data/kingdomFocusPrayers.ts` - Contains all Kingdom Focused intercession prayers
+- `src/data/initializePrayerLibrary.ts` - Main initialization file
+
+**Migration Script Created**: `scripts/populatePrayerLibrary.ts`
+
+**To Populate the Database**:
+
+1. Ensure the `prayer_points` table exists (SQL in Section 1.4 above) ✅
+2. Build the TypeScript files:
+
+```bash
+npm run build
 ```
 
-**Migration Instructions for Lovable**:
-
-Replace localStorage operations with Supabase queries:
-
-```typescript
-// REPLACE line 3:
-import { supabase } from "@/integrations/supabase/client";
-
-// REPLACE fetchPrayerPoints function:
-const fetchPrayerPoints = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('prayer_points')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching prayer points:', error);
-      toast.error('Failed to load prayer library');
-      return;
-    }
-
-    setPrayerPoints(data || []);
-  } catch (error) {
-    console.error('Error fetching prayer points:', error);
-    toast.error('Failed to load prayer library');
-  }
-};
-
-// REPLACE handleSave function:
-const handleSave = async () => {
-  if (!user) {
-    toast.error('You must be logged in');
-    return;
-  }
-
-  const newPoint = {
-    id: `prayer-${Date.now()}`,
-    title: editingPoint?.title || '',
-    content: editingPoint?.content || '',
-    category: editingPoint?.category || 'Kingdom Focused',
-  };
-
-  try {
-    if (editingPoint && editingPoint.id && !editingPoint.id.startsWith('prayer-')) {
-      // Update existing point
-      const { error } = await supabase
-        .from('prayer_points')
-        .update({
-          title: editingPoint.title,
-          content: editingPoint.content,
-          category: editingPoint.category,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', editingPoint.id);
-
-      if (error) throw error;
-      toast.success('Prayer point updated');
-    } else {
-      // Create new point
-      const { error } = await supabase
-        .from('prayer_points')
-        .insert([{
-          title: newPoint.title,
-          content: newPoint.content,
-          category: newPoint.category,
-          created_by: user.id
-        }]);
-
-      if (error) throw error;
-      toast.success('Prayer point added');
-    }
-
-    await fetchPrayerPoints();
-    setIsDialogOpen(false);
-    setEditingPoint(null);
-  } catch (error: any) {
-    console.error('Error saving prayer point:', error);
-    toast.error(error.message || 'Failed to save prayer point');
-  }
-};
-
-// REPLACE handleDelete function:
-const handleDelete = async (id: string) => {
-  if (!confirm('Are you sure you want to delete this prayer point?')) return;
-
-  try {
-    const { error } = await supabase
-      .from('prayer_points')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
-
-    toast.success('Prayer point deleted');
-    await fetchPrayerPoints();
-  } catch (error: any) {
-    console.error('Error deleting prayer point:', error);
-    toast.error(error.message || 'Failed to delete prayer point');
-  }
-};
+3. Run the migration script:
+```bash
+npx tsx scripts/populatePrayerLibrary.ts
 ```
 
-**IMPORTANT**: After migrating `PrayerLibrary.tsx`, you must also update `CreateGuideline.tsx` to fetch prayer points from Supabase instead of localStorage:
+**What the Migration Script Does**:
+- Reads prayer data from `kingdomFocusPrayers.ts` and `initializePrayerLibrary.ts`
+- Transforms each intercession point into a separate prayer_point entry
+- Inserts data into Supabase `prayer_points` table
+- Skips duplicates (safe to run multiple times)
+- Provides detailed progress logging
 
-```typescript
-// In CreateGuideline.tsx, REPLACE fetchPrayerPoints function (around line 51):
-const fetchPrayerPoints = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('prayer_points')
-      .select('*')
-      .order('created_at', { ascending: false});
-
-    if (error) throw error;
-    setPrayerPoints(data || []);
-  } catch (error) {
-    console.error('Error fetching prayer points:', error);
-  }
-};
+**Expected Output**:
 ```
+🙏 Starting Prayer Library Migration to Supabase...
+📖 Found [N] Kingdom Focused prayers
+✅ Inserted: kf-july-1-point-1
+✅ Inserted: kf-july-1-point-2
+...
+📊 Migration Summary:
+✅ Successfully inserted: [N] prayer points
+⏭️  Skipped (already exist): 0 prayers
+❌ Errors: 0
+🎉 Prayer Library migration completed successfully!
+```
+
+**After Data Migration**:
+- Prayer Library page will display all migrated prayers
+- Create Guideline page can select from these prayers when building guided sessions
+- Admins can add/edit/delete prayer points through the UI
+- All prayer data is now persistent in Supabase database
 
 ---
 
