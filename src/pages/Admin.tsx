@@ -32,7 +32,7 @@ interface Testimony {
   content: string;
   date: string;
   approved: boolean;
-  status: 'pending' | 'approved' | 'rejected';
+  status: string; // Change from literal union to string
   rejection_reason?: string;
   admin_note?: string;
   rejected_by?: string;
@@ -40,6 +40,10 @@ interface Testimony {
   resubmitted_at?: string;
   audio_note?: string;
   audio_duration?: number;
+  alias?: string;
+  location?: string;
+  related_series?: string;
+  gratitude_count?: number;
   profiles: {
     name: string;
   };
@@ -402,32 +406,28 @@ const Admin = () => {
   };
 
   const handleSaveTestimonyEdit = async () => {
-    if (!editingTestimony) return;
+    if (!editingTestimony || !user) return;
 
     try {
-      const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, []);
-      const testimonyIndex = testimonies.findIndex((t: any) => t.id === editingTestimony.id);
-      
-      if (testimonyIndex !== -1) {
-        testimonies[testimonyIndex] = {
-          ...testimonies[testimonyIndex],
+      const { error } = await supabase
+        .from('testimonies')
+        .update({
           title: editTitle,
           content: editContent,
-          admin_edited: true,
-          admin_edited_by: user?.user_metadata?.name || 'Admin',
-          admin_edited_at: new Date().toISOString()
-        };
-        setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
-        toast.success("Testimony edited successfully");
-      }
+          admin_note: `Edited by ${user.user_metadata?.name || 'Admin'} at ${new Date().toISOString()}`,
+        })
+        .eq('id', editingTestimony.id);
 
+      if (error) throw error;
+
+      toast.success("Testimony edited successfully");
       setEditingTestimony(null);
       setEditTitle("");
       setEditContent("");
-      await fetchTestimonies();
+      fetchTestimonies();
     } catch (error: any) {
       console.error('Error editing testimony:', error);
-      toast.error('Failed to edit testimony');
+      toast.error(error.message || 'Failed to edit testimony');
     }
   };
 

@@ -563,7 +563,11 @@ const Journal = () => {
 
                   {entry.voice_note_url && (
                     <div className="mb-4">
-                      <AudioPlayer audioUrl={entry.voice_note_url} />
+                      <p className="text-sm text-muted-foreground mb-2">Voice Note:</p>
+                      <audio controls className="w-full">
+                        <source src={entry.voice_note_url} type="audio/webm" />
+                        Your browser does not support the audio element.
+                      </audio>
                     </div>
                   )}
 

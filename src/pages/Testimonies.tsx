@@ -24,10 +24,11 @@ interface Testimony {
   related_series?: string;
   date: string;
   approved: boolean;
-  status: 'pending' | 'approved' | 'rejected';
+  status: string; // Change to string instead of literal union
   rejection_reason?: string;
   gratitude_count: number;
   journal_entry_id?: string;
+  title?: string; // Add title field
   profiles: {
     name: string;
   };
@@ -160,6 +161,7 @@ const Testimonies = () => {
         .from("testimonies")
         .insert([{
           user_id: user.id,
+          title: `${alias}'s Testimony`, // Add title field
           alias,
           location: location || null,
           content,

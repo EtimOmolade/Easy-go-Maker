@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { STORAGE_KEYS, getFromStorage, PrayerPoint, PrayerStep } from "@/data/mockData";
+import { PrayerStep } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,15 @@ import { ArrowLeft, Plus, Trash2, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+
+interface PrayerPoint {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  audio_url?: string;
+  created_at: string;
+}
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const STEP_TYPES = [
@@ -48,9 +57,19 @@ const CreateGuideline = () => {
     }
   }, []);
 
-  const fetchPrayerPoints = () => {
-    const points = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
-    setPrayerPoints(points);
+  const fetchPrayerPoints = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('prayer_points')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPrayerPoints(data || []);
+    } catch (error) {
+      console.error('Error fetching prayer points:', error);
+      toast.error('Failed to load prayer points');
+    }
   };
 
   const getPointsByCategory = (stepType: string) => {
@@ -165,7 +184,7 @@ const CreateGuideline = () => {
             title,
             week_number: weekNumber,
             day_of_week: day,
-            steps: finalSteps,
+            steps: finalSteps as any, // Cast to any to avoid type issues
             content: `${title} - Week ${weekNumber}`,
             updated_at: new Date().toISOString()
           })
@@ -183,7 +202,7 @@ const CreateGuideline = () => {
             month: month,
             day: dayOfMonth,
             day_of_week: day,
-            steps: finalSteps,
+            steps: finalSteps as any, // Cast to any to avoid type issues
             content: `${title} - Week ${weekNumber}`,
             created_by: user.id,
             date_uploaded: new Date().toISOString()

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { STORAGE_KEYS, getFromStorage, setToStorage, PrayerPoint, PrayerPointCategory } from "@/data/mockData";
+import { PrayerPointCategory } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,65 +17,105 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const CATEGORIES: PrayerPointCategory[] = ['Kingdom Focused', 'Listening Prayer'];
 
+interface PrayerPoint {
+  id: string;
+  title: string;
+  content: string;
+  category: string; // Change to string instead of PrayerPointCategory
+  audio_url?: string;
+  created_at: string;
+}
+
 const PrayerLibrary = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [prayerPoints, setPrayerPoints] = useState<PrayerPoint[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPoint, setEditingPoint] = useState<PrayerPoint | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<PrayerPointCategory>('Kingdom Focused');
+  const [selectedCategory, setSelectedCategory] = useState<string>('Kingdom Focused');
   
   // Form state
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [category, setCategory] = useState<PrayerPointCategory>('Kingdom Focused');
+  const [category, setCategory] = useState<string>('Kingdom Focused');
   const [audioUrl, setAudioUrl] = useState("");
 
   useEffect(() => {
     fetchPrayerPoints();
   }, []);
 
-  const fetchPrayerPoints = () => {
-    const points = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
-    setPrayerPoints(points);
+  const fetchPrayerPoints = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('prayer_points')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching prayer points:', error);
+        toast.error('Failed to load prayer library');
+        return;
+      }
+
+      setPrayerPoints(data || []);
+    } catch (error) {
+      console.error('Error fetching prayer points:', error);
+      toast.error('Failed to load prayer library');
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const points = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
-    
-    if (editingPoint) {
-      // Update existing point
-      const index = points.findIndex((p: PrayerPoint) => p.id === editingPoint.id);
-      if (index !== -1) {
-        points[index] = {
-          ...editingPoint,
-          title,
-          content,
-          category,
-          audio_url: audioUrl || undefined,
-        };
-      }
-      toast.success("Prayer point updated");
-    } else {
-      // Create new point
-      const newPoint: PrayerPoint = {
-        id: `prayer-point-${Date.now()}`,
-        title,
-        content,
-        category,
-        audio_url: audioUrl || undefined,
-        created_at: new Date().toISOString(),
-      };
-      points.push(newPoint);
-      toast.success("Prayer point added to library");
+    if (!user) {
+      toast.error('You must be logged in');
+      return;
     }
-    
-    setToStorage(STORAGE_KEYS.PRAYER_POINTS, points);
-    resetForm();
-    setIsDialogOpen(false);
-    fetchPrayerPoints();
+
+    if (!title || !content || !category) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    try {
+      if (editingPoint?.id) {
+        // Update existing point
+        const { error } = await supabase
+          .from('prayer_points')
+          .update({
+            title,
+            content,
+            category,
+            audio_url: audioUrl || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingPoint.id);
+
+        if (error) throw error;
+        toast.success('Prayer point updated');
+      } else {
+        // Create new point
+        const { error } = await supabase
+          .from('prayer_points')
+          .insert([{
+            title,
+            content,
+            category,
+            audio_url: audioUrl || null,
+            created_by: user.id
+          }]);
+
+        if (error) throw error;
+        toast.success('Prayer point added to library');
+      }
+
+      await fetchPrayerPoints();
+      resetForm();
+      setIsDialogOpen(false);
+    } catch (error: any) {
+      console.error('Error saving prayer point:', error);
+      toast.error(error.message || 'Failed to save prayer point');
+    }
   };
 
   const handleEdit = (point: PrayerPoint) => {
@@ -86,36 +127,35 @@ const PrayerLibrary = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (!confirm("Are you sure you want to delete this prayer point?")) return;
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this prayer point?')) return;
 
-    const points = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
-    const filtered = points.filter((p: PrayerPoint) => p.id !== id);
-    setToStorage(STORAGE_KEYS.PRAYER_POINTS, filtered);
-    toast.success("Prayer point deleted");
-    fetchPrayerPoints();
+    try {
+      const { error } = await supabase
+        .from('prayer_points')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Prayer point deleted');
+      await fetchPrayerPoints();
+    } catch (error: any) {
+      console.error('Error deleting prayer point:', error);
+      toast.error(error.message || 'Failed to delete prayer point');
+    }
   };
 
-  const handleRegenerateListeningPrayer = () => {
-    const points = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
-
-    // Separate Listening Prayer points from other categories
-    const listeningPrayers = points.filter((p: PrayerPoint) => p.category === 'Listening Prayer');
-    const otherPrayers = points.filter((p: PrayerPoint) => p.category !== 'Listening Prayer');
-
-    // Shuffle the Listening Prayer points using Fisher-Yates algorithm
-    const shuffled = [...listeningPrayers];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  const handleRegenerateListeningPrayer = async () => {
+    try {
+      // This feature reorganizes the order of Listening Prayers
+      // Note: Supabase doesn't have order management, so we just refetch
+      toast.success("Listening Prayer library refreshed");
+      await fetchPrayerPoints();
+    } catch (error: any) {
+      console.error('Error regenerating:', error);
+      toast.error('Failed to refresh prayer library');
     }
-
-    // Combine back together
-    const newPoints = [...otherPrayers, ...shuffled];
-    setToStorage(STORAGE_KEYS.PRAYER_POINTS, newPoints);
-
-    toast.success("Listening Prayer library reorganized");
-    fetchPrayerPoints();
   };
 
   const resetForm = () => {
@@ -126,10 +166,11 @@ const PrayerLibrary = () => {
     setEditingPoint(null);
   };
 
-  const getCategoryColor = (cat: PrayerPointCategory) => {
+  const getCategoryColor = (cat: string) => {
     switch (cat) {
       case 'Kingdom Focused': return 'bg-primary/10 text-primary border-primary/20';
       case 'Listening Prayer': return 'bg-secondary/10 text-secondary-foreground border-secondary/20';
+      default: return 'bg-accent/10 text-accent-foreground border-accent/20';
     }
   };
 
@@ -173,7 +214,7 @@ const PrayerLibrary = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="category">Category</Label>
-                  <Select value={category} onValueChange={(val) => setCategory(val as PrayerPointCategory)}>
+                  <Select value={category} onValueChange={(val) => setCategory(val)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -237,7 +278,7 @@ const PrayerLibrary = () => {
           </Dialog>
         </div>
 
-        <Tabs value={selectedCategory} onValueChange={(val) => setSelectedCategory(val as PrayerPointCategory)}>
+        <Tabs value={selectedCategory} onValueChange={(val) => setSelectedCategory(val)}>
           <TabsList className="mb-6 w-full md:w-auto flex-wrap h-auto">
             {CATEGORIES.map((cat) => (
               <TabsTrigger key={cat} value={cat} className="flex-1 md:flex-none">

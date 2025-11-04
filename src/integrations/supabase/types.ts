@@ -121,18 +121,21 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          type: string | null
         }
         Insert: {
           content: string
           created_at?: string
           created_by?: string | null
           id?: string
+          type?: string | null
         }
         Update: {
           content?: string
           created_at?: string
           created_by?: string | null
           id?: string
+          type?: string | null
         }
         Relationships: []
       }
@@ -323,6 +326,36 @@ export type Database = {
         }
         Relationships: []
       }
+      prayer_points: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -356,6 +389,7 @@ export type Database = {
       testimonies: {
         Row: {
           admin_note: string | null
+          alias: string
           approved: boolean
           approved_at: string | null
           approved_by: string | null
@@ -365,13 +399,16 @@ export type Database = {
           content: string
           created_at: string
           date: string
+          gratitude_count: number | null
           id: string
           is_shareable: boolean | null
           journal_entry_id: string | null
+          location: string | null
           rejected: boolean | null
           rejected_at: string | null
           rejected_by: string | null
           rejection_reason: string | null
+          related_series: string | null
           resubmitted_at: string | null
           shareable_id: string | null
           shared_at: string | null
@@ -381,6 +418,7 @@ export type Database = {
         }
         Insert: {
           admin_note?: string | null
+          alias?: string
           approved?: boolean
           approved_at?: string | null
           approved_by?: string | null
@@ -390,13 +428,16 @@ export type Database = {
           content: string
           created_at?: string
           date?: string
+          gratitude_count?: number | null
           id?: string
           is_shareable?: boolean | null
           journal_entry_id?: string | null
+          location?: string | null
           rejected?: boolean | null
           rejected_at?: string | null
           rejected_by?: string | null
           rejection_reason?: string | null
+          related_series?: string | null
           resubmitted_at?: string | null
           shareable_id?: string | null
           shared_at?: string | null
@@ -406,6 +447,7 @@ export type Database = {
         }
         Update: {
           admin_note?: string | null
+          alias?: string
           approved?: boolean
           approved_at?: string | null
           approved_by?: string | null
@@ -415,13 +457,16 @@ export type Database = {
           content?: string
           created_at?: string
           date?: string
+          gratitude_count?: number | null
           id?: string
           is_shareable?: boolean | null
           journal_entry_id?: string | null
+          location?: string | null
           rejected?: boolean | null
           rejected_at?: string | null
           rejected_by?: string | null
           rejection_reason?: string | null
+          related_series?: string | null
           resubmitted_at?: string | null
           shareable_id?: string | null
           shared_at?: string | null
@@ -442,6 +487,35 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      testimony_gratitudes: {
+        Row: {
+          created_at: string
+          id: string
+          testimony_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          testimony_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          testimony_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "testimony_gratitudes_testimony_id_fkey"
+            columns: ["testimony_id"]
+            isOneToOne: false
+            referencedRelation: "testimonies"
             referencedColumns: ["id"]
           },
         ]
