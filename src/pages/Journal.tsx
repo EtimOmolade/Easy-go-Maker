@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Edit, Trash2, CheckCircle, Search, Mic, Square, Share2, Download, AlertCircle, Heart } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, CheckCircle, Search, Mic, Square, Share2, Download, AlertCircle, Heart, BookText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -398,13 +398,16 @@ const Journal = () => {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                Prayer Journal
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Record your prayers, reflections, and answered prayers
-              </p>
+            <div className="flex items-center gap-3">
+              <BookText className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                  Prayer Journal
+                </h1>
+                <p className="text-muted-foreground mt-1">
+                  Record your prayers, reflections, and answered prayers
+                </p>
+              </div>
             </div>
           </div>
           

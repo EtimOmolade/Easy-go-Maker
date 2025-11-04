@@ -300,7 +300,7 @@ const Dashboard = () => {
           <div className="flex justify-between items-center mb-8">
             <div>
               <h1 className="text-4xl md:text-5xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                Welcome back, {profile?.name || "Friend"}! 🙏
+                Welcome back, {profile?.name || "Friend"}!
               </h1>
               <p className="text-muted-foreground mt-2">Continue your prayer journey today</p>
             </div>

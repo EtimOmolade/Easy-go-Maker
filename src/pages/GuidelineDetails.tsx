@@ -34,6 +34,23 @@ const GuidelineDetails = () => {
     }
   }, [id, user]);
 
+  // Refetch tracker data when page becomes visible (e.g., returning from prayer session)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && id && user) {
+        console.log('🔄 Page visible again - refreshing tracker data');
+        fetchGuideline();
+        checkCompletion();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [id, user]);
+
   // Check access status when guideline data is loaded
   useEffect(() => {
     if (guideline) {
