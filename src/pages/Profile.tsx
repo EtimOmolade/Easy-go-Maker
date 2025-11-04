@@ -1,8 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-// Backend integration - Supabase COMMENTED OUT (Prototype mode)
-// import { supabase } from "@/lib/supabase";
-import { STORAGE_KEYS, MILESTONES, getFromStorage, setToStorage } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { MILESTONES } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,48 +45,24 @@ const Profile = () => {
   const fetchProfile = async () => {
     if (!user) return;
 
-    // Prototype mode: Fetch from localStorage (profiles is an ARRAY)
-    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, [] as any[]);
-    const userProfile = profiles.find((p: any) => p.id === user.id);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("name, email, streak_count, reminders_enabled")
+        .eq("id", user.id)
+        .single();
 
-    if (userProfile) {
-      const profileData = {
-        name: userProfile.name || user.user_metadata?.name || 'Friend',
-        email: user.email || '',
-        streak_count: userProfile.streak_count || 0,
-        reminders_enabled: userProfile.reminders_enabled || false
-      };
-      setProfile(profileData);
-      setName(profileData.name);
-      setReminders(profileData.reminders_enabled);
-    } else {
-      // Create default profile
-      const defaultProfile = {
-        name: user.user_metadata?.name || 'Friend',
-        email: user.email || '',
-        streak_count: 0,
-        reminders_enabled: false
-      };
-      setProfile(defaultProfile);
-      setName(defaultProfile.name);
-      setReminders(false);
+      if (error) {
+        console.error("Error fetching profile:", error);
+        toast.error("Failed to load profile");
+      } else {
+        setProfile(data);
+        setName(data.name);
+        setReminders(data.reminders_enabled);
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
     }
-
-    // Backend integration - Supabase COMMENTED OUT
-    // const { data, error } = await supabase
-    //   .from("profiles")
-    //   .select("name, email, streak_count, reminders_enabled")
-    //   .eq("id", user.id)
-    //   .single();
-    //
-    // if (error) {
-    //   console.error("Error fetching profile:", error);
-    //   toast.error("Failed to load profile");
-    // } else {
-    //   setProfile(data);
-    //   setName(data.name);
-    //   setReminders(data.reminders_enabled);
-    // }
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -96,51 +71,35 @@ const Profile = () => {
 
     setLoading(true);
 
-    // Prototype mode: Update in localStorage (profiles is an ARRAY)
-    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, [] as any[]);
-    let userProfile = profiles.find((p: any) => p.id === user.id);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ name, reminders_enabled: reminders })
+        .eq("id", user.id);
 
-    if (!userProfile) {
-      userProfile = { id: user.id };
-      profiles.push(userProfile);
+      if (error) {
+        console.error("Error updating profile:", error);
+        toast.error("Failed to update profile");
+      } else {
+        toast.success("Profile updated successfully");
+        fetchProfile();
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
     }
 
-    userProfile.name = name;
-    userProfile.reminders_enabled = reminders;
-    setToStorage(STORAGE_KEYS.PROFILES, profiles);
-
-    toast.success("Profile updated successfully");
-    fetchProfile();
     setLoading(false);
-
-    // Backend integration - Supabase COMMENTED OUT
-    // const { error } = await supabase
-    //   .from("profiles")
-    //   .update({ name, reminders_enabled: reminders })
-    //   .eq("id", user.id);
-    //
-    // if (error) {
-    //   console.error("Error updating profile:", error);
-    //   toast.error("Failed to update profile");
-    // } else {
-    //   toast.success("Profile updated successfully");
-    //   fetchProfile();
-    // }
-    // setLoading(false);
   };
 
   const { unlocked, locked, currentStreak } = useMemo(() => {
-    if (!user) return { unlocked: [], locked: MILESTONES, currentStreak: 0 };
+    if (!user || !profile) return { unlocked: [], locked: MILESTONES, currentStreak: 0 };
 
-    // Read profiles as ARRAY
-    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, [] as any[]);
-    const userProfile = profiles.find((p: any) => p.id === user.id);
-    const currentStreak = userProfile?.streak_count || 0;
-    const unlockedDates = userProfile?.milestone_unlocked_dates || {};
+    const currentStreak = profile.streak_count || 0;
 
     const unlocked = MILESTONES.filter(m => currentStreak >= m.streak_needed).map(m => ({
       ...m,
-      unlockedDate: unlockedDates[m.level] || 'Recently unlocked'
+      unlockedDate: 'Recently unlocked'
     }));
 
     const locked = MILESTONES.filter(m => currentStreak < m.streak_needed).map(m => ({
@@ -163,7 +122,7 @@ const Profile = () => {
           Back to Dashboard
         </Button>
 
-        <h1 className="text-4xl font-heading font-bold gradient-primary bg-clip-text text-transparent mb-8">
+        <h1 className="text-4xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-8">
           Profile Settings
         </h1>
 

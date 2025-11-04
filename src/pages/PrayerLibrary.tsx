@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Plus, Edit, Trash2, BookOpen } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, BookOpen, Shuffle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -96,6 +96,28 @@ const PrayerLibrary = () => {
     fetchPrayerPoints();
   };
 
+  const handleRegenerateListeningPrayer = () => {
+    const points = getFromStorage(STORAGE_KEYS.PRAYER_POINTS, [] as PrayerPoint[]);
+
+    // Separate Listening Prayer points from other categories
+    const listeningPrayers = points.filter((p: PrayerPoint) => p.category === 'Listening Prayer');
+    const otherPrayers = points.filter((p: PrayerPoint) => p.category !== 'Listening Prayer');
+
+    // Shuffle the Listening Prayer points using Fisher-Yates algorithm
+    const shuffled = [...listeningPrayers];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    // Combine back together
+    const newPoints = [...otherPrayers, ...shuffled];
+    setToStorage(STORAGE_KEYS.PRAYER_POINTS, newPoints);
+
+    toast.success("Listening Prayer library reorganized");
+    fetchPrayerPoints();
+  };
+
   const resetForm = () => {
     setTitle("");
     setContent("");
@@ -111,9 +133,7 @@ const PrayerLibrary = () => {
     }
   };
 
-  const filteredPoints = selectedCategory === 'Kingdom Focused'
-    ? prayerPoints
-    : prayerPoints.filter(p => p.category === selectedCategory);
+  const filteredPoints = prayerPoints.filter(p => p.category === selectedCategory);
 
   return (
     <div className="min-h-screen gradient-subtle">
@@ -127,7 +147,7 @@ const PrayerLibrary = () => {
           <div className="flex items-center gap-3">
             <BookOpen className="h-8 w-8 text-accent" />
             <div>
-              <h1 className="text-4xl font-heading font-bold gradient-primary bg-clip-text text-transparent">
+              <h1 className="text-4xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                 Prayer Point Library
               </h1>
               <p className="text-muted-foreground mt-1">
@@ -237,50 +257,64 @@ const PrayerLibrary = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {filteredPoints.map((point) => (
-                  <Card key={point.id} className="shadow-medium hover:shadow-glow transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                          <Badge className={getCategoryColor(point.category)} variant="outline">
-                            {point.category}
-                          </Badge>
-                          <CardTitle className="text-lg mt-2">{point.title}</CardTitle>
+              <>
+                {selectedCategory === 'Listening Prayer' && (
+                  <div className="mb-4 flex justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={handleRegenerateListeningPrayer}
+                      className="gap-2"
+                    >
+                      <Shuffle className="h-4 w-4" />
+                      Reorganize Content
+                    </Button>
+                  </div>
+                )}
+                <div className="grid gap-4 md:grid-cols-2">
+                  {filteredPoints.map((point) => (
+                    <Card key={point.id} className="shadow-medium hover:shadow-glow transition-shadow">
+                      <CardHeader>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <Badge className={getCategoryColor(point.category)} variant="outline">
+                              {point.category}
+                            </Badge>
+                            <CardTitle className="text-lg mt-2">{point.title}</CardTitle>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(point)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(point.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(point)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(point.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-foreground/80 whitespace-pre-wrap line-clamp-3">
-                        {point.content}
-                      </p>
-                      {point.audio_url && (
-                        <div className="mt-3">
-                          <audio controls className="w-full h-8">
-                            <source src={point.audio_url} type="audio/mpeg" />
-                          </audio>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-foreground/80 whitespace-pre-wrap line-clamp-3">
+                          {point.content}
+                        </p>
+                        {point.audio_url && (
+                          <div className="mt-3">
+                            <audio controls className="w-full h-8">
+                              <source src={point.audio_url} type="audio/mpeg" />
+                            </audio>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
             )}
           </TabsContent>
         </Tabs>

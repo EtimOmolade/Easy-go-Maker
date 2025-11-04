@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { STORAGE_KEYS, getFromStorage, setToStorage, DailyPrayer } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,12 @@ import { ArrowLeft, Calendar, Check } from "lucide-react";
 import { toast } from "sonner";
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+interface DailyPrayer {
+  day: string;
+  completed: boolean;
+  completedAt?: string;
+}
 
 const GuidelineDetails = () => {
   const { id } = useParams();
@@ -20,59 +26,79 @@ const GuidelineDetails = () => {
   const [loading, setLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
   const [accessStatus, setAccessStatus] = useState<'locked' | 'current' | 'past'>('current');
-  
-  const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const currentDay = DAYS[new Date().getDay()];
 
   useEffect(() => {
     if (id && user) {
       fetchGuideline();
       checkCompletion();
-      checkAccessStatus();
     }
   }, [id, user]);
 
-  const checkCompletion = () => {
+  // Check access status when guideline data is loaded
+  useEffect(() => {
+    if (guideline) {
+      checkAccessStatus();
+    }
+  }, [guideline]);
+
+  const checkCompletion = async () => {
     if (!id || !user) return;
-    const completedGuidelines = getFromStorage(STORAGE_KEYS.COMPLETED_GUIDELINES, {} as any);
-    const userCompleted = completedGuidelines[user.id] || [];
-    setIsCompleted(userCompleted.includes(id));
+
+    try {
+      // Check if current day's prayer is completed
+      const now = new Date();
+      const currentDayName = DAYS[now.getDay()];
+
+      const { data, error } = await supabase
+        .from('daily_prayers')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('guideline_id', id)
+        .eq('day_of_week', currentDayName)
+        .maybeSingle();
+
+      if (error) console.error('Error checking completion:', error);
+      setIsCompleted(!!data);
+    } catch (error) {
+      console.error('Error checking completion:', error);
+    }
   };
 
   const checkAccessStatus = () => {
-    if (!id) return;
-    
-    const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
-    const foundGuideline = guidelines.find((g: any) => g.id === id);
-    
-    if (!foundGuideline) return;
+    if (!guideline) return;
 
     // Date-aware access control
     const now = new Date();
-    const currentWeek = Math.ceil((now.getDate()) / 7);
-    const guidelineWeek = foundGuideline.week_number;
-    const guidelineDay = foundGuideline.day_of_week || foundGuideline.day;
+    const monthsOrder = ['January', 'February', 'March', 'April', 'May', 'June',
+                         'July', 'August', 'September', 'October', 'November', 'December'];
+    const currentMonthIndex = now.getMonth();
+    const currentDay = now.getDate();
+    const currentDayName = DAYS[now.getDay()];
 
-    // Check if week is in the future
-    if (guidelineWeek > currentWeek) {
+    const guidelineMonth = guideline.month;
+    const guidelineDay = guideline.day;
+    const guidelineMonthIndex = monthsOrder.indexOf(guidelineMonth);
+
+    // Check if month is in the future
+    if (guidelineMonthIndex > currentMonthIndex) {
       setAccessStatus('locked');
       return;
     }
-    
-    // Check if week is in the past
-    if (guidelineWeek < currentWeek) {
+
+    // Check if month is in the past
+    if (guidelineMonthIndex < currentMonthIndex) {
       setAccessStatus('past');
       return;
     }
-    
-    // Same week - check day
+
+    // Same month - check day
     if (guidelineDay === currentDay) {
       setAccessStatus('current');
-    } else if (DAYS.indexOf(guidelineDay) > DAYS.indexOf(currentDay)) {
-      // Future day in current week
+    } else if (guidelineDay > currentDay) {
+      // Future day in current month
       setAccessStatus('locked');
     } else {
-      // Past day in current week
+      // Past day in current month
       setAccessStatus('past');
     }
   };
@@ -80,19 +106,48 @@ const GuidelineDetails = () => {
   const fetchGuideline = async () => {
     if (!id) return;
 
-    const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
-    const foundGuideline = guidelines.find((g: any) => g.id === id);
+    try {
+      // Fetch guideline from Supabase
+      const { data: guidelineData, error: guidelineError } = await supabase
+        .from('guidelines')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-    if (foundGuideline) {
-      setGuideline(foundGuideline);
-      
-      // Initialize daily prayers if not exists
-      const prayers = foundGuideline.dailyPrayers || DAYS.map(day => ({
-        day,
-        completed: false
-      }));
-      setDailyPrayers(prayers);
+      if (guidelineError) throw guidelineError;
+
+      if (guidelineData) {
+        setGuideline(guidelineData);
+
+        // Fetch completed prayers for this guideline
+        if (user) {
+          const { data: completedPrayers, error: prayersError } = await supabase
+            .from('daily_prayers')
+            .select('day_of_week, completed_at')
+            .eq('user_id', user.id)
+            .eq('guideline_id', id);
+
+          if (prayersError) console.error('Error fetching prayers:', prayersError);
+
+          // Create daily prayers array with completion status
+          const completedDays = new Set(completedPrayers?.map(p => p.day_of_week) || []);
+          const prayers = DAYS.map(day => ({
+            day,
+            completed: completedDays.has(day),
+            completedAt: completedPrayers?.find(p => p.day_of_week === day)?.completed_at
+          }));
+          setDailyPrayers(prayers);
+        } else {
+          // User not logged in - show all as incomplete
+          const prayers = DAYS.map(day => ({ day, completed: false }));
+          setDailyPrayers(prayers);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching guideline:', error);
+      toast.error('Failed to load guideline');
     }
+
     setLoading(false);
   };
 

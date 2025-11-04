@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Session, supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { initializeMockData } from "@/data/mockData";
+import { ensurePrayerLibraryInitialized } from "@/data/initializePrayerLibrary";
 
 interface AuthContextType {
   user: User | null;
@@ -25,6 +26,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Initialize mock data for prototype (needed for localStorage-based features like milestones, etc.)
     initializeMockData();
+
+    // Initialize prayer library with real client prayers
+    ensurePrayerLibraryInitialized();
 
     // Backend integration - Supabase ACTIVATED
     const { data: { subscription } } = supabase.auth.onAuthStateChange(

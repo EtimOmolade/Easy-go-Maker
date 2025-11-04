@@ -11,6 +11,7 @@ import { PrayerTimer } from "@/components/PrayerTimer";
 import { playVoicePrompt, stopVoicePrompt, VOICE_PROMPTS } from "@/utils/voicePrompts";
 import { Progress } from "@/components/ui/progress";
 import { MilestoneAchievementModal } from "@/components/MilestoneAchievementModal";
+import { speak, speakTwice, cancelSpeech } from "@/services/tts";
 
 interface PrayerStep {
   id: string;
@@ -81,6 +82,28 @@ const GuidedPrayerSession = () => {
     }
   }, [currentStepIndex, voiceEnabled, isGuidedMode, hasStarted]);
 
+  // Auto-read kingdom prayer content TWICE when point changes
+  useEffect(() => {
+    if (hasStarted && !completedSteps.includes(currentStepIndex)) {
+      const step = guideline?.steps[currentStepIndex];
+      if (step?.type === 'kingdom' && step.points?.[currentPointIndex]) {
+        const point = step.points[currentPointIndex];
+
+        // Read the prayer twice consecutively using TTS service
+        speakTwice(point.content, {
+          rate: 0.65,
+          pitch: 1,
+          volume: 1
+        });
+      }
+    }
+
+    // Cleanup when component unmounts or before next read
+    return () => {
+      cancelSpeech();
+    };
+  }, [currentPointIndex, currentStepIndex, hasStarted, guideline, completedSteps]);
+
   const fetchGuideline = async () => {
     if (!id) return;
 
@@ -94,13 +117,27 @@ const GuidedPrayerSession = () => {
       if (error) throw error;
 
       if (guideline) {
-        setGuideline(guideline);
+        // Deduplicate prayer points in each step (fix for old data with duplicates)
+        const deduplicatedGuideline = {
+          ...guideline,
+          steps: Array.isArray(guideline.steps) ? guideline.steps.map((step: any) => {
+            if (step.points && Array.isArray(step.points)) {
+              // Remove duplicate points based on ID
+              const uniquePoints = step.points.filter((point: any, index: number, self: any[]) =>
+                index === self.findIndex((p: any) => p.id === point.id)
+              );
+              return { ...step, points: uniquePoints };
+            }
+            return step;
+          }) : guideline.steps
+        };
+        setGuideline(deduplicatedGuideline);
       }
     } catch (error) {
       console.error("Error fetching guideline:", error);
       toast.error("Failed to load guideline");
     }
-    
+
     setLoading(false);
   };
 
@@ -194,9 +231,26 @@ const GuidedPrayerSession = () => {
           setAchievedMilestone(milestone);
           setShowMilestoneModal(true);
         }
+      }
 
-        // Log daily prayer completion in Supabase
-        await supabase
+      // Log daily prayer completion in Supabase (for ALL prayers - current, past, future)
+      // This updates the weekly tracker
+      // Check if already completed to avoid duplicates
+      const { data: existingPrayer, error: checkError } = await supabase
+        .from('daily_prayers')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('guideline_id', guideline.id)
+        .eq('day_of_week', guideline.day_of_week || currentDayName)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking daily prayer:', checkError);
+      }
+
+      // Only insert if not already completed
+      if (!existingPrayer) {
+        const { error: insertError } = await supabase
           .from('daily_prayers')
           .insert({
             user_id: user.id,
@@ -204,6 +258,15 @@ const GuidedPrayerSession = () => {
             day_of_week: guideline.day_of_week || currentDayName,
             completed_at: new Date().toISOString(),
           });
+
+        if (insertError) {
+          console.error('Error inserting daily prayer:', insertError);
+          toast.error('Failed to update prayer tracker');
+        } else {
+          console.log('✅ Daily prayer tracker updated successfully');
+        }
+      } else {
+        console.log('ℹ️ Prayer already marked as completed in tracker');
       }
 
       // Create journal entry with appropriate message
@@ -251,32 +314,28 @@ const GuidedPrayerSession = () => {
 
   const toggleAudioReading = () => {
     if (isPlayingAudio) {
-      window.speechSynthesis.cancel();
+      cancelSpeech();
       setIsPlayingAudio(false);
     } else {
       const currentStep = guideline.steps[currentStepIndex];
-      
-      if (currentStep && currentStep.type === 'listening' && currentStep.content) {
-        const utterance = new SpeechSynthesisUtterance(currentStep.content);
-        utterance.rate = 0.85;
-        utterance.pitch = 1;
-        utterance.volume = 1;
-        utterance.onend = () => {
-          setIsPlayingAudio(false);
-        };
-        window.speechSynthesis.speak(utterance);
+
+      // For listening prayers, use currentPoint which has the resolved content
+      if (currentStep && currentStep.type === 'listening' && currentPoint?.content) {
         setIsPlayingAudio(true);
-      } else if (currentStep && currentStep.type === 'kingdom' && currentStep.points?.[currentPointIndex]) {
-        const point = currentStep.points[currentPointIndex];
-        const utterance = new SpeechSynthesisUtterance(point.content);
-        utterance.rate = 0.85;
-        utterance.pitch = 1;
-        utterance.volume = 1;
-        utterance.onend = () => {
-          setIsPlayingAudio(false);
-        };
-        window.speechSynthesis.speak(utterance);
+        speak(currentPoint.content, {
+          rate: 0.5, // Very slow for meditative scripture reading
+          pitch: 1,
+          volume: 1,
+          onEnd: () => setIsPlayingAudio(false)
+        });
+      } else if (currentStep && currentStep.type === 'kingdom' && currentPoint?.content) {
         setIsPlayingAudio(true);
+        speak(currentPoint.content, {
+          rate: 0.65,
+          pitch: 1,
+          volume: 1,
+          onEnd: () => setIsPlayingAudio(false)
+        });
       }
     }
   };
@@ -304,7 +363,9 @@ const GuidedPrayerSession = () => {
 
   const currentStep = guideline.steps?.[currentStepIndex];
   const progress = ((completedSteps.length) / (guideline.steps?.length || 1)) * 100;
-  const currentPoint = currentStep?.type === 'kingdom' && currentStep?.points?.[currentPointIndex] 
+
+  // Get current point for both kingdom and listening prayers
+  const currentPoint = (currentStep?.type === 'kingdom' || currentStep?.type === 'listening') && currentStep?.points?.[currentPointIndex]
     ? currentStep.points[currentPointIndex]
     : null;
 
@@ -419,9 +480,17 @@ const GuidedPrayerSession = () => {
                       label="3 minutes"
                     />
                   ) : (
-                    <Button onClick={handlePointComplete} className="w-full">
-                      Next Prayer Point
-                    </Button>
+                    <>
+                      {currentPointIndex < (currentStep.points?.length || 0) - 1 ? (
+                        <Button onClick={handlePointComplete} className="w-full">
+                          Next Prayer
+                        </Button>
+                      ) : (
+                        <Button onClick={handleStepComplete} className="w-full">
+                          Complete Prayer Step
+                        </Button>
+                      )}
+                    </>
                   )}
                 </>
               )}

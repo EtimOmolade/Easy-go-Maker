@@ -1288,10 +1288,10 @@ export const initializeMockData = () => {
   if (!localStorage.getItem(STORAGE_KEYS.ENCOURAGEMENT)) {
     localStorage.setItem(STORAGE_KEYS.ENCOURAGEMENT, JSON.stringify(mockEncouragementMessages));
   }
-  
-  // Always reinitialize prayer points library
-  localStorage.setItem(STORAGE_KEYS.PRAYER_POINTS, JSON.stringify(mockPrayerPoints));
-  
+
+  // DO NOT initialize prayer points here - real prayer data is initialized in AuthContext
+  // via ensurePrayerLibraryInitialized() from initializePrayerLibrary.ts
+
   // Initialize completed guidelines tracking
   if (!localStorage.getItem(STORAGE_KEYS.COMPLETED_GUIDELINES)) {
     localStorage.setItem(STORAGE_KEYS.COMPLETED_GUIDELINES, JSON.stringify({}));

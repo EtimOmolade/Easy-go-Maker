@@ -111,7 +111,7 @@ const Guidelines = () => {
 
         <div className="flex items-center gap-3 mb-2">
           <BookMarked className="h-8 w-8 text-accent" />
-          <h1 className="text-4xl font-heading font-bold gradient-primary bg-clip-text text-transparent">
+          <h1 className="text-4xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Prayer Guidelines
           </h1>
         </div>

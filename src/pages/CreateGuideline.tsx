@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { STORAGE_KEYS, getFromStorage, setToStorage, PrayerPoint, PrayerStep } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { STORAGE_KEYS, getFromStorage, PrayerPoint, PrayerStep } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,78 +108,106 @@ const CreateGuideline = () => {
     }
 
     try {
+      // Resolve prayer_point_ids to actual prayer point objects
+      const resolvedSteps = steps.map(step => {
+        if (step.prayer_point_ids && step.prayer_point_ids.length > 0) {
+          const prayerPointsWithContent = step.prayer_point_ids
+            .map(id => prayerPoints.find(p => p.id === id))
+            .filter(Boolean) // Remove any undefined values
+            .map(point => ({
+              id: point!.id,
+              title: point!.title,
+              content: point!.content
+            }));
+
+          // Don't duplicate - let GuidedPrayerSession handle reading twice
+          const finalPoints = prayerPointsWithContent;
+
+          return {
+            id: step.id,
+            type: step.type,
+            duration: step.duration,
+            custom_audio_url: step.custom_audio_url,
+            prayer_point_ids: step.prayer_point_ids, // Keep IDs for reference
+            points: finalPoints // Add resolved prayer content
+          };
+        }
+
+        return step;
+      });
+
       // Auto-append reflection step if not already present
-      const hasReflection = steps.some(s => s.type === 'reflection');
-      const finalSteps = hasReflection ? steps : [
-        ...steps,
+      const hasReflection = resolvedSteps.some(s => s.type === 'reflection');
+      const finalSteps = hasReflection ? resolvedSteps : [
+        ...resolvedSteps,
         {
           id: `step-reflection-${Date.now()}`,
           type: 'reflection' as const,
           duration: 0,
           prayer_point_ids: [],
-          custom_audio_url: ''
+          custom_audio_url: '',
+          points: []
         }
       ];
 
-      const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
+      // Get current date info for month and day fields
+      const now = new Date();
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                         'July', 'August', 'September', 'October', 'November', 'December'];
+      const month = monthNames[now.getMonth()];
+      const dayOfMonth = now.getDate();
 
       if (editingGuideline) {
-        // Update existing guideline
-        const guidelineIndex = guidelines.findIndex((g: any) => g.id === editingGuideline.id);
-        if (guidelineIndex !== -1) {
-          guidelines[guidelineIndex] = {
-            ...guidelines[guidelineIndex],
+        // Update existing guideline in Supabase
+        const { error: updateError } = await supabase
+          .from("guidelines")
+          .update({
             title,
             week_number: weekNumber,
             day_of_week: day,
             steps: finalSteps,
+            content: `${title} - Week ${weekNumber}`,
             updated_at: new Date().toISOString()
-          };
-        }
-        setToStorage(STORAGE_KEYS.GUIDELINES, guidelines);
+          })
+          .eq("id", editingGuideline.id);
+
+        if (updateError) throw updateError;
         toast.success("Prayer guideline updated successfully!");
       } else {
-        // Create new guideline
-        const guideline = {
-          id: `guideline-${Date.now()}`,
-          title,
-          week_number: weekNumber,
-          day_of_week: day,
-          steps: finalSteps,
-          created_by: user.id,
-          date_uploaded: new Date().toISOString(),
-          dailyPrayers: DAYS.map((dayName: string) => ({
-            day: dayName,
-            completed: false
-          }))
-        };
+        // Create new guideline in Supabase
+        const { data: newGuideline, error: createError } = await supabase
+          .from("guidelines")
+          .insert([{
+            title,
+            week_number: weekNumber,
+            month: month,
+            day: dayOfMonth,
+            day_of_week: day,
+            steps: finalSteps,
+            content: `${title} - Week ${weekNumber}`,
+            created_by: user.id,
+            date_uploaded: new Date().toISOString()
+          }])
+          .select()
+          .single();
 
-        guidelines.push(guideline);
-        setToStorage(STORAGE_KEYS.GUIDELINES, guidelines);
+        if (createError) throw createError;
 
-        // Create announcement for new guideline (encouragement message)
-        const encouragementMessages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, [] as any[]);
-        encouragementMessages.push({
-          id: `announce-guideline-${Date.now()}`,
-          content: `🕊️ New Prayer Guideline Available!\n\nWeek ${weekNumber} - ${day}: ${title}\n\nCheck the Guidelines page to start your prayer journey!`,
-          created_at: new Date().toISOString(),
-          created_by: user.id
-        });
-        setToStorage(STORAGE_KEYS.ENCOURAGEMENT, encouragementMessages);
+        // Create announcement for new guideline
+        const { error: announcementError } = await supabase
+          .from("encouragement_messages")
+          .insert([{
+            content: `🕊️ New Prayer Guideline Available!\n\n${month} ${dayOfMonth} - ${day}: ${title}\n\nCheck the Guidelines page to start your prayer journey!`,
+            created_at: new Date().toISOString()
+          }]);
 
-        // Create notification for new guideline
-        const { createNotification } = await import('@/data/mockData');
-        const weekInfo = `Week ${weekNumber} - ${day}: ${title}`;
-        createNotification(
-          'guideline',
-          '🕊️ New Prayer Guideline Available!',
-          `${weekInfo} is now ready. Start your prayer journey today!`,
-          undefined, // undefined userId means for all users
-          guideline.id,
-          '🕊️'
-        );
-
-        toast.success("Prayer guideline created and announcement sent!");
+        if (announcementError) {
+          console.error("Error creating announcement:", announcementError);
+          toast.error("Guideline created but failed to send announcement: " + announcementError.message);
+        } else {
+          console.log("Announcement created successfully!");
+          toast.success("Prayer guideline created and announcement sent!");
+        }
       }
 
       navigate('/admin');
@@ -206,7 +235,7 @@ const CreateGuideline = () => {
           Back to Admin
         </Button>
 
-        <h1 className="text-4xl font-heading font-bold gradient-primary bg-clip-text text-transparent mb-8">
+        <h1 className="text-4xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-8">
           {editingGuideline ? 'Edit Prayer Guideline' : 'Create Prayer Guideline'}
         </h1>
 

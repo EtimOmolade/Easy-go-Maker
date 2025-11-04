@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-// Backend integration - Supabase ACTIVATED
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,23 +106,22 @@ const Admin = () => {
   }, []);
 
   const fetchGuidelines = async () => {
-    // Prototype mode: Fetch from localStorage
-    const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
-    const sortedGuidelines = guidelines.sort((a: any, b: any) => b.week_number - a.week_number);
-    setGuidelines(sortedGuidelines);
+    try {
+      const { data, error } = await supabase
+        .from('guidelines')
+        .select('*')
+        .order('month', { ascending: false })
+        .order('day', { ascending: false });
 
-    // Backend integration - Supabase COMMENTED OUT
-    // const { data, error } = await supabase
-    //   .from('guidelines')
-    //   .select('*')
-    //   .order('week_number', { ascending: false });
-    //
-    // if (error) {
-    //   console.error('Error fetching guidelines:', error);
-    //   toast.error('Failed to load guidelines');
-    // } else {
-    //   setGuidelines(data || []);
-    // }
+      if (error) {
+        console.error('Error fetching guidelines:', error);
+        toast.error('Failed to load guidelines');
+      } else {
+        setGuidelines(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching guidelines:', error);
+    }
   };
 
   const fetchUsers = async () => {
@@ -164,26 +161,25 @@ const Admin = () => {
   };
 
   const fetchTestimonies = async () => {
-    // Prototype mode: Fetch from localStorage - exclude rejected testimonies
-    const allTestimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
-    const testimonies = allTestimonies.filter((t: any) => t.status !== 'rejected');
-    const sortedTestimonies = testimonies.sort((a: any, b: any) =>
-      new Date(b.date || b.created_at).getTime() - new Date(a.date || a.created_at).getTime()
-    );
-    setTestimonies(sortedTestimonies);
+    try {
+      const { data, error } = await supabase
+        .from('testimonies')
+        .select(`
+          *,
+          profiles!testimonies_user_id_fkey (name)
+        `)
+        .neq('status', 'rejected')
+        .order('date', { ascending: false });
 
-    // Backend integration - Supabase COMMENTED OUT
-    // const { data, error } = await supabase
-    //   .from('testimonies')
-    //   .select('id, title, content, date, approved, profiles(name)')
-    //   .order('date', { ascending: false });
-    //
-    // if (error) {
-    //   console.error('Error fetching testimonies:', error);
-    //   toast.error('Failed to load testimonies');
-    // } else {
-    //   setTestimonies(data || []);
-    // }
+      if (error) {
+        console.error('Error fetching testimonies:', error);
+        toast.error('Failed to load testimonies');
+      } else {
+        setTestimonies(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching testimonies:', error);
+    }
   };
 
   const fetchEncouragementMessages = async () => {
@@ -206,79 +202,25 @@ const Admin = () => {
     e.preventDefault();
 
     try {
-      // Prototype mode: Update in localStorage
-      const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, []);
-      
       if (editingGuideline) {
         // Update existing guideline
-        const guidelineIndex = guidelines.findIndex((g: any) => g.id === editingGuideline.id);
-        if (guidelineIndex !== -1) {
-          guidelines[guidelineIndex] = {
-            ...guidelines[guidelineIndex],
+        const { error } = await supabase
+          .from('guidelines')
+          .update({
             title,
-            week_number: parseInt(weekNumber),
             content
-          };
-        }
+          })
+          .eq('id', editingGuideline.id);
+
+        if (error) throw error;
         toast.success("Guideline updated successfully");
       } else {
-        // Create new guideline
-        const newGuideline = {
-          id: `guideline-${Date.now()}`,
-          title,
-          week_number: parseInt(weekNumber),
-          content,
-          date_uploaded: new Date().toISOString()
-        };
-        guidelines.push(newGuideline);
-        
-        // Create announcement for new guideline
-        const messages = getFromStorage(STORAGE_KEYS.ENCOURAGEMENT, []);
-        messages.push({
-          id: `announce-guideline-${Date.now()}`,
-          content: `📖 New prayer guideline: Week ${weekNumber} - ${title}`,
-          created_at: new Date().toISOString(),
-          created_by: user?.id || 'admin'
-        });
-        setToStorage(STORAGE_KEYS.ENCOURAGEMENT, messages);
-        
-        toast.success("📖 Guideline created!");
+        // Create new guideline - Note: This should probably be done via CreateGuideline page
+        // But keeping this for quick admin access
+        toast.info("Please use the Create Guideline page for proper guideline creation");
+        navigate('/create-guideline');
+        return;
       }
-      
-      setToStorage(STORAGE_KEYS.GUIDELINES, guidelines);
-
-      // Backend integration - Supabase COMMENTED OUT
-      // if (editingGuideline) {
-      //   const { error } = await supabase
-      //     .from('guidelines')
-      //     .update({
-      //       title,
-      //       week_number: parseInt(weekNumber),
-      //       content
-      //     })
-      //     .eq('id', editingGuideline.id);
-      //
-      //   if (error) throw error;
-      //   toast.success("Guideline updated successfully");
-      // } else {
-      //   const { error } = await supabase
-      //     .from('guidelines')
-      //     .insert({
-      //       title,
-      //       week_number: parseInt(weekNumber),
-      //       content,
-      //       date_uploaded: new Date().toISOString()
-      //     });
-      //
-      //   if (error) throw error;
-      //
-      //   await supabase.from('encouragement_messages').insert({
-      //     content: `📖 New Prayer Guideline Available!\n\nWeek ${weekNumber}: "${title}"\n\nStart your prayer journey for this week. Check the Guidelines page to see the full content and begin your daily prayers! 🙏`,
-      //     created_at: new Date().toISOString()
-      //   });
-      //
-      //   toast.success("📖 Guideline created and all users notified!");
-      // }
 
       setTitle("");
       setWeekNumber("");
@@ -301,22 +243,14 @@ const Admin = () => {
     if (!confirm("Are you sure you want to delete this guideline?")) return;
 
     try {
-      // Prototype mode: Delete from localStorage
-      const guidelines = getFromStorage(STORAGE_KEYS.GUIDELINES, []);
-      const filtered = guidelines.filter((g: any) => g.id !== id);
-      setToStorage(STORAGE_KEYS.GUIDELINES, filtered);
+      const { error } = await supabase
+        .from('guidelines')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
       toast.success("Guideline deleted");
       await fetchGuidelines();
-
-      // Backend integration - Supabase COMMENTED OUT
-      // const { error } = await supabase
-      //   .from('guidelines')
-      //   .delete()
-      //   .eq('id', id);
-      //
-      // if (error) throw error;
-      // toast.success("Guideline deleted");
-      // await fetchGuidelines();
     } catch (error: any) {
       console.error('Error deleting guideline:', error);
       toast.error(error.message || 'Failed to delete guideline');
@@ -501,22 +435,14 @@ const Admin = () => {
     if (!confirm("Are you sure you want to delete this testimony?")) return;
 
     try {
-      // Prototype mode: Delete from localStorage
-      const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, []);
-      const filtered = testimonies.filter((t: any) => t.id !== id);
-      setToStorage(STORAGE_KEYS.TESTIMONIES, filtered);
+      const { error } = await supabase
+        .from('testimonies')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
       toast.success("Testimony deleted");
       await fetchTestimonies();
-
-      // Backend integration - Supabase COMMENTED OUT
-      // const { error } = await supabase
-      //   .from('testimonies')
-      //   .delete()
-      //   .eq('id', id);
-      //
-      // if (error) throw error;
-      // toast.success("Testimony deleted");
-      // await fetchTestimonies();
     } catch (error: any) {
       console.error('Error deleting testimony:', error);
       toast.error(error.message || 'Failed to delete testimony');
@@ -663,7 +589,7 @@ const Admin = () => {
             </Button>
           </div>
 
-        <h1 className="text-4xl font-heading font-bold gradient-primary bg-clip-text text-transparent mb-8">
+        <h1 className="text-4xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-8">
           Admin Dashboard
         </h1>
 

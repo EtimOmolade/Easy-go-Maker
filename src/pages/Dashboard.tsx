@@ -1,9 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-// Backend integration - Supabase ACTIVATED
-import { supabase } from "@/lib/supabase";
-import { STORAGE_KEYS, MILESTONES, getFromStorage, setToStorage } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { MILESTONES } from "@/data/mockData";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone } from "lucide-react";
@@ -134,51 +133,25 @@ const Dashboard = () => {
   const fetchProfile = async () => {
     if (!user) return;
 
-    // Prototype mode: Fetch from localStorage (profiles is an ARRAY)
-    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, [] as any[]);
-    const userProfile = profiles.find((p: any) => p.id === user.id);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("name, streak_count, reminders_enabled")
+        .eq("id", user.id)
+        .single();
 
-    console.log('[fetchProfile] Reading from localStorage:', {
-      userId: user.id,
-      profilesCount: profiles.length,
-      userProfile,
-      streak_count: userProfile?.streak_count
-    });
-
-    if (userProfile) {
-      if (profile) {
-        setPreviousStreak(profile.streak_count);
+      if (error) {
+        console.error("Error fetching profile:", error);
+        toast.error("Failed to load profile data");
+      } else {
+        if (profile) {
+          setPreviousStreak(profile.streak_count);
+        }
+        setProfile(data);
       }
-      setProfile(userProfile);
-    } else {
-      // Create default profile and save to localStorage
-      const defaultProfile: any = {
-        id: user.id,
-        name: user.user_metadata?.name || 'Friend',
-        streak_count: 0,
-        reminders_enabled: false
-      };
-      profiles.push(defaultProfile);
-      setToStorage(STORAGE_KEYS.PROFILES, profiles);
-      setProfile(defaultProfile);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
     }
-
-    // Backend integration - Supabase COMMENTED OUT
-    // const { data, error } = await supabase
-    //   .from("profiles")
-    //   .select("name, streak_count, reminders_enabled")
-    //   .eq("id", user.id)
-    //   .single();
-    //
-    // if (error) {
-    //   console.error("Error fetching profile:", error);
-    //   toast.error("Failed to load profile data");
-    // } else {
-    //   if (profile) {
-    //     setPreviousStreak(profile.streak_count);
-    //   }
-    //   setProfile(data);
-    // }
   };
 
   const fetchEncouragementMessage = async () => {
@@ -207,29 +180,26 @@ const Dashboard = () => {
   };
 
   const fetchPendingTestimonies = async () => {
-    // Prototype mode: Count pending testimonies from localStorage
-    const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
-    const pendingCount = testimonies.filter((t: any) => !t.approved).length;
-    setPendingTestimonyCount(pendingCount);
+    try {
+      const { count, error } = await supabase
+        .from("testimonies")
+        .select("*", { count: 'exact', head: true })
+        .eq("status", "pending");
 
-    // Backend integration - Supabase COMMENTED OUT
-    // const { count, error } = await supabase
-    //   .from("testimonies")
-    //   .select("*", { count: 'exact', head: true })
-    //   .eq("approved", false);
-    //
-    // if (!error && count !== null) {
-    //   setPendingTestimonyCount(count);
-    // }
+      if (error) {
+        console.error("Error fetching pending testimonies:", error);
+      } else {
+        setPendingTestimonyCount(count || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching pending testimonies:", error);
+    }
   };
 
   const milestoneData = useMemo(() => {
-    if (!user) return { current: MILESTONES[0], progress: 0, currentStreak: 0, nextMilestone: MILESTONES[0], daysToNext: 1 };
+    if (!user || !profile) return { current: MILESTONES[0], progress: 0, currentStreak: 0, nextMilestone: MILESTONES[0], daysToNext: 1 };
 
-    // Read profiles as ARRAY
-    const profiles = getFromStorage(STORAGE_KEYS.PROFILES, [] as any[]);
-    const userProfile = profiles.find((p: any) => p.id === user.id);
-    const currentStreak = userProfile?.streak_count || 0;
+    const currentStreak = profile.streak_count || 0;
 
     console.log('[Dashboard] Computing milestone data for streak:', currentStreak);
 
@@ -329,7 +299,7 @@ const Dashboard = () => {
           
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-4xl md:text-5xl font-heading font-bold gradient-primary bg-clip-text text-transparent">
+              <h1 className="text-4xl md:text-5xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                 Welcome back, {profile?.name || "Friend"}! 🙏
               </h1>
               <p className="text-muted-foreground mt-2">Continue your prayer journey today</p>

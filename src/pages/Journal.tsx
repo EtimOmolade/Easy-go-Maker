@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Edit, Trash2, CheckCircle, Search, Mic, Square, Share2, Download, AlertCircle } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, CheckCircle, Search, Mic, Square, Share2, Download, AlertCircle, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -137,31 +137,71 @@ const Journal = () => {
     if (!user) return;
 
     try {
+      let voiceNoteUrl: string | undefined = undefined;
+
+      // Upload audio if present
+      if (audioBlob) {
+        const fileName = `${user.id}/${Date.now()}.webm`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('voice-notes')
+          .upload(fileName, audioBlob, {
+            contentType: 'audio/webm',
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error("Error uploading audio:", uploadError);
+          toast.error("Failed to upload audio");
+          return;
+        }
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('voice-notes')
+          .getPublicUrl(fileName);
+
+        voiceNoteUrl = publicUrl;
+      }
+
       if (editingEntry) {
         // Update existing entry
+        const updateData: any = {
+          title,
+          content,
+          updated_at: new Date().toISOString(),
+        };
+
+        // Add voice note URL if audio was recorded
+        if (voiceNoteUrl) {
+          updateData.voice_note_url = voiceNoteUrl;
+        }
+
         const { error } = await supabase
           .from("journal_entries")
-          .update({
-            title,
-            content,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq("id", editingEntry.id);
 
         if (error) throw error;
         toast.success("Entry updated successfully");
       } else {
         // Create new entry
+        const insertData: any = {
+          user_id: user.id,
+          title,
+          content,
+          date: new Date().toISOString().split('T')[0],
+          is_answered: false,
+          is_shared: false,
+        };
+
+        // Add voice note URL if audio was recorded
+        if (voiceNoteUrl) {
+          insertData.voice_note_url = voiceNoteUrl;
+        }
+
         const { error } = await supabase
           .from("journal_entries")
-          .insert({
-            user_id: user.id,
-            title,
-            content,
-            date: new Date().toISOString().split('T')[0],
-            is_answered: false,
-            is_shared: false,
-          });
+          .insert(insertData);
 
         if (error) throw error;
         toast.success("📝 Your new journal entry has been saved!");
@@ -325,6 +365,17 @@ const Journal = () => {
       date: entry.date
     });
     toast.success("PDF downloaded!");
+  };
+
+  const handleShareAsTestimony = (entry: JournalEntry) => {
+    // Pre-fill testimony form with journal entry content
+    sessionStorage.setItem('prefillTestimony', JSON.stringify({
+      content: `${entry.title}\n\n${entry.content}`,
+      journalEntryId: entry.id
+    }));
+
+    navigate('/testimonies');
+    toast.success('Redirecting to testimony submission...');
   };
 
   const formatTime = (seconds: number): string => {
@@ -506,10 +557,10 @@ const Journal = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-4 whitespace-pre-wrap">{entry.content}</p>
-                  
+
                   {entry.voice_note_url && (
                     <div className="mb-4">
-                      <audio src={entry.voice_note_url} controls className="w-full" />
+                      <AudioPlayer audioUrl={entry.voice_note_url} />
                     </div>
                   )}
 
@@ -530,6 +581,26 @@ const Journal = () => {
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+
+                    {entry.is_answered && !entry.is_shared && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleShareAsTestimony(entry)}
+                              className="border-green-500 text-green-600 hover:bg-green-50"
+                            >
+                              <Heart className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Share as Testimony
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

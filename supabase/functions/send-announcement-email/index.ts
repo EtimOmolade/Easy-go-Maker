@@ -6,27 +6,29 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { announcement_id } = await req.json();
+    const { message_id } = await req.json();
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Get announcement details
-    const { data: announcement, error: announcementError } = await supabaseClient
-      .from("announcements")
+    // Get encouragement message details
+    const { data: message, error: messageError } = await supabaseClient
+      .from("encouragement_messages")
       .select("*")
-      .eq("id", announcement_id)
+      .eq("id", message_id)
       .single();
 
-    if (announcementError) throw announcementError;
+    if (messageError) throw messageError;
 
     // Get all users with reminders enabled
     const { data: profiles, error: profilesError } = await supabaseClient
@@ -36,11 +38,52 @@ serve(async (req) => {
 
     if (profilesError) throw profilesError;
 
-    console.log(`Sending announcement to ${profiles?.length || 0} users`);
+    console.log(`Sending encouragement message to ${profiles?.length || 0} users`);
 
     for (const profile of profiles || []) {
-      // Log announcement (email functionality requires RESEND_API_KEY secret to be configured)
-      console.log(`Would send announcement to ${profile.email}: ${announcement.title}`);
+      // Send encouragement email using Resend
+      try {
+        const res = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: "SpiritScribe <noreply@resend.dev>",
+            to: [profile.email],
+            subject: "📢 New Community Announcement",
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #1e40af;">Hello ${profile.name}! 👋</h2>
+                <div style="background-color: #f3f4f6; padding: 20px; border-left: 4px solid #d97706; border-radius: 4px; margin: 20px 0;">
+                  <p style="margin: 0; white-space: pre-wrap;">${message.content}</p>
+                </div>
+                <p style="margin: 30px 0;">
+                  <a href="${Deno.env.get("SUPABASE_URL")?.replace('/supabase', '')}/dashboard"
+                     style="background-color: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                    View on Dashboard
+                  </a>
+                </p>
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                <p style="color: #999; font-size: 12px;">
+                  This is a community announcement from SpiritScribe.
+                  You're receiving this because you have notifications enabled.
+                </p>
+              </div>
+            `,
+          }),
+        });
+
+        if (res.ok) {
+          console.log(`✅ Sent announcement to ${profile.email}`);
+        } else {
+          const error = await res.text();
+          console.error(`❌ Failed to send to ${profile.email}:`, error);
+        }
+      } catch (emailError) {
+        console.error(`❌ Error sending email to ${profile.email}:`, emailError);
+      }
     }
 
     return new Response(

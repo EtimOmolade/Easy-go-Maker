@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { STORAGE_KEYS, getFromStorage, setToStorage } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,7 @@ interface Testimony {
   status: 'pending' | 'approved' | 'rejected';
   rejection_reason?: string;
   gratitude_count: number;
+  journal_entry_id?: string;
   profiles: {
     name: string;
   };
@@ -86,28 +87,53 @@ const Testimonies = () => {
   }, [content]);
 
   const fetchGuidelines = async () => {
-    const guidelinesData = getFromStorage(STORAGE_KEYS.GUIDELINES, [] as any[]);
-    setGuidelines(guidelinesData);
+    try {
+      const { data, error } = await supabase
+        .from("guidelines")
+        .select("id, title, month, day")
+        .order("month", { ascending: true })
+        .order("day", { ascending: true });
+
+      if (error) throw error;
+      setGuidelines((data as any[]) || []);
+    } catch (error) {
+      console.error("Error fetching guidelines:", error);
+    }
   };
 
   const fetchTestimonies = async () => {
     if (!user) return;
 
-    const allTestimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
-    
-    // Approved testimonies for public feed
-    const approved = allTestimonies
-      .filter((t: any) => t.approved && t.status === 'approved')
-      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
-    setTestimonies(approved);
+    try {
+      // Fetch approved testimonies for public feed
+      const { data: approvedData, error: approvedError } = await supabase
+        .from("testimonies")
+        .select(`
+          *,
+          profiles!testimonies_user_id_fkey (name)
+        `)
+        .eq("status", "approved")
+        .order("date", { ascending: false });
 
-    // User's own testimonies (all statuses)
-    const mine = allTestimonies
-      .filter((t: any) => t.user_id === user.id)
-      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
-    setMyTestimonies(mine);
+      if (approvedError) throw approvedError;
+      setTestimonies(approvedData || []);
+
+      // Fetch user's own testimonies (all statuses)
+      const { data: myData, error: myError } = await supabase
+        .from("testimonies")
+        .select(`
+          *,
+          profiles!testimonies_user_id_fkey (name)
+        `)
+        .eq("user_id", user.id)
+        .order("date", { ascending: false });
+
+      if (myError) throw myError;
+      setMyTestimonies(myData || []);
+    } catch (error) {
+      console.error("Error fetching testimonies:", error);
+      toast.error("Failed to load testimonies");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,80 +155,49 @@ const Testimonies = () => {
     }
 
     try {
-      // Prototype mode: Save to localStorage
-      const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
-      const newTestimony = {
-        id: `testimony-${Date.now()}`,
-        user_id: user.id,
-        alias,
-        location: location || undefined,
-        content,
-        related_series: relatedSeries || undefined,
-        date: new Date().toISOString().split('T')[0],
-        created_at: new Date().toISOString(),
-        approved: false,
-        status: 'pending',
-        gratitude_count: 0,
-        profiles: { name: user.user_metadata?.name || alias }
-      };
+      // Save testimony to Supabase
+      const { data: newTestimony, error: testimonyError } = await supabase
+        .from("testimonies")
+        .insert([{
+          user_id: user.id,
+          alias,
+          location: location || null,
+          content,
+          related_series: relatedSeries || null,
+          date: new Date().toISOString(),
+          status: 'pending',
+          approved: false,
+          gratitude_count: 0,
+          journal_entry_id: journalEntryId || null
+        }])
+        .select()
+        .single();
 
-      testimonies.push(newTestimony);
-      setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
+      if (testimonyError) throw testimonyError;
 
-      // Create announcement for new testimony submission (internal notification)
-      const announcements = getFromStorage(STORAGE_KEYS.ANNOUNCEMENTS, [] as any[]);
-      const testimonyAnnouncement = {
-        id: `announcement-testimony-${Date.now()}`,
-        type: 'testimony_pending',
-        title: '📝 New Testimony Submitted',
-        content: `${alias} has submitted a testimony awaiting approval.`,
-        link: `/admin`,
-        created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      };
-      announcements.push(testimonyAnnouncement);
-      setToStorage(STORAGE_KEYS.ANNOUNCEMENTS, announcements);
+      // Create announcement for new testimony submission
+      const { error: announcementError } = await supabase
+        .from("encouragement_messages")
+        .insert([{
+          content: `📝 New testimony submitted by ${alias} - pending admin approval`,
+          type: 'testimony_pending',
+          created_at: new Date().toISOString()
+        }]);
+
+      if (announcementError) console.error("Error creating announcement:", announcementError);
 
       // Update journal entry if this was shared from journal
       if (journalEntryId) {
-        const journalEntries = getFromStorage(STORAGE_KEYS.JOURNAL_ENTRIES, [] as any[]);
-        const entryIndex = journalEntries.findIndex((e: any) => e.id === journalEntryId);
-        if (entryIndex !== -1) {
-          journalEntries[entryIndex].is_shared = true;
-          journalEntries[entryIndex].testimony_status = 'pending';
-          setToStorage(STORAGE_KEYS.JOURNAL_ENTRIES, journalEntries);
-        }
+        const { error: journalUpdateError } = await supabase
+          .from("journal_entries")
+          .update({
+            is_shared: true
+          })
+          .eq("id", journalEntryId);
+
+        if (journalUpdateError) console.error("Error updating journal entry:", journalUpdateError);
         setJournalEntryId(null);
       }
-
-      // Backend TODO: Log to secure database with:
-      // - timestamp, consent_confirmed: true, user_id, alias, content, location, related_series
-      console.log('[Backend Placeholder] Testimony submitted:', {
-        timestamp: new Date().toISOString(),
-        consent_confirmed: true,
-        testimony_id: newTestimony.id
-      });
-
-      // Create admin notification
-      const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
-      const adminUserIds = Object.keys(userRoles).filter(userId => userRoles[userId] === 'admin');
-      
-      const notifications = getFromStorage(STORAGE_KEYS.NOTIFICATIONS, [] as any[]);
-      adminUserIds.forEach(adminId => {
-        notifications.push({
-          id: `notif-${Date.now()}-${adminId}`,
-          userId: adminId,
-          type: 'testimony',
-          title: 'New Testimony Pending',
-          message: `📝 New testimony from ${alias}`,
-          messageId: newTestimony.id,
-          icon: '📝',
-          read: false,
-          created_at: new Date().toISOString(),
-          isAdminOnly: true
-        });
-      });
-      setToStorage(STORAGE_KEYS.NOTIFICATIONS, notifications);
 
       toast.success("Thank you! Your story has been sent for review. We'll notify you once it's live.");
 
@@ -213,7 +208,7 @@ const Testimonies = () => {
       setRelatedSeries("");
       setConsentChecked(false);
       setActiveTab('my-testimonies');
-      
+
       await fetchTestimonies();
     } catch (error: any) {
       console.error('Error submitting testimony:', error);
@@ -221,16 +216,78 @@ const Testimonies = () => {
     }
   };
 
-  const handleGratitude = (testimonyId: string) => {
-    const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
-    const updated = testimonies.map((t: any) => 
-      t.id === testimonyId 
-        ? { ...t, gratitude_count: (t.gratitude_count || 0) + 1 }
-        : t
-    );
-    setToStorage(STORAGE_KEYS.TESTIMONIES, updated);
-    fetchTestimonies();
-    toast.success("Thank God with them! 🙏");
+  const handleGratitude = async (testimonyId: string) => {
+    if (!user) {
+      toast.error("You must be logged in to celebrate testimonies");
+      return;
+    }
+
+    try {
+      // Check if user has already celebrated this testimony
+      const { data: existingGratitude, error: checkError } = await supabase
+        .from("testimony_gratitudes")
+        .select("*")
+        .eq("testimony_id", testimonyId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+
+      if (existingGratitude) {
+        // User has already celebrated - remove celebration (toggle off)
+        const { error: deleteError } = await supabase
+          .from("testimony_gratitudes")
+          .delete()
+          .eq("testimony_id", testimonyId)
+          .eq("user_id", user.id);
+
+        if (deleteError) throw deleteError;
+
+        // Decrement gratitude count
+        const { data: testimony } = await supabase
+          .from("testimonies")
+          .select("gratitude_count")
+          .eq("id", testimonyId)
+          .single();
+
+        await supabase
+          .from("testimonies")
+          .update({ gratitude_count: Math.max(0, (testimony?.gratitude_count || 1) - 1) })
+          .eq("id", testimonyId);
+
+        toast.success("Celebration removed");
+      } else {
+        // User hasn't celebrated yet - add celebration (toggle on)
+        const { error: insertError } = await supabase
+          .from("testimony_gratitudes")
+          .insert({
+            testimony_id: testimonyId,
+            user_id: user.id,
+            created_at: new Date().toISOString()
+          });
+
+        if (insertError) throw insertError;
+
+        // Increment gratitude count
+        const { data: testimony } = await supabase
+          .from("testimonies")
+          .select("gratitude_count")
+          .eq("id", testimonyId)
+          .single();
+
+        await supabase
+          .from("testimonies")
+          .update({ gratitude_count: (testimony?.gratitude_count || 0) + 1 })
+          .eq("id", testimonyId);
+
+        toast.success("Thank God with them! 🙏");
+      }
+
+      await fetchTestimonies();
+    } catch (error) {
+      console.error("Error toggling gratitude:", error);
+      toast.error("Failed to update celebration");
+    }
   };
 
   const viewFullTestimony = (testimony: Testimony) => {
@@ -279,47 +336,34 @@ const Testimonies = () => {
     }
 
     try {
-      const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
-      const testimonyIndex = testimonies.findIndex((t: any) => t.id === editingTestimony.id);
-      
-      if (testimonyIndex !== -1) {
-        // Update testimony and set to pending approval
-        testimonies[testimonyIndex] = {
-          ...testimonies[testimonyIndex],
+      // Update testimony in Supabase
+      const { error: updateError } = await supabase
+        .from("testimonies")
+        .update({
           alias,
-          location: location || undefined,
+          location: location || null,
           content,
-          related_series: relatedSeries || undefined,
+          related_series: relatedSeries || null,
           status: 'pending',
           approved: false,
-          rejection_reason: undefined,
-          updated_at: new Date().toISOString()
-        };
-        setToStorage(STORAGE_KEYS.TESTIMONIES, testimonies);
+          rejection_reason: null
+        })
+        .eq("id", editingTestimony.id);
 
-        // Create admin notification
-        const userRoles = getFromStorage(STORAGE_KEYS.USER_ROLES, {});
-        const adminUserIds = Object.keys(userRoles).filter(userId => userRoles[userId] === 'admin');
-        
-        const notifications = getFromStorage(STORAGE_KEYS.NOTIFICATIONS, [] as any[]);
-        adminUserIds.forEach(adminId => {
-          notifications.push({
-            id: `notif-${Date.now()}-${adminId}`,
-            userId: adminId,
-            type: 'testimony',
-            title: 'Testimony Updated - Pending Review',
-            message: `🔄 Updated testimony from ${alias}`,
-            messageId: editingTestimony.id,
-            icon: '🔄',
-            read: false,
-            created_at: new Date().toISOString(),
-            isAdminOnly: true
-          });
-        });
-        setToStorage(STORAGE_KEYS.NOTIFICATIONS, notifications);
+      if (updateError) throw updateError;
 
-        toast.success("Testimony updated and sent for approval");
-      }
+      // Create announcement for updated testimony
+      const { error: announcementError } = await supabase
+        .from("encouragement_messages")
+        .insert([{
+          content: `🔄 Testimony updated by ${alias} - pending admin approval`,
+          type: 'testimony_pending',
+          created_at: new Date().toISOString()
+        }]);
+
+      if (announcementError) console.error("Error creating announcement:", announcementError);
+
+      toast.success("Testimony updated and sent for approval");
 
       setIsEditDialogOpen(false);
       setEditingTestimony(null);
@@ -339,9 +383,13 @@ const Testimonies = () => {
     if (!confirm("Are you sure you want to delete this testimony?")) return;
 
     try {
-      const testimonies = getFromStorage(STORAGE_KEYS.TESTIMONIES, [] as any[]);
-      const filtered = testimonies.filter((t: any) => t.id !== testimonyId);
-      setToStorage(STORAGE_KEYS.TESTIMONIES, filtered);
+      const { error: deleteError } = await supabase
+        .from("testimonies")
+        .delete()
+        .eq("id", testimonyId);
+
+      if (deleteError) throw deleteError;
+
       toast.success("Testimony deleted");
       await fetchTestimonies();
     } catch (error: any) {
@@ -357,7 +405,7 @@ const Testimonies = () => {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex-1">
-              <h1 className="text-3xl md:text-4xl font-heading font-bold gradient-primary bg-clip-text text-transparent mb-2">
+              <h1 className="text-3xl md:text-4xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-2">
                 Stories of His Faithfulness
               </h1>
               <p className="text-sm md:text-base text-muted-foreground italic">
@@ -444,8 +492,8 @@ const Testimonies = () => {
                       <SelectContent>
                         <SelectItem value="none">None</SelectItem>
                         {guidelines.map((g) => (
-                          <SelectItem key={g.id} value={`Week ${g.week_number}: ${g.title}`}>
-                            Week {g.week_number}: {g.title}
+                          <SelectItem key={g.id} value={`${g.title}`}>
+                            {g.title}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -719,8 +767,8 @@ const Testimonies = () => {
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
                     {guidelines.map((g) => (
-                      <SelectItem key={g.id} value={`Week ${g.week_number}: ${g.title}`}>
-                        Week {g.week_number}: {g.title}
+                      <SelectItem key={g.id} value={`${g.title}`}>
+                        {g.title}
                       </SelectItem>
                     ))}
                   </SelectContent>
