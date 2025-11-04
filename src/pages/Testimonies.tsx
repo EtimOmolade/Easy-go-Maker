@@ -177,16 +177,8 @@ const Testimonies = () => {
 
       if (testimonyError) throw testimonyError;
 
-      // Create announcement for new testimony submission
-      const { error: announcementError } = await supabase
-        .from("encouragement_messages")
-        .insert([{
-          content: `📝 New testimony submitted by ${alias} - pending admin approval`,
-          type: 'testimony_pending',
-          created_at: new Date().toISOString()
-        }]);
-
-      if (announcementError) console.error("Error creating announcement:", announcementError);
+      // Note: Announcements are only created when admin approves the testimony
+      // No announcement on submission - admins will see pending testimonies in admin panel
 
       // Update journal entry if this was shared from journal
       if (journalEntryId) {
@@ -354,16 +346,8 @@ const Testimonies = () => {
 
       if (updateError) throw updateError;
 
-      // Create announcement for updated testimony
-      const { error: announcementError } = await supabase
-        .from("encouragement_messages")
-        .insert([{
-          content: `🔄 Testimony updated by ${alias} - pending admin approval`,
-          type: 'testimony_pending',
-          created_at: new Date().toISOString()
-        }]);
-
-      if (announcementError) console.error("Error creating announcement:", announcementError);
+      // Note: Announcements are only created when admin approves the testimony
+      // No announcement on update - admins will see pending testimonies in admin panel
 
       toast.success("Testimony updated and sent for approval");
 

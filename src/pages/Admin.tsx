@@ -307,14 +307,42 @@ const Admin = () => {
 
   const handleApproveTestimony = async (id: string) => {
     try {
-      // Use testimonyHelpers to handle approval properly
-      const { approveTestimony } = await import('@/utils/testimonyHelpers');
-      approveTestimony(id, user?.user_metadata?.name || 'Admin');
-      
-      // Refetch testimonies to update UI
-      await fetchTestimonies();
-      
+      // Get testimony details before updating
+      const { data: testimony, error: fetchError } = await supabase
+        .from('testimonies')
+        .select('alias, title, content')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Update testimony status to approved
+      const { error: updateError } = await supabase
+        .from('testimonies')
+        .update({
+          status: 'approved',
+          approved: true,
+          approved_at: new Date().toISOString(),
+          approved_by: user?.id
+        })
+        .eq('id', id);
+
+      if (updateError) throw updateError;
+
+      // Create public announcement for approved testimony
+      const alias = testimony?.alias || 'A member';
+      const { error: announcementError } = await supabase
+        .from('encouragement_messages')
+        .insert([{
+          content: `✨ New Testimony Approved!\n\n${alias} shared how God is working in their life. Visit the Testimonies page to read their story! 🙌`,
+          type: 'testimony_approved',
+          created_at: new Date().toISOString()
+        }]);
+
+      if (announcementError) console.error('Error creating announcement:', announcementError);
+
       toast.success("✨ Testimony approved and posted to testimony page!");
+      await fetchTestimonies();
     } catch (error: any) {
       console.error('Error approving testimony:', error);
       toast.error('Failed to approve testimony');
@@ -354,26 +382,36 @@ const Admin = () => {
     if (!rejectingTestimony) return;
 
     const finalReason = rejectionReason === "Other (specify)" ? customReason : rejectionReason;
-    
+
     if (!finalReason) {
       toast.error("Please provide a rejection reason");
       return;
     }
 
-    // Use testimonyHelpers to handle rejection properly
-    const { rejectTestimony } = await import('@/utils/testimonyHelpers');
-    rejectTestimony(
-      rejectingTestimony.id,
-      finalReason,
-      undefined,
-      user?.user_metadata?.name || 'Admin'
-    );
-    
-    toast.success(`Testimony rejected. User has been notified about the rejection.`);
-    setRejectingTestimony(null);
-    setRejectionReason("");
-    setCustomReason("");
-    await fetchTestimonies();
+    try {
+      // Update testimony status to rejected with reason
+      const { error: updateError } = await supabase
+        .from('testimonies')
+        .update({
+          status: 'rejected',
+          approved: false,
+          rejection_reason: finalReason,
+          rejected_by: user?.id,
+          rejected_at: new Date().toISOString()
+        })
+        .eq('id', rejectingTestimony.id);
+
+      if (updateError) throw updateError;
+
+      toast.success(`Testimony rejected. User can see the rejection reason in their "My Testimonies" section.`);
+      setRejectingTestimony(null);
+      setRejectionReason("");
+      setCustomReason("");
+      await fetchTestimonies();
+    } catch (error: any) {
+      console.error('Error rejecting testimony:', error);
+      toast.error('Failed to reject testimony');
+    }
 
     // Backend integration - Supabase COMMENTED OUT
     // try {
