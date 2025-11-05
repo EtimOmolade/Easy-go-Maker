@@ -34,7 +34,6 @@ export default function PrayerLibraryAdmin() {
     day: 30,
     day_of_week: "Monday",
     intercession_number: 1,
-    audio_url: "",
   });
 
   useEffect(() => {
@@ -131,7 +130,6 @@ export default function PrayerLibraryAdmin() {
       day: prayer.day || 30,
       day_of_week: prayer.day_of_week || "Monday",
       intercession_number: prayer.intercession_number || 1,
-      audio_url: prayer.audio_url || "",
     });
     setIsEditing(true);
     setIsDialogOpen(true);
@@ -164,7 +162,6 @@ export default function PrayerLibraryAdmin() {
       day: 30,
       day_of_week: "Monday",
       intercession_number: 1,
-      audio_url: "",
     });
     setIsEditing(false);
     setCurrentPrayer(null);
@@ -325,16 +322,6 @@ export default function PrayerLibraryAdmin() {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="audio_url">Audio URL (Optional)</Label>
-                    <Input
-                      id="audio_url"
-                      value={formData.audio_url}
-                      onChange={(e) => setFormData({ ...formData, audio_url: e.target.value })}
-                      placeholder="https://..."
-                    />
-                  </div>
-
                   <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Cancel
@@ -405,11 +392,6 @@ export default function PrayerLibraryAdmin() {
                       <p className="text-sm text-muted-foreground line-clamp-3">
                         {prayer.content}
                       </p>
-                      {prayer.audio_url && (
-                        <div className="text-sm text-muted-foreground">
-                          Audio URL: <a href={prayer.audio_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{prayer.audio_url}</a>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 ))}
