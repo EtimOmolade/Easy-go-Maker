@@ -59,7 +59,7 @@ export interface DailyPrayer {
   completedAt?: string;
 }
 
-export type PrayerPointCategory = 'Kingdom Focused' | 'Listening Prayer';
+export type PrayerPointCategory = 'Kingdom Focus' | 'Listening Prayer';
 
 export interface PrayerPoint {
   id: string;
@@ -191,75 +191,75 @@ export const mockTestimonies: MockTestimony[] = [
 
 // Sample prayer points for library
 export const mockPrayerPoints: PrayerPoint[] = [
-  // Kingdom Focused Points
+  // Kingdom Focus Points
   {
     id: 'kf-1',
     title: 'Pray for Global Missions',
     content: 'Father, raise up laborers for the harvest. Send more missionaries to unreached nations. Open doors where the gospel has not been preached. Strengthen those already on the field.',
-    category: 'Kingdom Focused',
+    category: 'Kingdom Focus',
     created_at: new Date().toISOString()
   },
   {
     id: 'kf-2',
     title: 'Pray for Church Unity',
     content: 'Lord, unite your Church across denominations and nations. Break down walls of division. Help us love one another as you loved us. May we be known by our love.',
-    category: 'Kingdom Focused',
+    category: 'Kingdom Focus',
     created_at: new Date().toISOString()
   },
   {
     id: 'kf-3',
     title: 'Pray for Revival',
     content: 'God, send revival to our generation. Awaken hearts that are cold. Draw the lost to yourself. Pour out your Spirit in power. Let signs and wonders follow your Word.',
-    category: 'Kingdom Focused',
+    category: 'Kingdom Focus',
     created_at: new Date().toISOString()
   },
   {
     id: 'kf-4',
     title: 'Pray for Kingdom Resources',
     content: 'Father, release financial provision for Kingdom work. Multiply the seeds sown by your people. Open heaven\'s storehouses. Fund every God-ordained project and ministry.',
-    category: 'Kingdom Focused',
+    category: 'Kingdom Focus',
     created_at: new Date().toISOString()
   },
   {
     id: 'kf-5',
     title: 'Pray for Leaders and Authorities',
     content: 'Lord, we lift up those in authority over us. Give them wisdom to lead with justice and righteousness. Turn their hearts toward You. Let Your will be done through their decisions.',
-    category: 'Kingdom Focused',
+    category: 'Kingdom Focus',
     created_at: new Date().toISOString()
   },
   {
     id: 'kf-6',
     title: 'Pray for the Persecuted Church',
     content: 'Father, strengthen our brothers and sisters facing persecution. Give them courage to stand firm. Comfort those who mourn. Turn the hearts of their oppressors. Let their faith shine as a testimony.',
-    category: 'Kingdom Focused',
+    category: 'Kingdom Focus',
     created_at: new Date().toISOString()
   },
   {
     id: 'kf-7',
     title: 'Pray for Gospel Laborers',
     content: 'Lord of the harvest, send out workers into Your harvest field. Raise up pastors, evangelists, teachers, and prophets. Equip them with power and boldness. Protect them from the enemy.',
-    category: 'Kingdom Focused',
+    category: 'Kingdom Focus',
     created_at: new Date().toISOString()
   },
   {
     id: 'kf-8',
     title: 'Pray for Spiritual Awakening',
     content: 'God, awaken this generation to spiritual truth. Open blind eyes and deaf ears. Break the strongholds of deception. Let the light of the gospel pierce through darkness in every nation.',
-    category: 'Kingdom Focused',
+    category: 'Kingdom Focus',
     created_at: new Date().toISOString()
   },
   {
     id: 'kf-9',
     title: 'Pray for Kingdom Multiplication',
     content: 'Father, multiply the Kingdom impact of every believer. Make us fruitful in every good work. Let our lives bear testimony to Your glory. Use us to disciple nations.',
-    category: 'Kingdom Focused',
+    category: 'Kingdom Focus',
     created_at: new Date().toISOString()
   },
   {
     id: 'kf-10',
     title: 'Pray for Breakthrough in Closed Nations',
     content: 'Lord, break through every barrier to the gospel. Open doors in nations that are closed to Christianity. Protect secret believers. Let Your Word spread rapidly despite opposition.',
-    category: 'Kingdom Focused',
+    category: 'Kingdom Focus',
     created_at: new Date().toISOString()
   },
   // Listening Prayer Points (Bible Verses)

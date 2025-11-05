@@ -8,21 +8,42 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Plus, Edit, Trash2, BookOpen, Shuffle } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, BookOpen, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BulkImportDialog } from "@/components/BulkImportDialog";
 
-const CATEGORIES: PrayerPointCategory[] = ['Kingdom Focused', 'Listening Prayer'];
+const CATEGORIES: PrayerPointCategory[] = ['Kingdom Focus', 'Listening Prayer'];
 
 interface PrayerPoint {
   id: string;
   title: string;
   content: string;
-  category: string; // Change to string instead of PrayerPointCategory
+  category: string;
   created_at: string;
+  created_by?: string;
+  audio_url?: string;
+  // Kingdom Focus specific fields (read-only in UI)
+  month?: string;
+  day?: number;
+  year?: number;
+  intercession_number?: number;
+  // Listening Prayer specific fields (read-only in UI)
+  cycle_number?: number;
+  day_number?: number;
+  chapter?: number;
+  start_verse?: number;
+  end_verse?: number;
+  reference_text?: string;
+  // Other metadata
+  is_used?: boolean;
+  is_placeholder?: boolean;
+  read_count?: number;
+  week_number?: number;
+  day_of_week?: string;
 }
 
 const PrayerLibrary = () => {
@@ -30,13 +51,29 @@ const PrayerLibrary = () => {
   const navigate = useNavigate();
   const [prayerPoints, setPrayerPoints] = useState<PrayerPoint[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [editingPoint, setEditingPoint] = useState<PrayerPoint | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('Kingdom Focused');
-  
+  const [selectedCategory, setSelectedCategory] = useState<string>('Kingdom Focus');
+
   // Form state
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [category, setCategory] = useState<string>('Kingdom Focused');
+  const [category, setCategory] = useState<string>('Kingdom Focus');
+
+  // Kingdom Focus schedule fields
+  const [month, setMonth] = useState("");
+  const [day, setDay] = useState("");
+  const [year, setYear] = useState(new Date().getFullYear().toString());
+  const [dayOfWeek, setDayOfWeek] = useState("");
+  const [intercessionNumber, setIntercessionNumber] = useState("");
+
+  // Listening Prayer schedule fields
+  const [cycleNumber, setCycleNumber] = useState("");
+  const [dayNumber, setDayNumber] = useState("");
+  const [chapter, setChapter] = useState("");
+  const [startVerse, setStartVerse] = useState("");
+  const [endVerse, setEndVerse] = useState("");
+  const [referenceText, setReferenceText] = useState("");
 
   useEffect(() => {
     fetchPrayerPoints();
@@ -45,7 +82,7 @@ const PrayerLibrary = () => {
   const fetchPrayerPoints = async () => {
     try {
       const { data, error } = await supabase
-        .from('prayer_points')
+        .from('prayer_library')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -71,35 +108,92 @@ const PrayerLibrary = () => {
     }
 
     if (!title || !content || !category) {
-      toast.error('Please fill in all fields');
+      toast.error('Please fill in all required fields');
       return;
+    }
+
+    // Validate Kingdom Focus schedule fields
+    if (category === 'Kingdom Focus') {
+      if (!month || !day || !year || !dayOfWeek || !intercessionNumber) {
+        toast.error('All Kingdom Focus schedule fields are required for auto-generation');
+        return;
+      }
+    }
+
+    // Validate Listening Prayer schedule fields
+    if (category === 'Listening Prayer') {
+      if (!dayNumber || !chapter || !startVerse || !endVerse || !referenceText) {
+        toast.error('All Listening Prayer schedule fields are required for auto-generation');
+        return;
+      }
     }
 
     try {
       if (editingPoint?.id) {
-        // Update existing point
+        // Update existing point - update editable fields and schedule metadata
+        const updateData: any = {
+          title,
+          content,
+          category
+        };
+
+        // Add Kingdom Focus schedule fields if provided
+        if (category === 'Kingdom Focus') {
+          if (month) updateData.month = month;
+          if (day) updateData.day = parseInt(day);
+          if (year) updateData.year = parseInt(year);
+          if (dayOfWeek) updateData.day_of_week = dayOfWeek;
+          if (intercessionNumber) updateData.intercession_number = parseInt(intercessionNumber);
+        }
+
+        // Add Listening Prayer schedule fields if provided
+        if (category === 'Listening Prayer') {
+          if (cycleNumber) updateData.cycle_number = parseInt(cycleNumber);
+          if (dayNumber) updateData.day_number = parseInt(dayNumber);
+          if (chapter) updateData.chapter = parseInt(chapter);
+          if (startVerse) updateData.start_verse = parseInt(startVerse);
+          if (endVerse) updateData.end_verse = parseInt(endVerse);
+          if (referenceText) updateData.reference_text = referenceText;
+        }
+
         const { error } = await supabase
-          .from('prayer_points')
-          .update({
-            title,
-            content,
-            category,
-            updated_at: new Date().toISOString()
-          })
+          .from('prayer_library')
+          .update(updateData)
           .eq('id', editingPoint.id);
 
         if (error) throw error;
         toast.success('Prayer point updated');
       } else {
-        // Create new point
+        // Create new point with schedule metadata
+        const insertData: any = {
+          title,
+          content,
+          category,
+          created_by: user.id
+        };
+
+        // Add Kingdom Focus schedule fields if provided
+        if (category === 'Kingdom Focus') {
+          if (month) insertData.month = month;
+          if (day) insertData.day = parseInt(day);
+          if (year) insertData.year = parseInt(year);
+          if (dayOfWeek) insertData.day_of_week = dayOfWeek;
+          if (intercessionNumber) insertData.intercession_number = parseInt(intercessionNumber);
+        }
+
+        // Add Listening Prayer schedule fields if provided
+        if (category === 'Listening Prayer') {
+          if (cycleNumber) insertData.cycle_number = parseInt(cycleNumber);
+          if (dayNumber) insertData.day_number = parseInt(dayNumber);
+          if (chapter) insertData.chapter = parseInt(chapter);
+          if (startVerse) insertData.start_verse = parseInt(startVerse);
+          if (endVerse) insertData.end_verse = parseInt(endVerse);
+          if (referenceText) insertData.reference_text = referenceText;
+        }
+
         const { error } = await supabase
-          .from('prayer_points')
-          .insert([{
-            title,
-            content,
-            category,
-            created_by: user.id
-          }]);
+          .from('prayer_library')
+          .insert([insertData]);
 
         if (error) throw error;
         toast.success('Prayer point added to library');
@@ -119,15 +213,31 @@ const PrayerLibrary = () => {
     setTitle(point.title);
     setContent(point.content);
     setCategory(point.category);
+
+    // Populate Kingdom Focus schedule fields
+    setMonth(point.month || "");
+    setDay(point.day?.toString() || "");
+    setYear(point.year?.toString() || new Date().getFullYear().toString());
+    setDayOfWeek(point.day_of_week || "");
+    setIntercessionNumber(point.intercession_number?.toString() || "");
+
+    // Populate Listening Prayer schedule fields
+    setCycleNumber(point.cycle_number?.toString() || "");
+    setDayNumber(point.day_number?.toString() || "");
+    setChapter(point.chapter?.toString() || "");
+    setStartVerse(point.start_verse?.toString() || "");
+    setEndVerse(point.end_verse?.toString() || "");
+    setReferenceText(point.reference_text || "");
+
     setIsDialogOpen(true);
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this prayer point?')) return;
+    if (!confirm('Are you sure you want to delete this prayer point? This may affect scheduled guidelines.')) return;
 
     try {
       const { error } = await supabase
-        .from('prayer_points')
+        .from('prayer_library')
         .delete()
         .eq('id', id);
 
@@ -141,31 +251,60 @@ const PrayerLibrary = () => {
     }
   };
 
-  const handleRegenerateListeningPrayer = async () => {
-    try {
-      // This feature reorganizes the order of Listening Prayers
-      // Note: Supabase doesn't have order management, so we just refetch
-      toast.success("Listening Prayer library refreshed");
-      await fetchPrayerPoints();
-    } catch (error: any) {
-      console.error('Error regenerating:', error);
-      toast.error('Failed to refresh prayer library');
-    }
-  };
-
   const resetForm = () => {
     setTitle("");
     setContent("");
-    setCategory('Kingdom Focused');
+    setCategory('Kingdom Focus');
     setEditingPoint(null);
+
+    // Reset Kingdom Focus schedule fields
+    setMonth("");
+    setDay("");
+    setYear(new Date().getFullYear().toString());
+    setDayOfWeek("");
+    setIntercessionNumber("");
+
+    // Reset Listening Prayer schedule fields
+    setCycleNumber("");
+    setDayNumber("");
+    setChapter("");
+    setStartVerse("");
+    setEndVerse("");
+    setReferenceText("");
   };
 
   const getCategoryColor = (cat: string) => {
     switch (cat) {
-      case 'Kingdom Focused': return 'bg-primary/10 text-primary border-primary/20';
+      case 'Kingdom Focus': return 'bg-primary/10 text-primary border-primary/20';
       case 'Listening Prayer': return 'bg-secondary/10 text-secondary-foreground border-secondary/20';
       default: return 'bg-accent/10 text-accent-foreground border-accent/20';
     }
+  };
+
+  const getScheduleInfo = (point: PrayerPoint): string | null => {
+    // Kingdom Focus: Show date and intercession number
+    if (point.category === 'Kingdom Focus' && point.month && point.day) {
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthNum = parseInt(point.month);
+      const monthName = (monthNum >= 1 && monthNum <= 12) ? monthNames[monthNum - 1] : point.month;
+      const intercessionPart = point.intercession_number ? `, Intercession ${point.intercession_number}` : '';
+      return `${monthName} ${point.day}${point.year ? `, ${point.year}` : ''}${intercessionPart}`;
+    }
+
+    // Listening Prayer: Show reference text or build from chapter/verses
+    if (point.category === 'Listening Prayer') {
+      if (point.reference_text) {
+        return point.reference_text;
+      }
+      if (point.chapter && point.start_verse && point.end_verse) {
+        return `Proverbs ${point.chapter}:${point.start_verse}-${point.end_verse}`;
+      }
+      if (point.day_number) {
+        return `Day ${point.day_number}`;
+      }
+    }
+
+    return null;
   };
 
   const filteredPoints = prayerPoints.filter(p => p.category === selectedCategory);
@@ -190,15 +329,26 @@ const PrayerLibrary = () => {
               </p>
             </div>
           </div>
-          
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <Plus className="mr-2 h-4 w-4" />
-                <span className="hidden md:inline">Add Prayer Point</span>
-                <span className="md:hidden">Add</span>
-              </Button>
-            </DialogTrigger>
+
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setBulkImportOpen(true)}
+              className="gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              <span className="hidden md:inline">Bulk Import</span>
+              <span className="md:hidden">Import</span>
+            </Button>
+
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={resetForm}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span className="hidden md:inline">Add Prayer Point</span>
+                  <span className="md:hidden">Add</span>
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
@@ -243,6 +393,172 @@ const PrayerLibrary = () => {
                   />
                 </div>
 
+                {/* Kingdom Focus Schedule Fields */}
+                {category === 'Kingdom Focus' && (
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                    <h3 className="font-semibold text-sm">Schedule Information (Required for Auto-Generation)</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="month">Month <span className="text-red-500">*</span></Label>
+                        <Select value={month} onValueChange={setMonth} required>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select month" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="January">January</SelectItem>
+                            <SelectItem value="February">February</SelectItem>
+                            <SelectItem value="March">March</SelectItem>
+                            <SelectItem value="April">April</SelectItem>
+                            <SelectItem value="May">May</SelectItem>
+                            <SelectItem value="June">June</SelectItem>
+                            <SelectItem value="July">July</SelectItem>
+                            <SelectItem value="August">August</SelectItem>
+                            <SelectItem value="September">September</SelectItem>
+                            <SelectItem value="October">October</SelectItem>
+                            <SelectItem value="November">November</SelectItem>
+                            <SelectItem value="December">December</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="day">Day <span className="text-red-500">*</span></Label>
+                        <Input
+                          id="day"
+                          type="number"
+                          min="1"
+                          max="31"
+                          value={day}
+                          onChange={(e) => setDay(e.target.value)}
+                          placeholder="1-31"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="year">Year <span className="text-red-500">*</span></Label>
+                        <Input
+                          id="year"
+                          type="number"
+                          value={year}
+                          onChange={(e) => setYear(e.target.value)}
+                          placeholder="2025"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="dayOfWeek">Day of Week <span className="text-red-500">*</span></Label>
+                        <Select value={dayOfWeek} onValueChange={setDayOfWeek} required>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select day" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="monday">Monday</SelectItem>
+                            <SelectItem value="tuesday">Tuesday</SelectItem>
+                            <SelectItem value="wednesday">Wednesday</SelectItem>
+                            <SelectItem value="thursday">Thursday</SelectItem>
+                            <SelectItem value="friday">Friday</SelectItem>
+                            <SelectItem value="saturday">Saturday</SelectItem>
+                            <SelectItem value="sunday">Sunday</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="intercessionNumber">Intercession Number <span className="text-red-500">*</span></Label>
+                        <Select value={intercessionNumber} onValueChange={setIntercessionNumber} required>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select number" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">1</SelectItem>
+                            <SelectItem value="2">2</SelectItem>
+                            <SelectItem value="3">3</SelectItem>
+                            <SelectItem value="4">4</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Listening Prayer Schedule Fields */}
+                {category === 'Listening Prayer' && (
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                    <h3 className="font-semibold text-sm">Schedule Information (Required for Auto-Generation)</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="cycleNumber">Cycle Number</Label>
+                        <Input
+                          id="cycleNumber"
+                          type="number"
+                          min="1"
+                          value={cycleNumber}
+                          onChange={(e) => setCycleNumber(e.target.value)}
+                          placeholder="1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="dayNumber">Day Number (1-91) <span className="text-red-500">*</span></Label>
+                        <Input
+                          id="dayNumber"
+                          type="number"
+                          min="1"
+                          max="91"
+                          value={dayNumber}
+                          onChange={(e) => setDayNumber(e.target.value)}
+                          placeholder="1-91"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="chapter">Chapter <span className="text-red-500">*</span></Label>
+                        <Input
+                          id="chapter"
+                          type="number"
+                          min="1"
+                          max="31"
+                          value={chapter}
+                          onChange={(e) => setChapter(e.target.value)}
+                          placeholder="1-31"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="startVerse">Start Verse <span className="text-red-500">*</span></Label>
+                        <Input
+                          id="startVerse"
+                          type="number"
+                          min="1"
+                          value={startVerse}
+                          onChange={(e) => setStartVerse(e.target.value)}
+                          placeholder="1"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="endVerse">End Verse <span className="text-red-500">*</span></Label>
+                        <Input
+                          id="endVerse"
+                          type="number"
+                          min="1"
+                          value={endVerse}
+                          onChange={(e) => setEndVerse(e.target.value)}
+                          placeholder="10"
+                          required
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Label htmlFor="referenceText">Reference Text <span className="text-red-500">*</span></Label>
+                        <Input
+                          id="referenceText"
+                          value={referenceText}
+                          onChange={(e) => setReferenceText(e.target.value)}
+                          placeholder="Proverbs 1:1-10"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-2 justify-end">
                   <Button type="button" variant="outline" onClick={() => {
                     resetForm();
@@ -257,7 +573,18 @@ const PrayerLibrary = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
+
+        <BulkImportDialog
+          open={bulkImportOpen}
+          onOpenChange={setBulkImportOpen}
+          onImportComplete={() => {
+            fetchPrayerPoints();
+            setBulkImportOpen(false);
+          }}
+          userId={user?.id || ''}
+        />
 
         <Tabs value={selectedCategory} onValueChange={(val) => setSelectedCategory(val)}>
           <TabsList className="mb-6 w-full md:w-auto flex-wrap h-auto">
@@ -279,28 +606,22 @@ const PrayerLibrary = () => {
                 </CardContent>
               </Card>
             ) : (
-              <>
-                {selectedCategory === 'Listening Prayer' && (
-                  <div className="mb-4 flex justify-end">
-                    <Button
-                      variant="outline"
-                      onClick={handleRegenerateListeningPrayer}
-                      className="gap-2"
-                    >
-                      <Shuffle className="h-4 w-4" />
-                      Reorganize Content
-                    </Button>
-                  </div>
-                )}
                 <div className="grid gap-4 md:grid-cols-2">
                   {filteredPoints.map((point) => (
                     <Card key={point.id} className="shadow-medium hover:shadow-glow transition-shadow">
                       <CardHeader>
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1">
-                            <Badge className={getCategoryColor(point.category)} variant="outline">
-                              {point.category}
-                            </Badge>
+                            <div className="flex flex-wrap gap-2 items-center">
+                              <Badge className={getCategoryColor(point.category)} variant="outline">
+                                {point.category}
+                              </Badge>
+                              {getScheduleInfo(point) && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {getScheduleInfo(point)}
+                                </Badge>
+                              )}
+                            </div>
                             <CardTitle className="text-lg mt-2">{point.title}</CardTitle>
                           </div>
                           <div className="flex gap-1">
@@ -329,7 +650,6 @@ const PrayerLibrary = () => {
                     </Card>
                   ))}
                 </div>
-              </>
             )}
           </TabsContent>
         </Tabs>
