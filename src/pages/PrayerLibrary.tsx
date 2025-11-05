@@ -22,7 +22,6 @@ interface PrayerPoint {
   title: string;
   content: string;
   category: string; // Change to string instead of PrayerPointCategory
-  audio_url?: string;
   created_at: string;
 }
 
@@ -38,7 +37,6 @@ const PrayerLibrary = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState<string>('Kingdom Focused');
-  const [audioUrl, setAudioUrl] = useState("");
 
   useEffect(() => {
     fetchPrayerPoints();
@@ -86,7 +84,6 @@ const PrayerLibrary = () => {
             title,
             content,
             category,
-            audio_url: audioUrl || null,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingPoint.id);
@@ -101,7 +98,6 @@ const PrayerLibrary = () => {
             title,
             content,
             category,
-            audio_url: audioUrl || null,
             created_by: user.id
           }]);
 
@@ -123,7 +119,6 @@ const PrayerLibrary = () => {
     setTitle(point.title);
     setContent(point.content);
     setCategory(point.category);
-    setAudioUrl(point.audio_url || "");
     setIsDialogOpen(true);
   };
 
@@ -162,7 +157,6 @@ const PrayerLibrary = () => {
     setTitle("");
     setContent("");
     setCategory('Kingdom Focused');
-    setAudioUrl("");
     setEditingPoint(null);
   };
 
@@ -249,19 +243,6 @@ const PrayerLibrary = () => {
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="audioUrl">Audio URL (Optional)</Label>
-                  <Input
-                    id="audioUrl"
-                    value={audioUrl}
-                    onChange={(e) => setAudioUrl(e.target.value)}
-                    placeholder="https://example.com/audio.mp3"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Add a custom audio recording for this prayer point
-                  </p>
-                </div>
-
                 <div className="flex gap-2 justify-end">
                   <Button type="button" variant="outline" onClick={() => {
                     resetForm();
@@ -344,13 +325,6 @@ const PrayerLibrary = () => {
                         <p className="text-sm text-foreground/80 whitespace-pre-wrap line-clamp-3">
                           {point.content}
                         </p>
-                        {point.audio_url && (
-                          <div className="mt-3">
-                            <audio controls className="w-full h-8">
-                              <source src={point.audio_url} type="audio/mpeg" />
-                            </audio>
-                          </div>
-                        )}
                       </CardContent>
                     </Card>
                   ))}
