@@ -60,7 +60,7 @@ const CreateGuideline = () => {
   const fetchPrayerPoints = async () => {
     try {
       const { data, error } = await supabase
-        .from('prayer_points')
+        .from('prayer_library')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -74,7 +74,7 @@ const CreateGuideline = () => {
 
   const getPointsByCategory = (stepType: string) => {
     const categoryMap: Record<string, string> = {
-      'kingdom': 'Kingdom Focused',
+      'kingdom': 'Kingdom Focus',
       'listening': 'Listening Prayer'
     };
     const category = categoryMap[stepType];
