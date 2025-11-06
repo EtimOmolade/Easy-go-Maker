@@ -554,6 +554,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_daily_guideline: { Args: never; Returns: undefined }
       get_testimony_counts: {
         Args: never
         Returns: {
