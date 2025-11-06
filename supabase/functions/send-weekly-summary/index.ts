@@ -54,7 +54,7 @@ serve(async (req) => {
             "Authorization": `Bearer ${RESEND_API_KEY}`,
           },
           body: JSON.stringify({
-            from: "SpiritScribe <noreply@resend.dev>",
+            from: "SpiritScribe <onboarding@resend.dev>",
             to: [profile.email],
             subject: "📊 Your Weekly Prayer Summary",
             html: `
