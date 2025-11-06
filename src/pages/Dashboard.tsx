@@ -37,11 +37,13 @@ const Dashboard = () => {
   const [pendingTestimonyCount, setPendingTestimonyCount] = useState(0);
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
   const [achievedMilestoneLevel, setAchievedMilestoneLevel] = useState(0);
+  const [todaysGuideline, setTodaysGuideline] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
       fetchEncouragementMessage();
+      fetchTodaysGuideline();
       checkReminders();
       checkForNewMilestones();
 
@@ -196,6 +198,30 @@ const Dashboard = () => {
     }
   };
 
+  const fetchTodaysGuideline = async () => {
+    try {
+      const today = new Date();
+      const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
+      const month = today.toLocaleDateString('en-US', { month: 'long' });
+      const day = today.getDate();
+
+      const { data, error } = await supabase
+        .from("guidelines")
+        .select("*")
+        .eq("month", month)
+        .eq("day", day)
+        .single();
+
+      if (error) {
+        console.error("Error fetching today's guideline:", error);
+      } else {
+        setTodaysGuideline(data);
+      }
+    } catch (error) {
+      console.error("Error fetching today's guideline:", error);
+    }
+  };
+
   const milestoneData = useMemo(() => {
     if (!user || !profile) return { current: MILESTONES[0], progress: 0, currentStreak: 0, nextMilestone: MILESTONES[0], daysToNext: 1 };
 
@@ -317,25 +343,91 @@ const Dashboard = () => {
             </div>
           </div>
 
+          {/* Today's Prayer Focus - Hero Section */}
+          {todaysGuideline && (
+            <Card className="mb-8 shadow-elegant border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
+              <CardHeader className="text-center pb-4">
+                <div className="text-4xl mb-3">🙏</div>
+                <CardTitle className="text-3xl font-heading">Today's Prayer Focus</CardTitle>
+                <CardDescription className="text-base mt-2">
+                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="text-center">
+                  <h3 className="text-xl font-semibold mb-3 text-foreground">
+                    {todaysGuideline.title}
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed mb-6 whitespace-pre-wrap">
+                    {todaysGuideline.content?.substring(0, 200)}...
+                  </p>
+                </div>
+                <Button
+                  onClick={() => navigate(`/guideline/${todaysGuideline.id}`)}
+                  size="lg"
+                  className="w-full text-lg py-6"
+                >
+                  <BookMarked className="mr-2 h-5 w-5" />
+                  Begin Today's Prayer
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Compact Streak Badge */}
+          {profile && (
+            <div className="mb-8 p-4 rounded-lg border bg-card flex items-center justify-between shadow-sm">
+              <StreakBadge streakCount={profile.streak_count} size="md" />
+              <div className="flex items-center gap-2">
+                <Flame className="h-6 w-6 text-accent" />
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-foreground">{profile.streak_count}</p>
+                  <p className="text-xs text-muted-foreground">day streak</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {quickActions.map((action) => (
+              <Tooltip key={action.path}>
+                <TooltipTrigger asChild>
+                  <Card
+                    className="cursor-pointer hover:shadow-medium transition-all hover:scale-105"
+                    onClick={() => navigate(action.path)}
+                  >
+                    <CardHeader>
+                      <action.icon className={`h-8 w-8 ${action.color} mb-2`} />
+                      <CardTitle className="text-xl">{action.title}</CardTitle>
+                      <CardDescription>{action.description}</CardDescription>
+                    </CardHeader>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent>{action.description}</TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+
           {/* Community Announcements */}
           {encouragementMessages.length > 0 && (
-            <Card className="mb-8 shadow-medium border-2 border-accent/20" data-encouragement-card>
+            <Card className="mb-8 shadow-medium border-accent/10" data-encouragement-card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Megaphone className="h-6 w-6 text-accent" />
-                  Community Announcements
+                  <Megaphone className="h-5 w-5 text-accent" />
+                  Community Updates
                 </CardTitle>
-                <CardDescription>Important updates from our community</CardDescription>
+                <CardDescription>Latest news and announcements</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Show first announcement always, others collapsible */}
                 {(showAllAnnouncements ? encouragementMessages : encouragementMessages.slice(0, 1)).map((message, index) => (
                   <div
                     key={message.id}
-                    className={`p-4 rounded-lg ${index === 0 ? 'bg-accent/10 border-l-4 border-accent' : 'bg-muted/50'}`}
+                    className={`p-4 rounded-lg ${index === 0 ? 'bg-accent/5 border-l-4 border-accent' : 'bg-muted/30'}`}
                   >
-                    <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                    <p className="text-xs text-muted-foreground mt-3">
+                    <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed text-sm">{message.content}</p>
+                    <p className="text-xs text-muted-foreground mt-2">
                       {new Date(message.created_at).toLocaleDateString('en-US', {
                         weekday: 'short',
                         month: 'short',
@@ -364,13 +456,14 @@ const Dashboard = () => {
             </Card>
           )}
 
-        {/* Milestone & Badge Card */}
-        <Card className="mb-8 shadow-medium border-2 border-primary/20">
+        {/* Prayer Milestones Journey - Bottom Section */}
+        <Card className="mb-8 shadow-medium border-primary/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Flame className="h-6 w-6 text-accent" />
-              Prayer Milestones
+              <Flame className="h-5 w-5 text-accent" />
+              Your Prayer Journey
             </CardTitle>
+            <CardDescription>Track your spiritual growth milestones</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
@@ -425,30 +518,9 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {quickActions.map((action) => (
-            <Tooltip key={action.path}>
-              <TooltipTrigger asChild>
-                <Card
-                  className="cursor-pointer hover:shadow-medium transition-all hover:scale-105"
-                  onClick={() => navigate(action.path)}
-                >
-                  <CardHeader>
-                    <action.icon className={`h-8 w-8 ${action.color} mb-2`} />
-                    <CardTitle className="text-xl">{action.title}</CardTitle>
-                    <CardDescription>{action.description}</CardDescription>
-                  </CardHeader>
-                </Card>
-              </TooltipTrigger>
-              <TooltipContent>{action.description}</TooltipContent>
-            </Tooltip>
-          ))}
-        </div>
-
         {/* Admin Card */}
         {isAdmin && (
-          <Card className="shadow-medium border-2 border-accent/20">
+          <Card className="shadow-medium border-accent/10">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-6 w-6 text-accent" />
