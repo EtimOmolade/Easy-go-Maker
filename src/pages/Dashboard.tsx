@@ -377,7 +377,13 @@ const Dashboard = () => {
           {/* Compact Streak Badge */}
           {profile && (
             <div className="mb-8 p-4 rounded-lg border bg-card flex items-center justify-between shadow-sm">
-              <StreakBadge streakCount={profile.streak_count} size="md" />
+              <div className="flex items-center gap-2">
+                <div className="text-4xl">{(milestoneData.lastAchieved || milestoneData.nextMilestone).emoji}</div>
+                <div>
+                  <p className="font-semibold text-foreground">{(milestoneData.lastAchieved || milestoneData.nextMilestone).name}</p>
+                  <p className="text-xs text-muted-foreground">Current Badge</p>
+                </div>
+              </div>
               <div className="flex items-center gap-2">
                 <Flame className="h-6 w-6 text-accent" />
                 <div className="text-right">
