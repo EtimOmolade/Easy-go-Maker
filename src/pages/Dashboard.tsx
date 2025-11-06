@@ -378,9 +378,9 @@ const Dashboard = () => {
           {profile && (
             <div className="mb-8 p-4 rounded-lg border bg-card flex items-center justify-between shadow-sm">
               <div className="flex items-center gap-2">
-                <div className="text-4xl">{(milestoneData.lastAchieved || milestoneData.nextMilestone).emoji}</div>
+                <div className="text-4xl">{(milestoneData.lastAchieved || MILESTONES[0]).emoji}</div>
                 <div>
-                  <p className="font-semibold text-foreground">{(milestoneData.lastAchieved || milestoneData.nextMilestone).name}</p>
+                  <p className="font-semibold text-foreground">{(milestoneData.lastAchieved || MILESTONES[0]).name}</p>
                   <p className="text-xs text-muted-foreground">Current Badge</p>
                 </div>
               </div>
@@ -473,21 +473,21 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {/* Next Milestone Goal */}
+              {/* Current Badge Achievement */}
               <div className="text-center">
-                <div className="text-6xl mb-3">{milestoneData.nextMilestone.emoji}</div>
+                <div className="text-6xl mb-3">{(milestoneData.lastAchieved || MILESTONES[0]).emoji}</div>
                 <h3 className="text-2xl font-bold text-foreground mb-2">
-                  {milestoneData.nextMilestone.name}
+                  {(milestoneData.lastAchieved || MILESTONES[0]).name}
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   {milestoneData.currentStreak} day{milestoneData.currentStreak !== 1 ? 's' : ''} streak
                 </p>
                 <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
                   <p className="text-sm italic text-foreground/90">
-                    "{milestoneData.nextMilestone.scripture}"
+                    "{(milestoneData.lastAchieved || MILESTONES[0]).scripture}"
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    - {milestoneData.nextMilestone.scripture_ref}
+                    - {(milestoneData.lastAchieved || MILESTONES[0]).scripture_ref}
                   </p>
                 </div>
               </div>
