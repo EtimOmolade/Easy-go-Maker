@@ -18,7 +18,7 @@ serve(async (req) => {
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
     // Get encouragement message details
@@ -47,10 +47,10 @@ serve(async (req) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${RESEND_API_KEY}`,
+            Authorization: `Bearer ${RESEND_API_KEY}`,
           },
           body: JSON.stringify({
-            from: "SpiritScribe <onboarding@resend.dev>",
+            from: "SpiritConnect <onboarding@resend.dev>",
             to: [profile.email],
             subject: "📢 New Community Announcement",
             html: `
@@ -60,14 +60,14 @@ serve(async (req) => {
                   <p style="margin: 0; white-space: pre-wrap;">${message.content}</p>
                 </div>
                 <p style="margin: 30px 0;">
-                  <a href="${Deno.env.get("SUPABASE_URL")?.replace('/supabase', '')}/dashboard"
+                  <a href="${Deno.env.get("SUPABASE_URL")?.replace("/supabase", "")}/dashboard"
                      style="background-color: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                     View on Dashboard
                   </a>
                 </p>
                 <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
                 <p style="color: #999; font-size: 12px;">
-                  This is a community announcement from SpiritScribe.
+                  This is a community announcement from SpiritConnect.
                   You're receiving this because you have notifications enabled.
                 </p>
               </div>
@@ -86,18 +86,14 @@ serve(async (req) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({ success: true, sent: profiles?.length || 0 }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: true, sent: profiles?.length || 0 }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Error in send-announcement-email:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
