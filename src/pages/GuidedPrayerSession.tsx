@@ -319,23 +319,30 @@ const GuidedPrayerSession = () => {
     } else {
       const currentStep = guideline.steps[currentStepIndex];
 
-      // For listening prayers, use currentPoint which has the resolved content
-      if (currentStep && currentStep.type === 'listening' && currentPoint?.content) {
+      // For listening prayers, use listeningPrayer which has the resolved content
+      const listeningPrayer = currentStep.type === 'listening' 
+        ? (currentStep.points?.[0] || currentStep.prayer || currentStep)
+        : null;
+      
+      if (currentStep && currentStep.type === 'listening' && listeningPrayer?.content) {
         setIsPlayingAudio(true);
-        speak(currentPoint.content, {
+        speak(listeningPrayer.content, {
           rate: 0.5, // Very slow for meditative scripture reading
           pitch: 1,
           volume: 1,
           onEnd: () => setIsPlayingAudio(false)
         });
-      } else if (currentStep && currentStep.type === 'kingdom' && currentPoint?.content) {
-        setIsPlayingAudio(true);
-        speak(currentPoint.content, {
-          rate: 0.65,
-          pitch: 1,
-          volume: 1,
-          onEnd: () => setIsPlayingAudio(false)
-        });
+      } else if (currentStep && currentStep.type === 'kingdom') {
+        const kingdomPoint = currentStep.points?.[currentPointIndex];
+        if (kingdomPoint?.content) {
+          setIsPlayingAudio(true);
+          speak(kingdomPoint.content, {
+            rate: 0.65,
+            pitch: 1,
+            volume: 1,
+            onEnd: () => setIsPlayingAudio(false)
+          });
+        }
       }
     }
   };
@@ -364,9 +371,14 @@ const GuidedPrayerSession = () => {
   const currentStep = guideline.steps?.[currentStepIndex];
   const progress = ((completedSteps.length) / (guideline.steps?.length || 1)) * 100;
 
-  // Get current point for both kingdom and listening prayers
-  const currentPoint = (currentStep?.type === 'kingdom' || currentStep?.type === 'listening') && currentStep?.points?.[currentPointIndex]
+  // Get current point for kingdom prayers (which have points array)
+  const currentPoint = currentStep?.type === 'kingdom' && currentStep?.points?.[currentPointIndex]
     ? currentStep.points[currentPointIndex]
+    : null;
+
+  // Get listening prayer directly (single object, not array)
+  const listeningPrayer = currentStep?.type === 'listening' 
+    ? (currentStep.points?.[0] || currentStep.prayer || currentStep)
     : null;
 
   return (
@@ -528,11 +540,14 @@ const GuidedPrayerSession = () => {
                 </>
               )}
 
-              {currentStep.type === 'listening' && currentPoint && (
+              {currentStep.type === 'listening' && listeningPrayer && (
                 <>
                   <div className="p-6 bg-accent/5 rounded-lg border border-border">
-                    <h4 className="font-semibold mb-3">{currentPoint.title}</h4>
-                    <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{currentPoint.content}</p>
+                    <h4 className="font-semibold mb-3">{listeningPrayer.title || listeningPrayer.reference || 'Scripture Reading'}</h4>
+                    <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{listeningPrayer.content}</p>
+                    {listeningPrayer.reference && (
+                      <p className="text-sm text-muted-foreground mt-3 italic">— {listeningPrayer.reference}</p>
+                    )}
                   </div>
                   
                   {currentStep.custom_audio_url && (
@@ -563,10 +578,10 @@ const GuidedPrayerSession = () => {
                       )}
                     </Button>
                     <Button 
-                      onClick={handlePointComplete}
+                      onClick={handleStepComplete}
                       variant="outline"
                     >
-                      {currentStep.prayer_point_ids && currentPointIndex < currentStep.prayer_point_ids.length - 1 ? 'Next Passage' : 'Complete'}
+                      Complete Listening Prayer
                     </Button>
                   </div>
                 </>
