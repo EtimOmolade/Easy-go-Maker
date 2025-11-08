@@ -52,7 +52,7 @@ serve(async (req) => {
               "Authorization": `Bearer ${RESEND_API_KEY}`,
             },
             body: JSON.stringify({
-              from: "SpiritScribe <onboarding@resend.dev>",
+              from: "SpiritConnect <onboarding@resend.dev>",
               to: [profile.email],
               subject: "🙏 Don't forget your prayer time today!",
               html: `
