@@ -18,18 +18,26 @@ serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Get userId from request body or from auth header
-    const { userId } = await req.json().catch(() => ({}));
+    // Try to get userId from request body first
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch {
+      requestBody = {};
+    }
+    
+    const { userId } = requestBody;
     
     let user;
     let userEmail;
     
     if (userId) {
-      // Use provided userId (when called from login flow before auth session)
+      // Use provided userId (when called from login flow after sign out)
       const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
       
       if (userError || !userData.user) {
-        throw new Error("Invalid user");
+        console.error("Error getting user by ID:", userError);
+        throw new Error("Invalid user ID");
       }
       
       user = userData.user;
@@ -46,6 +54,7 @@ serve(async (req) => {
       const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(token);
 
       if (userError || !authUser) {
+        console.error("Error getting user from token:", userError);
         throw new Error("Invalid token");
       }
       
