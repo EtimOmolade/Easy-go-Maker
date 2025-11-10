@@ -400,7 +400,7 @@ const CreateGuideline = () => {
                   <h4 className="font-semibold">Prayer Flow ({steps.length} steps)</h4>
                   {steps.map((step, index) => {
                     const stepType = STEP_TYPES.find(t => t.value === step.type);
-                    const selectedPoints = prayerPoints.filter(p => step.prayer_point_ids.includes(p.id));
+                    const selectedPoints = prayerPoints.filter(p => (step.prayer_point_ids || []).includes(p.id));
                     
                     return (
                       <Card key={step.id} className="shadow-sm">
