@@ -29,8 +29,11 @@ const VerifyOTP = () => {
     }
   }, [email, userId, navigate]);
 
-  const handleVerify = async () => {
-    if (otp.length !== 6) {
+  const handleVerify = async (otpValue?: string) => {
+    // Use passed value or state value
+    const codeToVerify = otpValue || otp;
+    
+    if (codeToVerify.length !== 6) {
       toast.error("Please enter the complete 6-digit code");
       return;
     }
@@ -68,7 +71,7 @@ const VerifyOTP = () => {
 
       // Hash the provided OTP to compare
       const encoder = new TextEncoder();
-      const data = encoder.encode(otp);
+      const data = encoder.encode(codeToVerify);
       const hashBuffer = await crypto.subtle.digest("SHA-256", data);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const hashedOtp = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
@@ -147,8 +150,9 @@ const VerifyOTP = () => {
     setOtp(value);
     if (value.length === 6) {
       // Auto-submit when all 6 digits are entered
+      // Pass the value directly to avoid state update race condition
       setTimeout(() => {
-        handleVerify();
+        handleVerify(value);
       }, 100);
     }
   };
@@ -201,7 +205,7 @@ const VerifyOTP = () => {
 
           <div className="space-y-2">
             <Button
-              onClick={handleVerify}
+              onClick={() => handleVerify()}
               className="w-full"
               disabled={loading || otp.length !== 6}
             >
