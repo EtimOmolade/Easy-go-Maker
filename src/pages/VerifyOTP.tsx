@@ -44,21 +44,26 @@ const VerifyOTP = () => {
     setLoading(true);
 
     try {
-      // Get OTP record from database
+      // Get OTP record from database (session still exists, so RLS works)
       const { data: otpRecord, error: otpError } = await supabase
         .from("user_2fa")
         .select("*")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
 
-      if (otpError || !otpRecord) {
-        throw new Error("No verification code found");
+      if (otpError) {
+        console.error("Database error:", otpError);
+        throw new Error("Failed to retrieve verification code");
+      }
+
+      if (!otpRecord) {
+        throw new Error("No verification code found. Please request a new code.");
       }
 
       // Check if OTP has expired
       if (new Date(otpRecord.otp_expires_at) < new Date()) {
         await supabase.from("user_2fa").delete().eq("user_id", userId);
-        throw new Error("Verification code has expired");
+        throw new Error("Verification code has expired. Please request a new code.");
       }
 
       // Hash the provided OTP to compare
@@ -70,7 +75,7 @@ const VerifyOTP = () => {
 
       // Verify OTP matches
       if (otpRecord.otp_code !== hashedOtp) {
-        throw new Error("Invalid verification code");
+        throw new Error("Invalid verification code. Please check and try again.");
       }
 
       // Mark OTP as verified
@@ -98,12 +103,9 @@ const VerifyOTP = () => {
           });
       }
 
-      // Now sign the user back in with their credentials
-      // Note: We need to store the password temporarily or use a different flow
-      // For now, we'll complete OTP verification and let AuthContext handle the rest
       toast.success("Verification successful!");
       
-      // Complete OTP verification in AuthContext
+      // Complete OTP verification in AuthContext (user already has session)
       completeOTPVerification(deviceToken);
       
       navigate("/dashboard");
@@ -126,9 +128,8 @@ const VerifyOTP = () => {
     setResending(true);
 
     try {
-      const { error } = await supabase.functions.invoke("generate-otp", {
-        body: { userId }
-      });
+      // Call generate-otp (session still exists)
+      const { error } = await supabase.functions.invoke("generate-otp");
 
       if (error) throw error;
 

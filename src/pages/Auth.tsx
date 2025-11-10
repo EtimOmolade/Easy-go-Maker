@@ -87,24 +87,18 @@ const Auth = () => {
               
               toast.success("Welcome back!");
               // Don't navigate - let the auth state change handle it
-              return;
             } else {
               // Not trusted - require OTP verification
-              // Sign out the session to prevent dashboard access
-              await supabase.auth.signOut();
-              
-              // Set pending state in AuthContext
+              // DON'T sign out - keep the session but set pending state
               setPendingAuth(data.user, true);
               
-              // Generate and send OTP
-              await supabase.functions.invoke("generate-otp", {
-                body: { userId: data.user.id }
-              });
+              // Generate and send OTP (now has valid session)
+              await supabase.functions.invoke("generate-otp");
               
               toast.success("Verification code sent to your email");
               navigate("/verify-otp", { state: { email: data.user.email, userId: data.user.id } });
-              return;
             }
+            return;
           }
         }
 
