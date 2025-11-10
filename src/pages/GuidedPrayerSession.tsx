@@ -234,39 +234,42 @@ const GuidedPrayerSession = () => {
       }
 
       // Log daily prayer completion in Supabase (for ALL prayers - current, past, future)
-      // This updates the weekly tracker
-      // Check if already completed to avoid duplicates
+      // This updates the weekly tracker - marks the ACTUAL day the user prayed
+      // Database expects lowercase day names
+      const dayOfWeekLowercase = currentDayName.toLowerCase();
+
+      // Check if already completed TODAY to avoid duplicates
       const { data: existingPrayer, error: checkError } = await supabase
         .from('daily_prayers')
         .select('*')
         .eq('user_id', user.id)
         .eq('guideline_id', guideline.id)
-        .eq('day_of_week', guideline.day_of_week || currentDayName)
+        .eq('day_of_week', dayOfWeekLowercase)
         .maybeSingle();
 
       if (checkError) {
         console.error('Error checking daily prayer:', checkError);
       }
 
-      // Only insert if not already completed
+      // Only insert if not already completed TODAY
       if (!existingPrayer) {
         const { error: insertError } = await supabase
           .from('daily_prayers')
           .insert({
             user_id: user.id,
             guideline_id: guideline.id,
-            day_of_week: guideline.day_of_week || currentDayName,
+            day_of_week: dayOfWeekLowercase, // Store the actual day user is praying (lowercase)
             completed_at: new Date().toISOString(),
           });
 
         if (insertError) {
-          console.error('Error inserting daily prayer:', insertError);
-          toast.error('Failed to update prayer tracker');
+          console.error('❌ Error inserting daily prayer:', insertError);
+          toast.error(`Failed to update prayer tracker: ${insertError.message}`);
         } else {
-          console.log('✅ Daily prayer tracker updated successfully');
+          console.log(`✅ Daily prayer tracker updated - marked ${currentDayName} as completed`);
         }
       } else {
-        console.log('ℹ️ Prayer already marked as completed in tracker');
+        console.log(`ℹ️ ${currentDayName} already marked as completed in tracker for this guideline`);
       }
 
       // Create journal entry with appropriate message

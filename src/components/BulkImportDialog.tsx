@@ -52,10 +52,10 @@ Kingdom Focus,July 1 Intercession 2,"Father, we decree the rescue of every capti
 Kingdom Focus,July 1 Intercession 3,"Lord Jesus, trigger new waves of signs and wonders by Your Word...",July,1,2025,tuesday,3
 Kingdom Focus,July 1 Intercession 4,"Father, let this church be minimum double her current attendance...",July,1,2025,tuesday,4`;
     } else {
-      csvContent = `category,title,content,day_number,chapter,start_verse,end_verse,reference_text,cycle_number
-Listening Prayer,Proverbs 1:1-10,"Read Proverbs 1:1-10. Meditate on the wisdom found in this passage and ask God to speak to you.",1,1,1,10,Proverbs 1:1-10,1
-Listening Prayer,Proverbs 1:11-20,"Read Proverbs 1:11-20. Meditate on the wisdom found in this passage and ask God to speak to you.",2,1,11,20,Proverbs 1:11-20,1
-Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom found in this passage and ask God to speak to you.",3,1,21,33,Proverbs 1:21-33,1`;
+      csvContent = `category,title,content,day_number,chapter,start_verse,end_verse,reference_text
+Listening Prayer,Proverbs 1:1-10,"Read Proverbs 1:1-10. Meditate on the wisdom found in this passage and ask God to speak to you.",1,1,1,10,Proverbs 1:1-10
+Listening Prayer,Proverbs 1:11-20,"Read Proverbs 1:11-20. Meditate on the wisdom found in this passage and ask God to speak to you.",2,1,11,20,Proverbs 1:11-20
+Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom found in this passage and ask God to speak to you.",3,1,21,33,Proverbs 1:21-33`;
     }
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -107,8 +107,7 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
           chapter: 1,
           start_verse: 1,
           end_verse: 10,
-          reference_text: "Proverbs 1:1-10",
-          cycle_number: 1
+          reference_text: "Proverbs 1:1-10"
         },
         {
           category: "Listening Prayer",
@@ -118,8 +117,7 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
           chapter: 1,
           start_verse: 11,
           end_verse: 20,
-          reference_text: "Proverbs 1:11-20",
-          cycle_number: 1
+          reference_text: "Proverbs 1:11-20"
         }
       ];
     }

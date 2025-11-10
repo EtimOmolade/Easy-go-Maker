@@ -68,15 +68,15 @@ const GuidelineDetails = () => {
     if (!id || !user || !guideline) return;
 
     try {
-      // Check if this guideline's prayer is completed (use guideline's day, not current day)
-      const guidelineDayOfWeek = guideline.day_of_week || DAYS[new Date().getDay()];
+      // Check if this guideline has been completed TODAY (actual current day)
+      const today = DAYS[new Date().getDay()].toLowerCase(); // Database expects lowercase
 
       const { data, error } = await supabase
         .from('daily_prayers')
         .select('*')
         .eq('user_id', user.id)
         .eq('guideline_id', id)
-        .eq('day_of_week', guidelineDayOfWeek)
+        .eq('day_of_week', today)
         .maybeSingle();
 
       if (error) console.error('Error checking completion:', error);
@@ -152,11 +152,16 @@ const GuidelineDetails = () => {
           if (prayersError) console.error('Error fetching prayers:', prayersError);
 
           // Create daily prayers array with completion status
-          const completedDays = new Set(completedPrayers?.map(p => p.day_of_week) || []);
+          // Database stores lowercase day names, so we need to capitalize for comparison
+          const completedDays = new Set(
+            completedPrayers?.map(p => p.day_of_week.charAt(0).toUpperCase() + p.day_of_week.slice(1)) || []
+          );
           const prayers = DAYS.map(day => ({
             day,
             completed: completedDays.has(day),
-            completedAt: completedPrayers?.find(p => p.day_of_week === day)?.completed_at
+            completedAt: completedPrayers?.find(p =>
+              (p.day_of_week.charAt(0).toUpperCase() + p.day_of_week.slice(1)) === day
+            )?.completed_at
           }));
           setDailyPrayers(prayers);
         } else {
