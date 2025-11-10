@@ -40,7 +40,26 @@ serve(async (req) => {
 
     console.log(`Sending encouragement message to ${profiles?.length || 0} users`);
 
+    // Helper function to validate email format
+    const isValidEmail = (email: string): boolean => {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(email);
+    };
+
+    // Helper function to delay between emails (rate limiting)
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+    let sentCount = 0;
+    let failedCount = 0;
+
     for (const profile of profiles || []) {
+      // Validate email format
+      if (!isValidEmail(profile.email)) {
+        console.error(`❌ Invalid email format: ${profile.email}`);
+        failedCount++;
+        continue;
+      }
+
       // Send encouragement email using Resend
       try {
         const res = await fetch("https://api.resend.com/emails", {
@@ -77,18 +96,27 @@ serve(async (req) => {
 
         if (res.ok) {
           console.log(`✅ Sent announcement to ${profile.email}`);
+          sentCount++;
         } else {
           const error = await res.text();
           console.error(`❌ Failed to send to ${profile.email}:`, error);
+          failedCount++;
         }
+
+        // Rate limiting: Wait 600ms between emails (allows ~1.6 emails/sec, safely under 2/sec limit)
+        await delay(600);
       } catch (emailError) {
         console.error(`❌ Error sending email to ${profile.email}:`, emailError);
+        failedCount++;
       }
     }
 
-    return new Response(JSON.stringify({ success: true, sent: profiles?.length || 0 }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.log(`📊 Email sending complete: ${sentCount} sent, ${failedCount} failed`);
+
+    return new Response(
+      JSON.stringify({ success: true, sent: sentCount, failed: failedCount }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (error) {
     console.error("Error in send-announcement-email:", error);
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {

@@ -77,6 +77,12 @@ serve(async (req) => {
       ? kingdomPrayers[0].day_of_week 
       : '';
 
+    // Calculate week number (simple calculation: week of the year)
+    const currentDate = new Date(2025, months.indexOf(month), day);
+    const startOfYear = new Date(currentDate.getFullYear(), 0, 1);
+    const days = Math.floor((currentDate.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+    const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+
     // Build guideline structure
     const steps = [];
 
@@ -129,6 +135,7 @@ serve(async (req) => {
     const { data: guideline, error: guidelineError } = await supabase
       .from('guidelines')
       .insert({
+        week_number: weekNumber,
         month: month,
         day: day,
         day_of_week: dayOfWeek,
