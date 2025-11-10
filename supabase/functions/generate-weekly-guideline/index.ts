@@ -22,18 +22,19 @@ serve(async (req) => {
       throw new Error('Missing required fields: month, day, title, userId');
     }
 
-    // Fetch Kingdom Focus prayers for this day (first 4 intercessions)
+    // Fetch Kingdom Focus prayers for this day (all 4 intercessions)
     const { data: kingdomPrayers, error: kingdomError } = await supabase
       .from('prayer_library')
       .select('*')
       .eq('category', 'Kingdom Focus')
       .eq('month', month)
       .eq('day', day)
-      .gte('intercession_number', 1)
-      .lte('intercession_number', 4)
+      .in('intercession_number', [1, 2, 3, 4])
       .order('intercession_number', { ascending: true });
 
     if (kingdomError) throw kingdomError;
+    
+    console.log(`Found ${kingdomPrayers?.length || 0} Kingdom Focus prayers for ${month} ${day}`);
 
     // Calculate cycle day for Listening Prayer (based on calendar date)
     // Start from June 30 (Day 1) and count forward
