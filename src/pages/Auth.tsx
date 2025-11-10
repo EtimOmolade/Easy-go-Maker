@@ -48,12 +48,30 @@ const Auth = () => {
     try {
       // Backend integration - Supabase ACTIVATED
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (error) throw error;
+
+        // Check if user has 2FA enabled
+        if (data.user) {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("two_factor_enabled")
+            .eq("id", data.user.id)
+            .single();
+
+          if (profileData?.two_factor_enabled) {
+            // Generate and send OTP
+            await supabase.functions.invoke("generate-otp");
+            toast.success("Verification code sent to your email");
+            navigate("/verify-otp", { state: { email } });
+            return;
+          }
+        }
+
         toast.success("Welcome back!");
         navigate("/dashboard");
       } else {
@@ -171,6 +189,19 @@ const Auth = () => {
                 </p>
               )}
             </div>
+            
+            {isLogin && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => navigate("/forgot-password")}
+                  className="text-sm text-primary hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
+
             <Button type="submit" className="w-full text-primary-foreground" disabled={loading}>
               {loading ? (
                 <>

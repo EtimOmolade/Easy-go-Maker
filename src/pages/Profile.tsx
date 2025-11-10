@@ -19,6 +19,7 @@ interface ProfileData {
   email: string;
   streak_count: number;
   reminders_enabled: boolean;
+  two_factor_enabled: boolean;
 }
 
 const Profile = () => {
@@ -27,7 +28,9 @@ const Profile = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [name, setName] = useState("");
   const [reminders, setReminders] = useState(true);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [toggling2FA, setToggling2FA] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -48,7 +51,7 @@ const Profile = () => {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("name, email, streak_count, reminders_enabled")
+        .select("name, email, streak_count, reminders_enabled, two_factor_enabled")
         .eq("id", user.id)
         .single();
 
@@ -59,6 +62,7 @@ const Profile = () => {
         setProfile(data);
         setName(data.name);
         setReminders(data.reminders_enabled);
+        setTwoFactorEnabled(data.two_factor_enabled || false);
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -90,6 +94,29 @@ const Profile = () => {
     }
 
     setLoading(false);
+  };
+
+  const handleToggle2FA = async (enabled: boolean) => {
+    if (!user) return;
+
+    setToggling2FA(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("toggle-2fa", {
+        body: { enabled },
+      });
+
+      if (error) throw error;
+
+      setTwoFactorEnabled(enabled);
+      toast.success(`Two-factor authentication ${enabled ? 'enabled' : 'disabled'}`);
+      fetchProfile();
+    } catch (error: any) {
+      console.error("Error toggling 2FA:", error);
+      toast.error(error.message || "Failed to update 2FA settings");
+    } finally {
+      setToggling2FA(false);
+    }
   };
 
   const { unlocked, locked, currentStreak } = useMemo(() => {
@@ -228,7 +255,20 @@ const Profile = () => {
                 </p>
               </div>
 
-              {/* Notifications are always enabled - no toggle needed */}
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="2fa">Two-Factor Authentication</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Require a verification code sent to your email when logging in
+                  </p>
+                </div>
+                <Switch
+                  id="2fa"
+                  checked={twoFactorEnabled}
+                  onCheckedChange={handleToggle2FA}
+                  disabled={toggling2FA}
+                />
+              </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Saving..." : "Save Changes"}

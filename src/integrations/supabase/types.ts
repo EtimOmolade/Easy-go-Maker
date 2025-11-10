@@ -365,6 +365,7 @@ export type Database = {
           name: string
           reminders_enabled: boolean
           streak_count: number
+          two_factor_enabled: boolean | null
         }
         Insert: {
           created_at?: string
@@ -374,6 +375,7 @@ export type Database = {
           name: string
           reminders_enabled?: boolean
           streak_count?: number
+          two_factor_enabled?: boolean | null
         }
         Update: {
           created_at?: string
@@ -383,6 +385,7 @@ export type Database = {
           name?: string
           reminders_enabled?: boolean
           streak_count?: number
+          two_factor_enabled?: boolean | null
         }
         Relationships: []
       }
@@ -520,6 +523,33 @@ export type Database = {
           },
         ]
       }
+      user_2fa: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_verified: boolean | null
+          otp_code: string
+          otp_expires_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_verified?: boolean | null
+          otp_code: string
+          otp_expires_at: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_verified?: boolean | null
+          otp_code?: string
+          otp_expires_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -554,6 +584,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      clean_expired_otps: { Args: never; Returns: undefined }
       generate_daily_guideline: { Args: never; Returns: undefined }
       get_testimony_counts: {
         Args: never
