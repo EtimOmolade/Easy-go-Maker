@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Award, Scale } from "lucide-react";
+import { ArrowLeft, Award, Scale, Smartphone, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useState as useCollapsibleState } from "react";
+import { format } from "date-fns";
+import { generateDeviceFingerprint } from "@/utils/deviceFingerprint";
 
 interface ProfileData {
   name: string;
@@ -31,9 +32,13 @@ const Profile = () => {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toggling2FA, setToggling2FA] = useState(false);
+  const [trustedDevices, setTrustedDevices] = useState<any[]>([]);
+  const [currentFingerprint, setCurrentFingerprint] = useState<string>("");
 
   useEffect(() => {
     fetchProfile();
+    fetchTrustedDevices();
+    setCurrentFingerprint(generateDeviceFingerprint());
   }, [user]);
 
   // Refetch profile when component mounts or when navigating back to this page
@@ -96,6 +101,24 @@ const Profile = () => {
     setLoading(false);
   };
 
+  const fetchTrustedDevices = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("trusted_devices")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("last_used_at", { ascending: false });
+
+      if (error) throw error;
+
+      setTrustedDevices(data || []);
+    } catch (error) {
+      console.error("Error fetching trusted devices:", error);
+    }
+  };
+
   const handleToggle2FA = async (enabled: boolean) => {
     if (!user) return;
 
@@ -109,6 +132,16 @@ const Profile = () => {
       if (error) throw error;
 
       setTwoFactorEnabled(enabled);
+      
+      // If disabling 2FA, also revoke all trusted devices
+      if (!enabled) {
+        await supabase
+          .from("trusted_devices")
+          .delete()
+          .eq("user_id", user.id);
+        setTrustedDevices([]);
+      }
+      
       toast.success(`Two-factor authentication ${enabled ? 'enabled' : 'disabled'}`);
       fetchProfile();
     } catch (error: any) {
@@ -116,6 +149,26 @@ const Profile = () => {
       toast.error(error.message || "Failed to update 2FA settings");
     } finally {
       setToggling2FA(false);
+    }
+  };
+
+  const handleRevokeDevice = async (deviceId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("trusted_devices")
+        .delete()
+        .eq("id", deviceId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      toast.success("Device trust revoked");
+      fetchTrustedDevices();
+    } catch (error: any) {
+      console.error("Error revoking device:", error);
+      toast.error("Failed to revoke device");
     }
   };
 
@@ -276,6 +329,61 @@ const Profile = () => {
             </form>
           </CardContent>
         </Card>
+
+        {/* Trusted Devices Card - Only show if 2FA is enabled */}
+        {twoFactorEnabled && (
+          <Card className="shadow-medium mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Smartphone className="h-5 w-5" />
+                Trusted Devices
+              </CardTitle>
+              <CardDescription>
+                Devices you've marked as trusted won't require 2FA for 30 days
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {trustedDevices.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No trusted devices yet
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {trustedDevices.map((device) => (
+                    <div
+                      key={device.id}
+                      className="flex items-center justify-between p-3 border rounded-lg bg-muted/30"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Smartphone className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">{device.device_name}</span>
+                          {device.device_fingerprint === currentFingerprint && (
+                            <Badge variant="secondary" className="text-xs">This device</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Last used: {format(new Date(device.last_used_at), "MMM d, yyyy 'at' h:mm a")}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Expires: {format(new Date(device.expires_at), "MMM d, yyyy")}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleRevokeDevice(device.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Legal & Policies Section */}
         <Card className="shadow-medium">

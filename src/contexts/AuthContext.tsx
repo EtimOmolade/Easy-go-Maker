@@ -10,8 +10,13 @@ interface AuthContextType {
   session: any;
   loading: boolean;
   isAdmin: boolean;
+  requiresOTP: boolean;
+  pendingUser: User | null;
+  verifiedDeviceToken: string | null;
   signOut: () => Promise<void>;
   signIn: (user: User) => void;
+  setPendingAuth: (user: User | null, requiresOTP: boolean) => void;
+  completeOTPVerification: (deviceToken?: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +26,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [requiresOTP, setRequiresOTP] = useState(false);
+  const [pendingUser, setPendingUser] = useState<User | null>(null);
+  const [verifiedDeviceToken, setVerifiedDeviceToken] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -87,18 +95,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.warn("handleSignIn is deprecated - Supabase handles authentication automatically");
   };
 
+  // Set pending authentication state (used by Auth.tsx when 2FA is required)
+  const setPendingAuth = (newPendingUser: User | null, needsOTP: boolean) => {
+    setPendingUser(newPendingUser);
+    setRequiresOTP(needsOTP);
+  };
+
+  // Complete OTP verification (called from VerifyOTP.tsx)
+  const completeOTPVerification = (deviceToken?: string) => {
+    if (pendingUser) {
+      setUser(pendingUser);
+      setPendingUser(null);
+      setRequiresOTP(false);
+      if (deviceToken) {
+        setVerifiedDeviceToken(deviceToken);
+        localStorage.setItem('device_trust_token', deviceToken);
+      }
+    }
+  };
+
   const handleSignOut = async () => {
     try {
+      // Revoke current device trust on explicit logout
+      const trustToken = localStorage.getItem('device_trust_token');
+      if (trustToken && user) {
+        await supabase
+          .from('trusted_devices')
+          .delete()
+          .eq('trust_token', trustToken)
+          .eq('user_id', user.id);
+      }
+
       // Backend integration - Supabase ACTIVATED
       await supabase.auth.signOut();
 
       // Clear any prototype/localStorage data
       localStorage.removeItem('POPUP_SHOWN');
       sessionStorage.removeItem('encouragement_popup_shown');
+      localStorage.removeItem('device_trust_token');
 
       setUser(null);
       setSession(null);
       setIsAdmin(false);
+      setPendingUser(null);
+      setRequiresOTP(false);
+      setVerifiedDeviceToken(null);
       navigate("/auth");
     } catch (error) {
       console.error("Error signing out:", error);
@@ -106,7 +147,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, signOut: handleSignOut, signIn: handleSignIn }}>
+    <AuthContext.Provider 
+      value={{ 
+        user, 
+        session, 
+        loading, 
+        isAdmin, 
+        requiresOTP, 
+        pendingUser, 
+        verifiedDeviceToken,
+        signOut: handleSignOut, 
+        signIn: handleSignIn,
+        setPendingAuth,
+        completeOTPVerification
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

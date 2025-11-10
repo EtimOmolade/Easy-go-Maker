@@ -17,18 +17,44 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const authHeader = req.headers.get("Authorization");
     
-    if (!authHeader) {
-      throw new Error("No authorization header");
+    // Get userId from request body or from auth header
+    const { userId } = await req.json().catch(() => ({}));
+    
+    let user;
+    let userEmail;
+    
+    if (userId) {
+      // Use provided userId (when called from login flow before auth session)
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+      
+      if (userError || !userData.user) {
+        throw new Error("Invalid user");
+      }
+      
+      user = userData.user;
+      userEmail = user.email;
+    } else {
+      // Fall back to auth header (when called from authenticated session)
+      const authHeader = req.headers.get("Authorization");
+      
+      if (!authHeader) {
+        throw new Error("No authorization header or userId provided");
+      }
+
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(token);
+
+      if (userError || !authUser) {
+        throw new Error("Invalid token");
+      }
+      
+      user = authUser;
+      userEmail = user.email;
     }
-
-    // Get user from token
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-
-    if (userError || !user) {
-      throw new Error("Invalid token");
+    
+    if (!userEmail) {
+      throw new Error("User email not found");
     }
 
     // Generate 6-digit OTP
@@ -68,7 +94,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: "SpiritConnect <onboarding@resend.dev>",
-        to: [user.email!],
+        to: [userEmail],
         subject: "Your SpiritConnect Verification Code",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

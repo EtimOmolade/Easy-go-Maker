@@ -523,6 +523,45 @@ export type Database = {
           },
         ]
       }
+      trusted_devices: {
+        Row: {
+          created_at: string
+          device_fingerprint: string
+          device_name: string
+          expires_at: string
+          id: string
+          ip_address: string | null
+          last_used_at: string
+          trust_token: string
+          user_agent: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_fingerprint: string
+          device_name: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          last_used_at?: string
+          trust_token: string
+          user_agent: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_fingerprint?: string
+          device_name?: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          last_used_at?: string
+          trust_token?: string
+          user_agent?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_2fa: {
         Row: {
           created_at: string | null
@@ -584,6 +623,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      clean_expired_devices: { Args: never; Returns: undefined }
       clean_expired_otps: { Args: never; Returns: undefined }
       generate_daily_guideline: { Args: never; Returns: undefined }
       get_testimony_counts: {

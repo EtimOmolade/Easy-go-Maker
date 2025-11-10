@@ -3,9 +3,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Shield } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { generateDeviceFingerprint, getDeviceName, generateTrustToken } from "@/utils/deviceFingerprint";
 
 const VerifyOTP = () => {
   const navigate = useNavigate();
@@ -13,15 +16,18 @@ const VerifyOTP = () => {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [rememberDevice, setRememberDevice] = useState(true);
   const email = location.state?.email;
+  const userId = location.state?.userId;
+  const { completeOTPVerification } = useAuth();
 
   useEffect(() => {
-    // If no email provided, redirect back to auth
-    if (!email) {
+    // If no email or userId provided, redirect back to auth
+    if (!email || !userId) {
       toast.error("Session expired. Please log in again.");
       navigate("/auth");
     }
-  }, [email, navigate]);
+  }, [email, userId, navigate]);
 
   const handleVerify = async () => {
     if (otp.length !== 6) {
@@ -29,27 +35,78 @@ const VerifyOTP = () => {
       return;
     }
 
+    if (!userId) {
+      toast.error("Session expired. Please login again.");
+      navigate("/auth");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      // Get OTP record from database
+      const { data: otpRecord, error: otpError } = await supabase
+        .from("user_2fa")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
+
+      if (otpError || !otpRecord) {
+        throw new Error("No verification code found");
+      }
+
+      // Check if OTP has expired
+      if (new Date(otpRecord.otp_expires_at) < new Date()) {
+        await supabase.from("user_2fa").delete().eq("user_id", userId);
+        throw new Error("Verification code has expired");
+      }
+
+      // Hash the provided OTP to compare
+      const encoder = new TextEncoder();
+      const data = encoder.encode(otp);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashedOtp = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      // Verify OTP matches
+      if (otpRecord.otp_code !== hashedOtp) {
+        throw new Error("Invalid verification code");
+      }
+
+      // Mark OTP as verified
+      await supabase
+        .from("user_2fa")
+        .update({ is_verified: true })
+        .eq("user_id", userId);
+
+      // Handle device trust if requested
+      let deviceToken: string | undefined;
+      if (rememberDevice) {
+        const fingerprint = generateDeviceFingerprint();
+        const deviceName = getDeviceName();
+        deviceToken = generateTrustToken();
+
+        // Insert trusted device
+        await supabase
+          .from("trusted_devices")
+          .insert({
+            user_id: userId,
+            device_fingerprint: fingerprint,
+            trust_token: deviceToken,
+            device_name: deviceName,
+            user_agent: navigator.userAgent,
+          });
+      }
+
+      // Now sign the user back in with their credentials
+      // Note: We need to store the password temporarily or use a different flow
+      // For now, we'll complete OTP verification and let AuthContext handle the rest
+      toast.success("Verification successful!");
       
-      if (!session) {
-        throw new Error("No active session");
-      }
-
-      const { data, error } = await supabase.functions.invoke("verify-otp", {
-        body: { otp },
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        toast.success("Verification successful!");
-        navigate("/dashboard");
-      } else {
-        throw new Error("Verification failed");
-      }
+      // Complete OTP verification in AuthContext
+      completeOTPVerification(deviceToken);
+      
+      navigate("/dashboard");
     } catch (error: any) {
       console.error("OTP verification error:", error);
       toast.error(error.message || "Invalid verification code");
@@ -60,16 +117,18 @@ const VerifyOTP = () => {
   };
 
   const handleResend = async () => {
+    if (!userId) {
+      toast.error("Session expired. Please login again.");
+      navigate("/auth");
+      return;
+    }
+
     setResending(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error("No active session");
-      }
-
-      const { error } = await supabase.functions.invoke("generate-otp");
+      const { error } = await supabase.functions.invoke("generate-otp", {
+        body: { userId }
+      });
 
       if (error) throw error;
 
@@ -123,6 +182,20 @@ const VerifyOTP = () => {
             <p className="text-sm text-muted-foreground text-center">
               Code expires in 5 minutes
             </p>
+          </div>
+
+          <div className="flex items-center space-x-2 pb-2">
+            <Checkbox 
+              id="remember-device" 
+              checked={rememberDevice}
+              onCheckedChange={(checked) => setRememberDevice(checked as boolean)}
+            />
+            <label
+              htmlFor="remember-device"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+            >
+              Remember this device for 30 days
+            </label>
           </div>
 
           <div className="space-y-2">

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, BookOpen, Eye, EyeOff } from "lucide-react";
+import { generateDeviceFingerprint } from "@/utils/deviceFingerprint";
 
 const Auth = () => {
   const location = useLocation();
@@ -20,13 +21,14 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const { user, signIn } = useAuth();
+  const { user, signIn, requiresOTP, setPendingAuth } = useAuth();
 
   useEffect(() => {
-    if (user) {
+    // Only redirect if fully authenticated (not pending OTP)
+    if (user && !requiresOTP) {
       navigate("/dashboard");
     }
-  }, [user, navigate]);
+  }, [user, requiresOTP, navigate]);
 
   const validatePassword = (password: string): { valid: boolean; message?: string } => {
     if (password.length < 8) {
@@ -64,16 +66,50 @@ const Auth = () => {
             .single();
 
           if (profileData?.two_factor_enabled) {
-            // Generate and send OTP
-            await supabase.functions.invoke("generate-otp");
-            toast.success("Verification code sent to your email");
-            navigate("/verify-otp", { state: { email } });
-            return;
+            // Generate device fingerprint
+            const fingerprint = generateDeviceFingerprint();
+            
+            // Check if this device is already trusted
+            const { data: trustedDevice } = await supabase
+              .from("trusted_devices")
+              .select("*")
+              .eq("user_id", data.user.id)
+              .eq("device_fingerprint", fingerprint)
+              .gt("expires_at", new Date().toISOString())
+              .maybeSingle();
+
+            if (trustedDevice) {
+              // Trusted device - update last_used_at and proceed
+              await supabase
+                .from("trusted_devices")
+                .update({ last_used_at: new Date().toISOString() })
+                .eq("id", trustedDevice.id);
+              
+              toast.success("Welcome back!");
+              // Don't navigate - let the auth state change handle it
+              return;
+            } else {
+              // Not trusted - require OTP verification
+              // Sign out the session to prevent dashboard access
+              await supabase.auth.signOut();
+              
+              // Set pending state in AuthContext
+              setPendingAuth(data.user, true);
+              
+              // Generate and send OTP
+              await supabase.functions.invoke("generate-otp", {
+                body: { userId: data.user.id }
+              });
+              
+              toast.success("Verification code sent to your email");
+              navigate("/verify-otp", { state: { email: data.user.email, userId: data.user.id } });
+              return;
+            }
           }
         }
 
         toast.success("Welcome back!");
-        navigate("/dashboard");
+        // Don't navigate - let the auth state change handle it
       } else {
         const passwordValidation = validatePassword(password);
         if (!passwordValidation.valid) {
