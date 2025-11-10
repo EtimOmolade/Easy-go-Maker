@@ -87,49 +87,66 @@ serve(async (req) => {
     // Build guideline structure
     const steps = [];
 
-    // Step 1: Kingdom Focused Prayers (4 points, read twice each)
+    // Step 1-4: Kingdom Focused Prayers (4 separate steps, one for each prayer)
     if (kingdomPrayers && kingdomPrayers.length > 0) {
-      steps.push({
-        type: 'kingdom',
-        title: 'Kingdom Focused Prayers',
-        points: kingdomPrayers.map((prayer: any) => ({
-          title: prayer.title,
-          content: prayer.content,
-          audioUrl: prayer.audio_url,
-          readTwice: true,
-        })),
-        duration: 3 * kingdomPrayers.length, // 3 minutes per point
+      kingdomPrayers.forEach((prayer: any, index: number) => {
+        steps.push({
+          id: `step-kingdom-${index + 1}-${Date.now()}`,
+          type: 'kingdom',
+          title: `Kingdom Focused Prayer ${index + 1}`,
+          prayer_point_ids: [prayer.id],
+          points: [{
+            id: prayer.id,
+            title: prayer.title,
+            content: prayer.content,
+            audioUrl: prayer.audio_url,
+          }],
+          duration: 180, // 3 minutes per prayer
+        });
       });
     }
 
-    // Step 2: Personal Supplication
+    // Step 5: Personal Supplication
     steps.push({
+      id: `step-personal-${Date.now()}`,
       type: 'personal',
       title: 'Personal Supplication',
+      prayer_point_ids: [],
       content: 'Take time to bring your personal requests before God. Pray for your needs, your family, and your personal concerns.',
-      duration: 5,
+      duration: 300, // 5 minutes
     });
 
-    // Step 3: Listening Section (Proverbs)
+    // Step 6: Listening Section (Proverbs)
     if (listeningPrayer) {
       steps.push({
+        id: `step-listening-${Date.now()}`,
         type: 'listening',
         title: 'Listening Prayer',
+        prayer_point_ids: [listeningPrayer.id],
+        points: [{
+          id: listeningPrayer.id,
+          title: listeningPrayer.title,
+          content: listeningPrayer.content,
+        }],
         content: listeningPrayer.content,
         reference: listeningPrayer.reference_text,
         chapter: listeningPrayer.chapter,
         startVerse: listeningPrayer.start_verse,
         endVerse: listeningPrayer.end_verse,
         audioUrl: listeningPrayer.audio_url,
-        readOnce: true,
+        duration: 240, // 4 minutes
       });
     }
 
-    // Step 4: Reflection & Journaling (Automatic)
+    // Step 7: Reflection & Journaling (Automatic)
     steps.push({
+      id: `step-reflection-${Date.now()}`,
       type: 'reflection',
       title: 'Reflection & Journaling',
+      prayer_point_ids: [],
+      points: [],
       content: 'Take time to reflect on what you have prayed and what God has spoken to you. Write down your thoughts, insights, and what you sense God is saying.',
+      duration: 0, // User-paced
     });
 
     // Create the guideline
