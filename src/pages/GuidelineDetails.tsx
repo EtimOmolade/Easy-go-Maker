@@ -30,9 +30,15 @@ const GuidelineDetails = () => {
   useEffect(() => {
     if (id && user) {
       fetchGuideline();
-      checkCompletion();
     }
   }, [id, user]);
+
+  // Check completion after guideline is loaded
+  useEffect(() => {
+    if (guideline && user) {
+      checkCompletion();
+    }
+  }, [guideline, user]);
 
   // Refetch tracker data when page becomes visible (e.g., returning from prayer session)
   useEffect(() => {
@@ -40,7 +46,7 @@ const GuidelineDetails = () => {
       if (!document.hidden && id && user) {
         console.log('🔄 Page visible again - refreshing tracker data');
         fetchGuideline();
-        checkCompletion();
+        // checkCompletion will be triggered by guideline update
       }
     };
 
@@ -59,19 +65,18 @@ const GuidelineDetails = () => {
   }, [guideline]);
 
   const checkCompletion = async () => {
-    if (!id || !user) return;
+    if (!id || !user || !guideline) return;
 
     try {
-      // Check if current day's prayer is completed
-      const now = new Date();
-      const currentDayName = DAYS[now.getDay()];
+      // Check if this guideline's prayer is completed (use guideline's day, not current day)
+      const guidelineDayOfWeek = guideline.day_of_week || DAYS[new Date().getDay()];
 
       const { data, error } = await supabase
         .from('daily_prayers')
         .select('*')
         .eq('user_id', user.id)
         .eq('guideline_id', id)
-        .eq('day_of_week', currentDayName)
+        .eq('day_of_week', guidelineDayOfWeek)
         .maybeSingle();
 
       if (error) console.error('Error checking completion:', error);
