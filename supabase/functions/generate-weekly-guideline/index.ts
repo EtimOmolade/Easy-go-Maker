@@ -9,7 +9,8 @@ const corsHeaders = {
 // Helper function to generate audio for a guideline using Speechmatics
 async function generateAudioForGuideline(guideline: any, supabase: any): Promise<Record<string, string>> {
   const audioUrls: Record<string, string> = {};
-  const SPEECHMATICS_API = 'https://api.speechmatics.com/v1/tts';
+  const SPEECHMATICS_API_BASE = 'https://preview.tts.speechmatics.com/generate';
+  const VOICE_ID = 'sarah'; // English Female (UK) - can be 'sarah', 'theo', or 'megan'
   const API_KEY = Deno.env.get('SPEECHMATICS_API_KEY');
 
   if (!API_KEY) {
@@ -31,17 +32,14 @@ async function generateAudioForGuideline(guideline: any, supabase: any): Promise
         try {
           console.log(`  Generating ${audioKey}: "${point.content.substring(0, 50)}..."`);
           
-          const response = await fetch(SPEECHMATICS_API, {
+          const response = await fetch(`${SPEECHMATICS_API_BASE}/${VOICE_ID}`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${API_KEY}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              text: point.content,
-              voice: 'en-US-female-1',
-              output_format: 'mp3',
-              sample_rate: 24000
+              text: point.content
             })
           });
 
@@ -51,23 +49,15 @@ async function generateAudioForGuideline(guideline: any, supabase: any): Promise
             continue;
           }
 
-          const responseData = await response.json();
-          const audio_data = responseData.audio_data || responseData.audio;
-          
-          if (!audio_data) {
-            console.error(`  ❌ No audio data in response for ${audioKey}`);
-            continue;
-          }
-          
-          // Decode base64 to binary
-          const audioBuffer = Uint8Array.from(atob(audio_data), c => c.charCodeAt(0));
-          const fileName = `${guideline.id}/${audioKey}.mp3`;
+          // Response is WAV audio data directly (not JSON)
+          const audioBuffer = new Uint8Array(await response.arrayBuffer());
+          const fileName = `${guideline.id}/${audioKey}.wav`;
           
           // Upload to Supabase Storage
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('prayer-audio')
             .upload(fileName, audioBuffer, {
-              contentType: 'audio/mpeg',
+              contentType: 'audio/wav',
               upsert: true
             });
 
@@ -97,17 +87,14 @@ async function generateAudioForGuideline(guideline: any, supabase: any): Promise
       try {
         console.log(`  Generating ${audioKey}: "${step.content.substring(0, 50)}..."`);
         
-        const response = await fetch(SPEECHMATICS_API, {
+        const response = await fetch(`${SPEECHMATICS_API_BASE}/${VOICE_ID}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${API_KEY}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            text: step.content,
-            voice: 'en-US-female-1',
-            output_format: 'mp3',
-            sample_rate: 24000
+            text: step.content
           })
         });
 
@@ -117,21 +104,14 @@ async function generateAudioForGuideline(guideline: any, supabase: any): Promise
           continue;
         }
 
-        const responseData = await response.json();
-        const audio_data = responseData.audio_data || responseData.audio;
-        
-        if (!audio_data) {
-          console.error(`  ❌ No audio data in response for ${audioKey}`);
-          continue;
-        }
-        
-        const audioBuffer = Uint8Array.from(atob(audio_data), c => c.charCodeAt(0));
-        const fileName = `${guideline.id}/${audioKey}.mp3`;
+        // Response is WAV audio data directly (not JSON)
+        const audioBuffer = new Uint8Array(await response.arrayBuffer());
+        const fileName = `${guideline.id}/${audioKey}.wav`;
         
         const { error: uploadError } = await supabase.storage
           .from('prayer-audio')
           .upload(fileName, audioBuffer, {
-            contentType: 'audio/mpeg',
+            contentType: 'audio/wav',
             upsert: true
           });
 
