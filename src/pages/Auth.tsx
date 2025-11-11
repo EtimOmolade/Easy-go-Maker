@@ -21,7 +21,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const { user, signIn, requiresOTP, setPendingAuth } = useAuth();
+  const { user, signIn, requiresOTP, setPendingAuth, completeTrustedDeviceAuth } = useAuth();
 
   useEffect(() => {
     // Only redirect if fully authenticated (not pending OTP)
@@ -79,14 +79,17 @@ const Auth = () => {
               .maybeSingle();
 
             if (trustedDevice) {
-              // Trusted device - update last_used_at and proceed
+              // Trusted device - update last_used_at and complete auth
               await supabase
                 .from("trusted_devices")
                 .update({ last_used_at: new Date().toISOString() })
                 .eq("id", trustedDevice.id);
-              
+
+              // Manually complete auth (onAuthStateChange won't set user for SIGNED_IN events)
+              completeTrustedDeviceAuth(data.user);
+
               toast.success("Welcome back!");
-              // Don't navigate - let the auth state change handle it
+              // Navigation will happen via useEffect when user is set
             } else {
               // Not trusted - require OTP verification
               // DON'T sign out - keep the session but set pending state

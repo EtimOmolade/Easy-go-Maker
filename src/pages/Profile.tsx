@@ -41,14 +41,8 @@ const Profile = () => {
     setCurrentFingerprint(generateDeviceFingerprint());
   }, [user]);
 
-  // Refetch profile when component mounts or when navigating back to this page
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchProfile();
-    }, 1000); // Refresh every second to catch updates
-
-    return () => clearInterval(interval);
-  }, [user]);
+  // DON'T refetch every second - it causes the name field to reset while typing!
+  // Only fetch on mount and after successful update
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -81,21 +75,25 @@ const Profile = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      console.log('Updating profile with:', { name, reminders, userId: user.id });
+
+      const { data, error } = await supabase
         .from("profiles")
         .update({ name, reminders_enabled: reminders })
-        .eq("id", user.id);
+        .eq("id", user.id)
+        .select();
 
       if (error) {
         console.error("Error updating profile:", error);
-        toast.error("Failed to update profile");
+        toast.error(`Failed to update profile: ${error.message}`);
       } else {
+        console.log('Profile updated successfully:', data);
         toast.success("Profile updated successfully");
         fetchProfile();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
-      toast.error("Failed to update profile");
+      toast.error(`Failed to update profile: ${error.message || 'Unknown error'}`);
     }
 
     setLoading(false);

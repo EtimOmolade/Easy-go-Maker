@@ -17,6 +17,7 @@ interface AuthContextType {
   signIn: (user: User) => void;
   setPendingAuth: (user: User | null, requiresOTP: boolean) => void;
   completeOTPVerification: (deviceToken?: string) => void;
+  completeTrustedDeviceAuth: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,7 +42,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Backend integration - Supabase ACTIVATED
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
         setSession(session);
+
+        // Don't set user on SIGNED_IN - let Auth.tsx handle 2FA check
+        // This prevents dashboard flash before OTP verification
+        if (event === 'SIGNED_IN') {
+          console.log('SIGNED_IN event - Auth.tsx will handle 2FA check');
+          return;
+        }
+
+        // For TOKEN_REFRESHED, SIGNED_OUT, etc., update user normally
         setUser(session?.user ?? null);
 
         if (session?.user) {
@@ -114,25 +125,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Complete authentication for trusted device (called from Auth.tsx)
+  const completeTrustedDeviceAuth = (authUser: User) => {
+    setUser(authUser);
+    setPendingUser(null);
+    setRequiresOTP(false);
+  };
+
   const handleSignOut = async () => {
     try {
-      // Revoke current device trust on explicit logout
-      const trustToken = localStorage.getItem('device_trust_token');
-      if (trustToken && user) {
-        await supabase
-          .from('trusted_devices')
-          .delete()
-          .eq('trust_token', trustToken)
-          .eq('user_id', user.id);
-      }
+      // DON'T revoke device trust on logout
+      // If user checked "Remember this device", it should persist across logouts
+      // Only manual "Revoke device" button should remove trust
 
       // Backend integration - Supabase ACTIVATED
       await supabase.auth.signOut();
 
-      // Clear any prototype/localStorage data
+      // Clear session data but KEEP device_trust_token for next login
       localStorage.removeItem('POPUP_SHOWN');
       sessionStorage.removeItem('encouragement_popup_shown');
-      localStorage.removeItem('device_trust_token');
+      // DON'T remove device_trust_token - user wants device remembered
 
       setUser(null);
       setSession(null);
@@ -147,19 +159,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        session, 
-        loading, 
-        isAdmin, 
-        requiresOTP, 
-        pendingUser, 
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        isAdmin,
+        requiresOTP,
+        pendingUser,
         verifiedDeviceToken,
-        signOut: handleSignOut, 
+        signOut: handleSignOut,
         signIn: handleSignIn,
         setPendingAuth,
-        completeOTPVerification
+        completeOTPVerification,
+        completeTrustedDeviceAuth
       }}
     >
       {children}
