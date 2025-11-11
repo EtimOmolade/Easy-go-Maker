@@ -20,7 +20,13 @@ interface PrayerStep {
   content: string;
   duration: number; // in seconds
   audioUrl?: string;
-  points?: string[];
+  audio_url?: string; // NEW - Speechmatics generated audio
+  points?: {
+    id: string;
+    content: string;
+    title: string;
+    audio_url?: string; // NEW - Speechmatics generated audio
+  }[];
 }
 
 interface GuidelineSession {
@@ -48,6 +54,8 @@ const GuidedPrayerSession = () => {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [achievedMilestone, setAchievedMilestone] = useState<any>(null);
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+  const [backgroundMusicEnabled, setBackgroundMusicEnabled] = useState(true);
+  const [bgAudio, setBgAudio] = useState<HTMLAudioElement | null>(null);
 
   const currentDay = DAYS[new Date().getDay()];
 
@@ -86,15 +94,57 @@ const GuidedPrayerSession = () => {
   useEffect(() => {
     if (hasStarted && !completedSteps.includes(currentStepIndex)) {
       const step = guideline?.steps[currentStepIndex];
+      
       if (step?.type === 'kingdom' && step.points?.[currentPointIndex]) {
         const point = step.points[currentPointIndex];
 
-        // Read the prayer twice consecutively using TTS service
-        speakTwice(point.content, {
-          rate: 0.65,
-          pitch: 1,
-          volume: 1
-        });
+        // TRY PRE-GENERATED AUDIO FIRST
+        if (point.audio_url) {
+          const audio = new Audio(point.audio_url);
+          let playCount = 0;
+          
+          audio.onended = () => {
+            playCount++;
+            if (playCount < 2) {
+              // Play twice (like speakTwice)
+              audio.currentTime = 0;
+              audio.play().catch(() => {
+                console.warn('⚠️ Audio replay failed');
+              });
+            } else {
+              setIsPlayingAudio(false);
+            }
+          };
+          
+          audio.onerror = () => {
+            // FALLBACK TO BROWSER TTS
+            console.warn('⚠️ Audio failed to load, using browser TTS fallback');
+            speakTwice(point.content, {
+              rate: 0.65,
+              pitch: 1,
+              volume: 1
+            });
+          };
+          
+          audio.play().catch(() => {
+            // FALLBACK IF PLAY FAILS
+            console.warn('⚠️ Audio playback failed, using browser TTS fallback');
+            speakTwice(point.content, {
+              rate: 0.65,
+              pitch: 1,
+              volume: 1
+            });
+          });
+          
+          setIsPlayingAudio(true);
+        } else {
+          // NO AUDIO URL, USE BROWSER TTS
+          speakTwice(point.content, {
+            rate: 0.65,
+            pitch: 1,
+            volume: 1
+          });
+        }
       }
     }
 
@@ -328,27 +378,114 @@ const GuidedPrayerSession = () => {
         : null;
       
       if (currentStep && currentStep.type === 'listening' && listeningPrayer?.content) {
-        setIsPlayingAudio(true);
-        speak(listeningPrayer.content, {
-          rate: 0.5, // Very slow for meditative scripture reading
-          pitch: 1,
-          volume: 1,
-          onEnd: () => setIsPlayingAudio(false)
-        });
-      } else if (currentStep && currentStep.type === 'kingdom') {
-        const kingdomPoint = currentStep.points?.[currentPointIndex];
-        if (kingdomPoint?.content) {
+        // TRY PRE-GENERATED AUDIO FIRST
+        if (currentStep.audio_url) {
+          const audio = new Audio(currentStep.audio_url);
+          
+          audio.onended = () => setIsPlayingAudio(false);
+          
+          audio.onerror = () => {
+            console.warn('⚠️ Listening audio failed, using browser TTS');
+            setIsPlayingAudio(true);
+            speak(listeningPrayer.content, {
+              rate: 0.5, // Very slow for meditative scripture
+              pitch: 1,
+              volume: 1,
+              onEnd: () => setIsPlayingAudio(false)
+            });
+          };
+          
+          audio.play().catch(() => {
+            console.warn('⚠️ Listening playback failed, using browser TTS');
+            setIsPlayingAudio(true);
+            speak(listeningPrayer.content, {
+              rate: 0.5,
+              pitch: 1,
+              volume: 1,
+              onEnd: () => setIsPlayingAudio(false)
+            });
+          });
+          
           setIsPlayingAudio(true);
-          speak(kingdomPoint.content, {
-            rate: 0.65,
+        } else {
+          // NO AUDIO URL, USE BROWSER TTS
+          setIsPlayingAudio(true);
+          speak(listeningPrayer.content, {
+            rate: 0.5, // Very slow for meditative scripture reading
             pitch: 1,
             volume: 1,
             onEnd: () => setIsPlayingAudio(false)
           });
         }
+      } else if (currentStep && currentStep.type === 'kingdom') {
+        const kingdomPoint = currentStep.points?.[currentPointIndex];
+        if (kingdomPoint?.content) {
+          if (kingdomPoint.audio_url) {
+            const audio = new Audio(kingdomPoint.audio_url);
+            audio.onended = () => setIsPlayingAudio(false);
+            audio.onerror = () => {
+              speak(kingdomPoint.content, {
+                rate: 0.65,
+                pitch: 1,
+                volume: 1,
+                onEnd: () => setIsPlayingAudio(false)
+              });
+            };
+            audio.play().catch(() => {
+              speak(kingdomPoint.content, {
+                rate: 0.65,
+                pitch: 1,
+                volume: 1,
+                onEnd: () => setIsPlayingAudio(false)
+              });
+            });
+            setIsPlayingAudio(true);
+          } else {
+            setIsPlayingAudio(true);
+            speak(kingdomPoint.content, {
+              rate: 0.65,
+              pitch: 1,
+              volume: 1,
+              onEnd: () => setIsPlayingAudio(false)
+            });
+          }
+        }
       }
     }
   };
+
+  // Initialize background music when session starts
+  useEffect(() => {
+    if (hasStarted && backgroundMusicEnabled) {
+      const audio = new Audio('/assets/music/Ambient_Music.mp3');
+      audio.loop = true;
+      audio.volume = 0.15; // Subtle 15% volume
+      
+      audio.play().catch(err => {
+        console.warn('⚠️ Background music autoplay blocked:', err);
+        // User needs to interact with page first (browser policy)
+      });
+      
+      setBgAudio(audio);
+      
+      return () => {
+        audio.pause();
+        audio.src = '';
+      };
+    } else if (bgAudio && !backgroundMusicEnabled) {
+      // User toggled off
+      bgAudio.pause();
+      bgAudio.src = '';
+      setBgAudio(null);
+    }
+  }, [hasStarted, backgroundMusicEnabled]);
+
+  // Volume ducking: Lower background music during prayer audio
+  useEffect(() => {
+    if (bgAudio) {
+      bgAudio.volume = isPlayingAudio ? 0.05 : 0.15; // 5% during speech, 15% normally
+    }
+  }, [isPlayingAudio, bgAudio]);
 
   const handleBeginSession = () => {
     setHasStarted(true);
@@ -406,6 +543,15 @@ const GuidedPrayerSession = () => {
               className={!isGuidedMode ? 'opacity-50 cursor-not-allowed' : ''}
             >
               {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBackgroundMusicEnabled(!backgroundMusicEnabled)}
+              title={backgroundMusicEnabled ? "Turn off background music" : "Turn on background music"}
+              className={!backgroundMusicEnabled ? "opacity-50" : ""}
+            >
+              <Volume2 className="h-4 w-4" />
             </Button>
             <Button
               variant={isGuidedMode ? "default" : "outline"}
