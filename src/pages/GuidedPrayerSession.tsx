@@ -12,6 +12,7 @@ import { playVoicePrompt, stopVoicePrompt, VOICE_PROMPTS } from "@/utils/voicePr
 import { Progress } from "@/components/ui/progress";
 import { MilestoneAchievementModal } from "@/components/MilestoneAchievementModal";
 import { speak, speakTwice, cancelSpeech } from "@/services/tts";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PrayerStep {
   id: string;
@@ -534,33 +535,50 @@ const GuidedPrayerSession = () => {
             <span className="hidden sm:inline">Back</span>
           </Button>
 
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleVoice}
-              disabled={!isGuidedMode}
-              className={!isGuidedMode ? 'opacity-50 cursor-not-allowed' : ''}
-            >
-              {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setBackgroundMusicEnabled(!backgroundMusicEnabled)}
-              title={backgroundMusicEnabled ? "Turn off background music" : "Turn on background music"}
-              className={!backgroundMusicEnabled ? "opacity-50" : ""}
-            >
-              <Volume2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={isGuidedMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIsGuidedMode(!isGuidedMode)}
-            >
-              {isGuidedMode ? 'Guided' : 'Free'}
-            </Button>
-          </div>
+          <TooltipProvider>
+            <div className="flex gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleVoice}
+                    disabled={!isGuidedMode}
+                    className={!isGuidedMode ? 'opacity-50 cursor-not-allowed' : ''}
+                  >
+                    {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Voice Guidance - Spoken prompts for each prayer step</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBackgroundMusicEnabled(!backgroundMusicEnabled)}
+                    className={!backgroundMusicEnabled ? "opacity-50" : ""}
+                  >
+                    <Volume2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Ambient Music - Peaceful background music during prayer</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Button
+                variant={isGuidedMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIsGuidedMode(!isGuidedMode)}
+              >
+                {isGuidedMode ? 'Guided' : 'Free'}
+              </Button>
+            </div>
+          </TooltipProvider>
         </div>
 
         <Card className="shadow-medium mb-4 md:mb-6">
