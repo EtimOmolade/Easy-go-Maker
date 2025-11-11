@@ -314,13 +314,13 @@ serve(async (req) => {
               ...step,
               points: step.points.map((point: any, pointIndex: number) => ({
                 ...point,
-                audio_url: audioUrls[`step${stepIndex}-p${pointIndex}`] || null
+                audioUrl: audioUrls[`step${stepIndex}-p${pointIndex}`] || null
               }))
             };
           } else if (step.type === 'listening') {
             return {
               ...step,
-              audio_url: audioUrls[`step${stepIndex}-listening`] || null
+              audioUrl: audioUrls[`step${stepIndex}-listening`] || null
             };
           }
           return step;
