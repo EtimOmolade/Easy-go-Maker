@@ -130,14 +130,10 @@ const Auth = () => {
 
         if (error) throw error;
         
-        // Send welcome email (don't block on this)
-        if (data.user) {
-          supabase.functions.invoke("send-welcome-email", {
-            body: { email, name }
-          }).catch(err => console.error("Welcome email failed:", err));
-        }
+        // Password signups get verification email as welcome message
+        // No need to send separate welcome email
         
-        toast.success("Account created! Welcome to SpiritConnect.");
+        toast.success("Account created! Please check your email to verify your account.");
         navigate("/dashboard");
       }
     } catch (error: any) {
