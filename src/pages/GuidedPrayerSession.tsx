@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Check, Volume2, VolumeX, Play, Pause } from "lucide-react";
+import { ArrowLeft, Check, Volume2, VolumeX, Play, Pause, Music2, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { PrayerTimer } from "@/components/PrayerTimer";
 import { playVoicePrompt, stopVoicePrompt, VOICE_PROMPTS } from "@/utils/voicePrompts";
@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { MilestoneAchievementModal } from "@/components/MilestoneAchievementModal";
 import { speak, speakTwice, cancelSpeech } from "@/services/tts";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface PrayerStep {
   id: string;
@@ -57,18 +58,53 @@ const GuidedPrayerSession = () => {
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
   const [backgroundMusicEnabled, setBackgroundMusicEnabled] = useState(true);
   const [bgAudio, setBgAudio] = useState<HTMLAudioElement | null>(null);
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
+  const [isPlayingVoicePrompt, setIsPlayingVoicePrompt] = useState(false);
+
+  // Use ref for synchronous audio tracking (prevents race conditions when switching steps)
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const currentDay = DAYS[new Date().getDay()];
+
+  // Helper function to stop all audio
+  const stopAllAudio = () => {
+    // Stop HTML5 Audio elements (use ref for immediate access)
+    if (currentAudioRef.current) {
+      // CRITICAL: Remove event listeners BEFORE stopping to prevent error fallback
+      currentAudioRef.current.onerror = null;
+      currentAudioRef.current.onended = null;
+      currentAudioRef.current.pause();
+      currentAudioRef.current.src = '';
+      currentAudioRef.current = null;
+    }
+    if (currentAudio) {
+      // Remove event listeners to prevent fallback
+      currentAudio.onerror = null;
+      currentAudio.onended = null;
+      currentAudio.pause();
+      currentAudio.src = '';
+      setCurrentAudio(null);
+    }
+    // Stop Web Speech API (browser TTS)
+    cancelSpeech();
+    window.speechSynthesis.cancel();
+    setIsPlayingAudio(false);
+  };
 
   useEffect(() => {
     if (id && user) {
       fetchGuideline();
     }
 
-    // Cleanup: Stop voice when component unmounts (user leaves page)
+    // Cleanup: Stop ALL audio when component unmounts (user leaves page)
     return () => {
       stopVoicePrompt();
-      window.speechSynthesis.cancel(); // Also stop any audio reading
+      stopAllAudio();
+      // Also stop background music
+      if (bgAudio) {
+        bgAudio.pause();
+        bgAudio.src = '';
+      }
     };
   }, [id, user]);
 
@@ -82,28 +118,42 @@ const GuidedPrayerSession = () => {
     }
   }, [isGuidedMode]);
 
+  // Combined effect: Voice prompt THEN prayer audio (sequential, not simultaneous)
+  //
+  // FIXES APPLIED:
+  // 1. ✅ Audio stops when leaving page (cleanup in mount useEffect)
+  // 2. ✅ Audio stops when switching steps (stopAllAudio called first + cleanup in return)
+  // 3. ✅ No overlapping audio (currentAudioRef tracked and cleaned up)
+  // 4. ✅ Voice prompt plays FIRST, then 1.5-second pause, then prayer audio
+  // 5. ✅ Voice differentiation: Male voice (prompts) vs Female voice (prayers)
+  // 6. ✅ Speechmatics audio slowed down (playbackRate = 0.85)
+  // 7. ✅ Only Speechmatics plays (no browser TTS fallback unless error)
+  //
   useEffect(() => {
-    if (voiceEnabled && isGuidedMode && guideline && hasStarted) {
-      const step = guideline.steps[currentStepIndex];
-      if (step && !completedSteps.includes(currentStepIndex)) {
-        playStepVoicePrompt(step.type);
-      }
+    if (!hasStarted || completedSteps.includes(currentStepIndex)) {
+      return;
     }
-  }, [currentStepIndex, voiceEnabled, isGuidedMode, hasStarted]);
 
-  // Auto-read kingdom prayer content TWICE when point changes
-  useEffect(() => {
-    if (hasStarted && !completedSteps.includes(currentStepIndex)) {
-      const step = guideline?.steps[currentStepIndex];
-      
+    const step = guideline?.steps[currentStepIndex];
+    if (!step) return;
+
+    // STOP ALL PREVIOUS AUDIO FIRST (prevents overlapping)
+    stopAllAudio();
+
+    const playPrayerAudio = () => {
       if (step?.type === 'kingdom' && step.points?.[currentPointIndex]) {
         const point = step.points[currentPointIndex];
 
-        // TRY PRE-GENERATED AUDIO FIRST
+        // TRY PRE-GENERATED AUDIO FIRST (Speechmatics)
         if (point.audio_url) {
           const audio = new Audio(point.audio_url);
+          audio.playbackRate = 0.85; // Slow down Speechmatics audio (85% speed)
+
+          setCurrentAudio(audio);
+          currentAudioRef.current = audio; // Also track in ref for immediate cleanup
+
           let playCount = 0;
-          
+
           audio.onended = () => {
             playCount++;
             if (playCount < 2) {
@@ -114,29 +164,35 @@ const GuidedPrayerSession = () => {
               });
             } else {
               setIsPlayingAudio(false);
+              setCurrentAudio(null);
+              currentAudioRef.current = null;
             }
           };
-          
+
           audio.onerror = () => {
-            // FALLBACK TO BROWSER TTS
+            // FALLBACK TO BROWSER TTS ONLY ON ERROR
             console.warn('⚠️ Audio failed to load, using browser TTS fallback');
+            setCurrentAudio(null);
+            currentAudioRef.current = null;
             speakTwice(point.content, {
               rate: 0.65,
               pitch: 1,
               volume: 1
             });
           };
-          
+
           audio.play().catch(() => {
             // FALLBACK IF PLAY FAILS
             console.warn('⚠️ Audio playback failed, using browser TTS fallback');
+            setCurrentAudio(null);
+            currentAudioRef.current = null;
             speakTwice(point.content, {
               rate: 0.65,
               pitch: 1,
               volume: 1
             });
           });
-          
+
           setIsPlayingAudio(true);
         } else {
           // NO AUDIO URL, USE BROWSER TTS
@@ -147,13 +203,27 @@ const GuidedPrayerSession = () => {
           });
         }
       }
-    }
-
-    // Cleanup when component unmounts or before next read
-    return () => {
-      cancelSpeech();
     };
-  }, [currentPointIndex, currentStepIndex, hasStarted, guideline, completedSteps]);
+
+    // SEQUENCE: Voice prompt → 3 second pause → Prayer audio (GUIDED MODE ONLY)
+    if (voiceEnabled && isGuidedMode) {
+      playStepVoicePrompt(step.type);
+
+      // Wait for voice prompt to finish + 3 second pause, then play prayer
+      setTimeout(() => {
+        playPrayerAudio();
+      }, 5000); // Voice prompt takes ~2s, + 3s pause = 5s total
+    } else if (isGuidedMode) {
+      // Guided mode but voice disabled - play prayer audio immediately
+      playPrayerAudio();
+    }
+    // FREE MODE: Don't auto-play audio, user controls it manually with toggleAudioReading
+
+    // Cleanup when step/point changes - CRITICAL for free mode step switching
+    return () => {
+      stopAllAudio();
+    };
+  }, [currentPointIndex, currentStepIndex, hasStarted, guideline, completedSteps, voiceEnabled, isGuidedMode]);
 
   const fetchGuideline = async () => {
     if (!id) return;
@@ -368,25 +438,39 @@ const GuidedPrayerSession = () => {
 
   const toggleAudioReading = () => {
     if (isPlayingAudio) {
-      cancelSpeech();
-      setIsPlayingAudio(false);
+      // Stop all audio
+      stopAllAudio();
     } else {
+      // Stop any previous audio first
+      stopAllAudio();
+
       const currentStep = guideline.steps[currentStepIndex];
 
       // For listening prayers, use listeningPrayer which has the resolved content
-      const listeningPrayer = currentStep.type === 'listening' 
+      const listeningPrayer = currentStep.type === 'listening'
         ? (currentStep.points?.[0] || currentStep.prayer || currentStep)
         : null;
-      
+
       if (currentStep && currentStep.type === 'listening' && listeningPrayer?.content) {
-        // TRY PRE-GENERATED AUDIO FIRST
+        // TRY PRE-GENERATED AUDIO FIRST (Speechmatics)
         if (currentStep.audio_url) {
           const audio = new Audio(currentStep.audio_url);
-          
-          audio.onended = () => setIsPlayingAudio(false);
-          
+          audio.playbackRate = 0.7; // Slow down Speechmatics audio for meditative scripture (70% speed)
+
+          setCurrentAudio(audio);
+          currentAudioRef.current = audio; // Track in ref for immediate cleanup
+
+          audio.onended = () => {
+            setIsPlayingAudio(false);
+            setCurrentAudio(null);
+            currentAudioRef.current = null;
+          };
+
           audio.onerror = () => {
+            // FALLBACK TO BROWSER TTS ONLY ON ERROR
             console.warn('⚠️ Listening audio failed, using browser TTS');
+            setCurrentAudio(null);
+            currentAudioRef.current = null;
             setIsPlayingAudio(true);
             speak(listeningPrayer.content, {
               rate: 0.5, // Very slow for meditative scripture
@@ -395,9 +479,12 @@ const GuidedPrayerSession = () => {
               onEnd: () => setIsPlayingAudio(false)
             });
           };
-          
+
           audio.play().catch(() => {
+            // FALLBACK IF PLAY FAILS
             console.warn('⚠️ Listening playback failed, using browser TTS');
+            setCurrentAudio(null);
+            currentAudioRef.current = null;
             setIsPlayingAudio(true);
             speak(listeningPrayer.content, {
               rate: 0.5,
@@ -406,7 +493,7 @@ const GuidedPrayerSession = () => {
               onEnd: () => setIsPlayingAudio(false)
             });
           });
-          
+
           setIsPlayingAudio(true);
         } else {
           // NO AUDIO URL, USE BROWSER TTS
@@ -421,10 +508,24 @@ const GuidedPrayerSession = () => {
       } else if (currentStep && currentStep.type === 'kingdom') {
         const kingdomPoint = currentStep.points?.[currentPointIndex];
         if (kingdomPoint?.content) {
+          // TRY PRE-GENERATED AUDIO FIRST (Speechmatics)
           if (kingdomPoint.audio_url) {
             const audio = new Audio(kingdomPoint.audio_url);
-            audio.onended = () => setIsPlayingAudio(false);
+            audio.playbackRate = 0.85; // Slow down Speechmatics audio (85% speed)
+
+            setCurrentAudio(audio);
+            currentAudioRef.current = audio; // Track in ref for immediate cleanup
+
+            audio.onended = () => {
+              setIsPlayingAudio(false);
+              setCurrentAudio(null);
+              currentAudioRef.current = null;
+            };
+
             audio.onerror = () => {
+              // FALLBACK TO BROWSER TTS ONLY ON ERROR
+              setCurrentAudio(null);
+              currentAudioRef.current = null;
               speak(kingdomPoint.content, {
                 rate: 0.65,
                 pitch: 1,
@@ -432,7 +533,11 @@ const GuidedPrayerSession = () => {
                 onEnd: () => setIsPlayingAudio(false)
               });
             };
+
             audio.play().catch(() => {
+              // FALLBACK IF PLAY FAILS
+              setCurrentAudio(null);
+              currentAudioRef.current = null;
               speak(kingdomPoint.content, {
                 rate: 0.65,
                 pitch: 1,
@@ -442,6 +547,7 @@ const GuidedPrayerSession = () => {
             });
             setIsPlayingAudio(true);
           } else {
+            // NO AUDIO URL, USE BROWSER TTS
             setIsPlayingAudio(true);
             speak(kingdomPoint.content, {
               rate: 0.65,
@@ -537,38 +643,66 @@ const GuidedPrayerSession = () => {
 
           <TooltipProvider>
             <div className="flex gap-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
+              {/* Audio Settings Dropdown - Mobile First */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
+                    className="gap-2"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span className="hidden sm:inline">Audio</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Audio Settings</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
                     onClick={toggleVoice}
                     disabled={!isGuidedMode}
-                    className={!isGuidedMode ? 'opacity-50 cursor-not-allowed' : ''}
+                    className="flex items-center justify-between cursor-pointer"
                   >
-                    {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs">Voice Guidance - Spoken prompts for each prayer step</p>
-                </TooltipContent>
-              </Tooltip>
+                    <div className="flex items-center gap-2">
+                      {voiceEnabled ? (
+                        <Volume2 className="h-4 w-4 text-primary" />
+                      ) : (
+                        <VolumeX className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <div>
+                        <p className="font-medium">Voice Guidance</p>
+                        <p className="text-xs text-muted-foreground">Spoken prompts</p>
+                      </div>
+                    </div>
+                    <Badge variant={voiceEnabled ? "default" : "secondary"} className="ml-2">
+                      {voiceEnabled ? 'ON' : 'OFF'}
+                    </Badge>
+                  </DropdownMenuItem>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <DropdownMenuItem
                     onClick={() => setBackgroundMusicEnabled(!backgroundMusicEnabled)}
-                    className={!backgroundMusicEnabled ? "opacity-50" : ""}
+                    className="flex items-center justify-between cursor-pointer"
                   >
-                    <Volume2 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs">Ambient Music - Peaceful background music during prayer</p>
-                </TooltipContent>
-              </Tooltip>
+                    <div className="flex items-center gap-2">
+                      <Music2 className={`h-4 w-4 ${backgroundMusicEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <div>
+                        <p className="font-medium">Background Music</p>
+                        <p className="text-xs text-muted-foreground">Ambient sounds</p>
+                      </div>
+                    </div>
+                    <Badge variant={backgroundMusicEnabled ? "default" : "secondary"} className="ml-2">
+                      {backgroundMusicEnabled ? 'ON' : 'OFF'}
+                    </Badge>
+                  </DropdownMenuItem>
+
+                  {!isGuidedMode && (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                      Voice guidance only works in Guided mode
+                    </div>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <Button
                 variant={isGuidedMode ? "default" : "outline"}

@@ -6,6 +6,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to improve TTS pronunciation of scripture references
+// Formats "Proverbs 17:1-9 (KJV)" as "Proverbs 17, verses 1 through 9. (KJV content...)"
+// The period after verse numbers creates a pause before reading the scripture
+function formatScriptureForTTS(text: string): string {
+  // Replace verse references like "17:1-9" with "17, verses 1 through 9."
+  // This helps Speechmatics pronounce numbers correctly and adds a pause
+  return text.replace(/(\d+):(\d+)-(\d+)/g, '$1, verses $2 through $3.')
+             .replace(/(\d+):(\d+)(?!-)/g, '$1, verse $2.'); // Handle single verses like "17:1"
+}
+
 // Helper function to generate audio for a guideline using Speechmatics
 async function generateAudioForGuideline(guideline: any, supabase: any): Promise<Record<string, string>> {
   const audioUrls: Record<string, string> = {};
@@ -83,10 +93,14 @@ async function generateAudioForGuideline(guideline: any, supabase: any): Promise
     } else if (step.type === 'listening' && step.content) {
       // Generate audio for listening prayer (Proverbs)
       const audioKey = `step${stepIndex}-listening`;
-      
+
       try {
-        console.log(`  Generating ${audioKey}: "${step.content.substring(0, 50)}..."`);
-        
+        // Format scripture reference for better TTS pronunciation
+        // e.g., "Proverbs 17:1-9" becomes "Proverbs 17, verses 1 through 9."
+        const formattedContent = formatScriptureForTTS(step.content);
+
+        console.log(`  Generating ${audioKey}: "${formattedContent.substring(0, 50)}..."`);
+
         const response = await fetch(`${SPEECHMATICS_API_BASE}/${VOICE_ID}`, {
           method: 'POST',
           headers: {
@@ -94,7 +108,7 @@ async function generateAudioForGuideline(guideline: any, supabase: any): Promise
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            text: step.content
+            text: formattedContent
           })
         });
 

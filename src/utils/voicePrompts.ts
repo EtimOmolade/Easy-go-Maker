@@ -1,4 +1,10 @@
 // Voice prompt utilities for guided prayer sessions
+//
+// VOICE DIFFERENTIATION STRATEGY:
+// - Voice Prompts: Use MALE voice (browser TTS or Coqui) - calm, deep, father-like
+// - Prayer Audio: Use FEMALE voice (Speechmatics en-US-female-1) - clear, gentle
+// This helps users distinguish between guidance and prayer content
+//
 import { isTTSServerAvailable, speakWithCoqui, stopCoquiSpeech } from './ttsClient';
 
 // Initialize voices - voices load asynchronously
