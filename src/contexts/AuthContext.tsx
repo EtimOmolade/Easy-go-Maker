@@ -118,6 +118,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(pendingUser);
       setPendingUser(null);
       setRequiresOTP(false);
+      // Check admin status immediately after setting user
+      checkAdminStatus(pendingUser.id);
       if (deviceToken) {
         setVerifiedDeviceToken(deviceToken);
         localStorage.setItem('device_trust_token', deviceToken);
@@ -130,6 +132,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(authUser);
     setPendingUser(null);
     setRequiresOTP(false);
+    // Check admin status immediately after setting user
+    checkAdminStatus(authUser.id);
   };
 
   const handleSignOut = async () => {
