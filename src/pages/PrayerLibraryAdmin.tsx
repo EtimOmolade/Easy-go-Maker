@@ -198,27 +198,27 @@ export default function PrayerLibraryAdmin() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={handleGenerateProverbsPlan} disabled={isGenerating}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${isGenerating ? 'animate-spin' : ''}`} />
-              {isGenerating ? 'Generating...' : 'Regenerate Proverbs'}
+            <Button onClick={handleGenerateProverbsPlan} disabled={isGenerating} size="default">
+              <RefreshCw className={`h-4 w-4 ${isGenerating ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline ml-2">{isGenerating ? 'Generating...' : 'Regenerate Proverbs'}</span>
             </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={resetForm}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Prayer
+                <Button onClick={resetForm} size="default">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-2">Add Prayer</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto w-[95vw] sm:w-full">
                 <DialogHeader>
-                  <DialogTitle>{isEditing ? 'Edit Prayer' : 'Add New Prayer'}</DialogTitle>
-                  <DialogDescription>
+                  <DialogTitle className="text-lg sm:text-xl">{isEditing ? 'Edit Prayer' : 'Add New Prayer'}</DialogTitle>
+                  <DialogDescription className="text-sm">
                     {isEditing ? 'Update the prayer details below' : 'Enter the details for the new prayer'}
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
+                    <Label htmlFor="category" className="text-sm">Category</Label>
                     <Select
                       value={formData.category}
                       onValueChange={(value) => setFormData({ ...formData, category: value })}

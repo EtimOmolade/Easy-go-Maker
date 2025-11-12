@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin = false }) => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, requiresOTP } = useAuth();
 
   if (loading) {
     return (
@@ -16,6 +16,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin 
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  // If user requires OTP verification, redirect to OTP page
+  if (requiresOTP) {
+    return <Navigate to="/verify-otp" replace />;
   }
 
   if (!user) {

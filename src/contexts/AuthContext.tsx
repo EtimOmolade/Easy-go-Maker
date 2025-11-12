@@ -10,8 +10,14 @@ interface AuthContextType {
   session: any;
   loading: boolean;
   isAdmin: boolean;
+  requiresOTP: boolean;
+  pendingUser: User | null;
+  verifiedDeviceToken: string | null;
   signOut: () => Promise<void>;
   signIn: (user: User) => void;
+  setPendingAuth: (user: User | null, requiresOTP: boolean) => void;
+  completeOTPVerification: (deviceToken?: string) => void;
+  completeTrustedDeviceAuth: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +27,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [requiresOTP, setRequiresOTP] = useState(false);
+  const [pendingUser, setPendingUser] = useState<User | null>(null);
+  const [verifiedDeviceToken, setVerifiedDeviceToken] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,7 +42,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Backend integration - Supabase ACTIVATED
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
         setSession(session);
+
+        // Don't set user on SIGNED_IN - let Auth.tsx handle 2FA check
+        // This prevents dashboard flash before OTP verification
+        if (event === 'SIGNED_IN') {
+          console.log('SIGNED_IN event - Auth.tsx will handle 2FA check');
+          return;
+        }
+
+        // For TOKEN_REFRESHED, SIGNED_OUT, etc., update user normally
         setUser(session?.user ?? null);
 
         if (session?.user) {
@@ -87,18 +106,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.warn("handleSignIn is deprecated - Supabase handles authentication automatically");
   };
 
+  // Set pending authentication state (used by Auth.tsx when 2FA is required)
+  const setPendingAuth = (newPendingUser: User | null, needsOTP: boolean) => {
+    setPendingUser(newPendingUser);
+    setRequiresOTP(needsOTP);
+  };
+
+  // Complete OTP verification (called from VerifyOTP.tsx)
+  const completeOTPVerification = (deviceToken?: string) => {
+    if (pendingUser) {
+      setUser(pendingUser);
+      setPendingUser(null);
+      setRequiresOTP(false);
+      if (deviceToken) {
+        setVerifiedDeviceToken(deviceToken);
+        localStorage.setItem('device_trust_token', deviceToken);
+      }
+    }
+  };
+
+  // Complete authentication for trusted device (called from Auth.tsx)
+  const completeTrustedDeviceAuth = (authUser: User) => {
+    setUser(authUser);
+    setPendingUser(null);
+    setRequiresOTP(false);
+  };
+
   const handleSignOut = async () => {
     try {
+      // DON'T revoke device trust on logout
+      // If user checked "Remember this device", it should persist across logouts
+      // Only manual "Revoke device" button should remove trust
+
       // Backend integration - Supabase ACTIVATED
       await supabase.auth.signOut();
 
-      // Clear any prototype/localStorage data
+      // Clear session data but KEEP device_trust_token for next login
       localStorage.removeItem('POPUP_SHOWN');
       sessionStorage.removeItem('encouragement_popup_shown');
+      // DON'T remove device_trust_token - user wants device remembered
 
       setUser(null);
       setSession(null);
       setIsAdmin(false);
+      setPendingUser(null);
+      setRequiresOTP(false);
+      setVerifiedDeviceToken(null);
       navigate("/auth");
     } catch (error) {
       console.error("Error signing out:", error);
@@ -106,7 +159,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, signOut: handleSignOut, signIn: handleSignIn }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        isAdmin,
+        requiresOTP,
+        pendingUser,
+        verifiedDeviceToken,
+        signOut: handleSignOut,
+        signIn: handleSignIn,
+        setPendingAuth,
+        completeOTPVerification,
+        completeTrustedDeviceAuth
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

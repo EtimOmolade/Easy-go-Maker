@@ -334,19 +334,17 @@ const PrayerLibrary = () => {
             <Button
               variant="outline"
               onClick={() => setBulkImportOpen(true)}
-              className="gap-2"
+              size="default"
             >
               <Upload className="h-4 w-4" />
-              <span className="hidden md:inline">Bulk Import</span>
-              <span className="md:hidden">Import</span>
+              <span className="hidden sm:inline ml-2">Bulk Import</span>
             </Button>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={resetForm}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  <span className="hidden md:inline">Add Prayer Point</span>
-                  <span className="md:hidden">Add</span>
+                <Button onClick={resetForm} size="default">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-2">Add Prayer Point</span>
                 </Button>
               </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

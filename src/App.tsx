@@ -8,6 +8,9 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import ReminderSystem from "@/components/ReminderSystem";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ForgotPassword from "./pages/ForgotPassword";
+import UpdatePassword from "./pages/UpdatePassword";
+import VerifyOTP from "./pages/VerifyOTP";
 import Dashboard from "./pages/Dashboard";
 import Guidelines from "./pages/Guidelines";
 import GuidelineDetails from "./pages/GuidelineDetails";
@@ -34,6 +37,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/update-password" element={<UpdatePassword />} />
+            <Route path="/verify-otp" element={<VerifyOTP />} />
             <Route
               path="/dashboard"
               element={

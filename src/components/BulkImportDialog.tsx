@@ -52,10 +52,10 @@ Kingdom Focus,July 1 Intercession 2,"Father, we decree the rescue of every capti
 Kingdom Focus,July 1 Intercession 3,"Lord Jesus, trigger new waves of signs and wonders by Your Word...",July,1,2025,tuesday,3
 Kingdom Focus,July 1 Intercession 4,"Father, let this church be minimum double her current attendance...",July,1,2025,tuesday,4`;
     } else {
-      csvContent = `category,title,content,day_number,chapter,start_verse,end_verse,reference_text,cycle_number
-Listening Prayer,Proverbs 1:1-10,"Read Proverbs 1:1-10. Meditate on the wisdom found in this passage and ask God to speak to you.",1,1,1,10,Proverbs 1:1-10,1
-Listening Prayer,Proverbs 1:11-20,"Read Proverbs 1:11-20. Meditate on the wisdom found in this passage and ask God to speak to you.",2,1,11,20,Proverbs 1:11-20,1
-Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom found in this passage and ask God to speak to you.",3,1,21,33,Proverbs 1:21-33,1`;
+      csvContent = `category,title,content,day_number,chapter,start_verse,end_verse,reference_text
+Listening Prayer,Proverbs 1:1-10,"Read Proverbs 1:1-10. Meditate on the wisdom found in this passage and ask God to speak to you.",1,1,1,10,Proverbs 1:1-10
+Listening Prayer,Proverbs 1:11-20,"Read Proverbs 1:11-20. Meditate on the wisdom found in this passage and ask God to speak to you.",2,1,11,20,Proverbs 1:11-20
+Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom found in this passage and ask God to speak to you.",3,1,21,33,Proverbs 1:21-33`;
     }
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -107,8 +107,7 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
           chapter: 1,
           start_verse: 1,
           end_verse: 10,
-          reference_text: "Proverbs 1:1-10",
-          cycle_number: 1
+          reference_text: "Proverbs 1:1-10"
         },
         {
           category: "Listening Prayer",
@@ -118,8 +117,7 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
           chapter: 1,
           start_verse: 11,
           end_verse: 20,
-          reference_text: "Proverbs 1:11-20",
-          cycle_number: 1
+          reference_text: "Proverbs 1:11-20"
         }
       ];
     }
@@ -368,20 +366,20 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
         <DialogHeader>
-          <DialogTitle>Bulk Import Prayer Points</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">Bulk Import Prayer Points</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="upload" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="upload">Upload File</TabsTrigger>
-            <TabsTrigger value="templates">Download Templates</TabsTrigger>
+            <TabsTrigger value="upload" className="text-sm">Upload File</TabsTrigger>
+            <TabsTrigger value="templates" className="text-sm">Templates</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload" className="space-y-4">
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="border-2 border-dashed rounded-lg p-6 text-center space-y-2">
                   <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
                   <Label htmlFor="csv-upload" className="block">
@@ -425,29 +423,30 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
 
               {parsedData.length > 0 && (
                 <>
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-muted rounded-lg">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        <span className="font-medium">{validPrayers.length} Valid Prayers</span>
+                        <span className="font-medium text-sm sm:text-base">{validPrayers.length} Valid</span>
                       </div>
                       {invalidPrayers.length > 0 && (
                         <div className="flex items-center gap-2">
                           <AlertCircle className="h-5 w-5 text-red-600" />
-                          <span className="font-medium">{invalidPrayers.length} Invalid Prayers</span>
+                          <span className="font-medium text-sm sm:text-base">{invalidPrayers.length} Invalid</span>
                         </div>
                       )}
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={clearData} size="sm">
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <Button variant="outline" onClick={clearData} size="sm" className="flex-1 sm:flex-none">
                         Clear
                       </Button>
                       <Button
                         onClick={handleImport}
                         disabled={validPrayers.length === 0 || importing}
                         size="sm"
+                        className="flex-1 sm:flex-none"
                       >
-                        {importing ? 'Importing...' : `Import ${validPrayers.length} Prayers`}
+                        {importing ? 'Importing...' : `Import ${validPrayers.length}`}
                       </Button>
                     </div>
                   </div>
@@ -461,31 +460,31 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
                   )}
 
                   <div className="border rounded-lg overflow-hidden">
-                    <div className="max-h-96 overflow-y-auto">
+                    <div className="max-h-96 overflow-x-auto overflow-y-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-12">Row</TableHead>
-                            <TableHead>Category</TableHead>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Content</TableHead>
-                            <TableHead>Status</TableHead>
+                            <TableHead className="w-12 text-xs sm:text-sm">Row</TableHead>
+                            <TableHead className="hidden sm:table-cell text-xs sm:text-sm">Category</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Title</TableHead>
+                            <TableHead className="hidden md:table-cell text-xs sm:text-sm">Content</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Status</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {parsedData.slice(0, 20).map((prayer, index) => (
                             <TableRow key={index}>
-                              <TableCell>{prayer.rowNumber}</TableCell>
-                              <TableCell className="font-medium">{prayer.category}</TableCell>
-                              <TableCell>{prayer.title}</TableCell>
-                              <TableCell className="max-w-md truncate">{prayer.content}</TableCell>
-                              <TableCell>
+                              <TableCell className="text-xs sm:text-sm">{prayer.rowNumber}</TableCell>
+                              <TableCell className="hidden sm:table-cell font-medium text-xs sm:text-sm">{prayer.category}</TableCell>
+                              <TableCell className="text-xs sm:text-sm max-w-[150px] truncate">{prayer.title}</TableCell>
+                              <TableCell className="hidden md:table-cell text-xs sm:text-sm max-w-md truncate">{prayer.content}</TableCell>
+                              <TableCell className="text-xs sm:text-sm">
                                 {prayer.errors!.length === 0 ? (
                                   <CheckCircle2 className="h-4 w-4 text-green-600" />
                                 ) : (
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1">
                                     <AlertCircle className="h-4 w-4 text-red-600" />
-                                    <span className="text-xs text-red-600">
+                                    <span className="text-xs text-red-600 hidden lg:inline">
                                       {prayer.errors!.join(', ')}
                                     </span>
                                   </div>
@@ -497,7 +496,7 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
                       </Table>
                     </div>
                     {parsedData.length > 20 && (
-                      <div className="p-2 text-center text-sm text-muted-foreground bg-muted">
+                      <div className="p-2 text-center text-xs sm:text-sm text-muted-foreground bg-muted">
                         Showing first 20 of {parsedData.length} prayers
                       </div>
                     )}
@@ -517,35 +516,39 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
 
               <div className="grid gap-4">
                 <div className="border rounded-lg p-4 space-y-3">
-                  <h3 className="font-semibold">Kingdom Focus Prayers</h3>
-                  <p className="text-sm text-muted-foreground">
-                    For daily intercessions with date scheduling (month, day, year, day_of_week, intercession_number)
+                  <h3 className="font-semibold text-sm sm:text-base">Kingdom Focus Prayers</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    For daily intercessions with date scheduling
                   </p>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => downloadCSVTemplate('Kingdom Focus')}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download CSV Template
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button variant="outline" onClick={() => downloadCSVTemplate('Kingdom Focus')} size="sm" className="flex-1">
+                      <Download className="h-4 w-4" />
+                      <span className="hidden sm:inline ml-2">CSV Template</span>
+                      <span className="sm:hidden ml-2">CSV</span>
                     </Button>
-                    <Button variant="outline" onClick={() => downloadJSONTemplate('Kingdom Focus')}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download JSON Template
+                    <Button variant="outline" onClick={() => downloadJSONTemplate('Kingdom Focus')} size="sm" className="flex-1">
+                      <Download className="h-4 w-4" />
+                      <span className="hidden sm:inline ml-2">JSON Template</span>
+                      <span className="sm:hidden ml-2">JSON</span>
                     </Button>
                   </div>
                 </div>
 
                 <div className="border rounded-lg p-4 space-y-3">
-                  <h3 className="font-semibold">Listening Prayer (Proverbs)</h3>
-                  <p className="text-sm text-muted-foreground">
-                    For 91-day Proverbs reading cycle (day_number, chapter, start_verse, end_verse, reference_text)
+                  <h3 className="font-semibold text-sm sm:text-base">Listening Prayer (Proverbs)</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    For 91-day Proverbs reading cycle
                   </p>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => downloadCSVTemplate('Listening Prayer')}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download CSV Template
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button variant="outline" onClick={() => downloadCSVTemplate('Listening Prayer')} size="sm" className="flex-1">
+                      <Download className="h-4 w-4" />
+                      <span className="hidden sm:inline ml-2">CSV Template</span>
+                      <span className="sm:hidden ml-2">CSV</span>
                     </Button>
-                    <Button variant="outline" onClick={() => downloadJSONTemplate('Listening Prayer')}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download JSON Template
+                    <Button variant="outline" onClick={() => downloadJSONTemplate('Listening Prayer')} size="sm" className="flex-1">
+                      <Download className="h-4 w-4" />
+                      <span className="hidden sm:inline ml-2">JSON Template</span>
+                      <span className="sm:hidden ml-2">JSON</span>
                     </Button>
                   </div>
                 </div>

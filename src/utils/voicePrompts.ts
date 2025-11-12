@@ -1,27 +1,13 @@
 // Voice prompt utilities for guided prayer sessions
-import { isTTSServerAvailable, speakWithCoqui, stopCoquiSpeech } from './ttsClient';
+//
+// VOICE DIFFERENTIATION STRATEGY:
+// - Voice Prompts: Use MALE voice (Speechmatics 'theo') - calm, deep, father-like
+// - Prayer Audio: Use FEMALE voice (Speechmatics 'sarah') - clear, gentle
+// This helps users distinguish between guidance and prayer content
+//
 
-// Initialize voices - voices load asynchronously
-let voicesLoaded = false;
-let useCoquiTTS = false;
-
-if ('speechSynthesis' in window) {
-  window.speechSynthesis.onvoiceschanged = () => {
-    voicesLoaded = true;
-  };
-  // Trigger voice loading
-  window.speechSynthesis.getVoices();
-}
-
-// Check if Coqui TTS server is available on initialization
-isTTSServerAvailable().then(available => {
-  useCoquiTTS = available;
-  if (available) {
-    console.log('✅ Coqui TTS server detected - using high-quality voice');
-  } else {
-    console.log('ℹ️ Coqui TTS server not available - using browser voice');
-  }
-});
+// Base URL for pre-generated voice prompts (Speechmatics audio files)
+const VOICE_PROMPT_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/prayer-audio/voice-prompts`;
 
 export const VOICE_PROMPTS = {
   KINGDOM_START: "Now pray for kingdom purposes. Let's intercede for God's work in the world.",
@@ -32,32 +18,51 @@ export const VOICE_PROMPTS = {
   SESSION_COMPLETE: "Well done! You've completed today's prayer session. May God bless you."
 };
 
+// Map prompt keys to audio file URLs
+const PROMPT_AUDIO_URLS: Record<string, string> = {
+  KINGDOM_START: `${VOICE_PROMPT_BASE_URL}/kingdom-start.wav`,
+  KINGDOM_NEXT: `${VOICE_PROMPT_BASE_URL}/kingdom-next.wav`,
+  PERSONAL_START: `${VOICE_PROMPT_BASE_URL}/personal-start.wav`,
+  LISTENING_START: `${VOICE_PROMPT_BASE_URL}/listening-start.wav`,
+  JOURNALING_START: `${VOICE_PROMPT_BASE_URL}/journaling-start.wav`,
+  SESSION_COMPLETE: `${VOICE_PROMPT_BASE_URL}/session-complete.wav`,
+};
+
+let currentAudio: HTMLAudioElement | null = null;
+
 export const playVoicePrompt = async (text: string) => {
-  // Always try Coqui TTS first if available
-  if (useCoquiTTS) {
+  // Stop any currently playing audio
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+
+  // Find the audio URL for this prompt text
+  const promptKey = Object.keys(VOICE_PROMPTS).find(
+    key => VOICE_PROMPTS[key as keyof typeof VOICE_PROMPTS] === text
+  );
+
+  if (promptKey && PROMPT_AUDIO_URLS[promptKey]) {
+    // Use pre-generated Speechmatics audio (male voice)
     try {
-      await speakWithCoqui(text);
+      currentAudio = new Audio(PROMPT_AUDIO_URLS[promptKey]);
+      currentAudio.volume = 0.95;
+      await currentAudio.play();
+      console.log(`✅ Playing Speechmatics voice prompt: ${promptKey}`);
       return;
     } catch (error) {
-      console.warn('Coqui TTS failed, falling back to browser voice:', error);
-      // Don't disable permanently, might be temporary network issue
+      console.warn('Failed to play Speechmatics audio, falling back to browser TTS:', error);
     }
   }
 
-  // Fallback to browser's Web Speech API
+  // Fallback to browser's Web Speech API if audio file not available
   if ('speechSynthesis' in window) {
-    // Cancel any ongoing speech
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-
-    // Try to select a deep, calm, masculine voice - like a gentle father figure
     const voices = window.speechSynthesis.getVoices();
 
-    // Priority order for natural, deep voices:
-    // 1. Look for male voices with "Google" (typically high quality)
-    // 2. Look for specific good male voices (Daniel, Alex, etc.)
-    // 3. Fall back to any male English voice
+    // Try to select a deep, calm, masculine voice
     const preferredVoice =
       voices.find(voice =>
         voice.lang.startsWith('en') &&
@@ -80,22 +85,22 @@ export const playVoicePrompt = async (text: string) => {
 
     if (preferredVoice) {
       utterance.voice = preferredVoice;
-      console.log('Using voice:', preferredVoice.name); // Debug: see which voice is selected
     }
 
-    // Deep, calm, father-like voice settings
-    utterance.rate = 0.75;    // Slower for a calm, contemplative pace
-    utterance.pitch = 0.8;    // Lower pitch for deep, masculine tone
-    utterance.volume = 0.95;  // Clear but not overwhelming
+    utterance.rate = 0.75;
+    utterance.pitch = 0.8;
+    utterance.volume = 0.95;
 
     window.speechSynthesis.speak(utterance);
+    console.log('⚠️ Using fallback browser TTS for voice prompt');
   }
 };
 
 export const stopVoicePrompt = () => {
-  // Stop Coqui TTS if it's being used
-  if (useCoquiTTS) {
-    stopCoquiSpeech();
+  // Stop Speechmatics audio if playing
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
   }
 
   // Stop browser speech synthesis

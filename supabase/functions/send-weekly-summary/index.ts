@@ -54,7 +54,7 @@ serve(async (req) => {
             "Authorization": `Bearer ${RESEND_API_KEY}`,
           },
           body: JSON.stringify({
-            from: "SpiritScribe <onboarding@resend.dev>",
+            from: "SpiritConnect <onboarding@resend.dev>",
             to: [profile.email],
             subject: "📊 Your Weekly Prayer Summary",
             html: `
@@ -80,7 +80,7 @@ serve(async (req) => {
                 </p>
 
                 <p style="margin: 30px 0;">
-                  <a href="${Deno.env.get("SUPABASE_URL")?.replace('/supabase', '')}/dashboard"
+                  <a href="https://dev.spiritconnects.org/dashboard"
                      style="background-color: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                     Continue Your Journey
                   </a>

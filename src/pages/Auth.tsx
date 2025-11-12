@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, BookOpen, Eye, EyeOff } from "lucide-react";
+import { generateDeviceFingerprint } from "@/utils/deviceFingerprint";
 
 const Auth = () => {
   const location = useLocation();
@@ -20,13 +21,14 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const { user, signIn } = useAuth();
+  const { user, signIn, requiresOTP, setPendingAuth, completeTrustedDeviceAuth } = useAuth();
 
   useEffect(() => {
-    if (user) {
+    // Only redirect if fully authenticated (not pending OTP)
+    if (user && !requiresOTP) {
       navigate("/dashboard");
     }
-  }, [user, navigate]);
+  }, [user, requiresOTP, navigate]);
 
   const validatePassword = (password: string): { valid: boolean; message?: string } => {
     if (password.length < 8) {
@@ -48,14 +50,63 @@ const Auth = () => {
     try {
       // Backend integration - Supabase ACTIVATED
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (error) throw error;
+
+        // Check if user has 2FA enabled
+        if (data.user) {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("two_factor_enabled")
+            .eq("id", data.user.id)
+            .single();
+
+          if (profileData?.two_factor_enabled) {
+            // Generate device fingerprint
+            const fingerprint = generateDeviceFingerprint();
+            
+            // Check if this device is already trusted
+            const { data: trustedDevice } = await supabase
+              .from("trusted_devices")
+              .select("*")
+              .eq("user_id", data.user.id)
+              .eq("device_fingerprint", fingerprint)
+              .gt("expires_at", new Date().toISOString())
+              .maybeSingle();
+
+            if (trustedDevice) {
+              // Trusted device - update last_used_at and complete auth
+              await supabase
+                .from("trusted_devices")
+                .update({ last_used_at: new Date().toISOString() })
+                .eq("id", trustedDevice.id);
+
+              // Manually complete auth (onAuthStateChange won't set user for SIGNED_IN events)
+              completeTrustedDeviceAuth(data.user);
+
+              toast.success("Welcome back!");
+              // Navigation will happen via useEffect when user is set
+            } else {
+              // Not trusted - require OTP verification
+              // DON'T sign out - keep the session but set pending state
+              setPendingAuth(data.user, true);
+              
+              // Generate and send OTP (now has valid session)
+              await supabase.functions.invoke("generate-otp");
+              
+              toast.success("Verification code sent to your email");
+              navigate("/verify-otp", { state: { email: data.user.email, userId: data.user.id } });
+            }
+            return;
+          }
+        }
+
         toast.success("Welcome back!");
-        navigate("/dashboard");
+        // Don't navigate - let the auth state change handle it
       } else {
         const passwordValidation = validatePassword(password);
         if (!passwordValidation.valid) {
@@ -171,6 +222,19 @@ const Auth = () => {
                 </p>
               )}
             </div>
+            
+            {isLogin && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => navigate("/forgot-password")}
+                  className="text-sm text-primary hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
+
             <Button type="submit" className="w-full text-primary-foreground" disabled={loading}>
               {loading ? (
                 <>
