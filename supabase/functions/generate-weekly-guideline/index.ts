@@ -243,7 +243,7 @@ serve(async (req) => {
             id: prayer.id,
             title: prayer.title,
             content: prayer.content,
-            audioUrl: prayer.audio_url,
+            audio_url: prayer.audio_url, // Use snake_case from prayer_library
           }],
           duration: 180, // 3 minutes per prayer
         });
@@ -277,7 +277,7 @@ serve(async (req) => {
         chapter: listeningPrayer.chapter,
         startVerse: listeningPrayer.start_verse,
         endVerse: listeningPrayer.end_verse,
-        audioUrl: listeningPrayer.audio_url,
+        audio_url: listeningPrayer.audio_url, // Use snake_case from prayer_library
         duration: 240, // 4 minutes
       });
     }
@@ -321,20 +321,20 @@ serve(async (req) => {
       const audioUrls = await generateAudioForGuideline(guideline, supabase);
       
       if (Object.keys(audioUrls).length > 0) {
-        // Update guideline steps with audio URLs
+        // Update guideline steps with audio URLs (use snake_case audio_url to match frontend expectations)
         const updatedSteps = guideline.steps.map((step: any, stepIndex: number) => {
           if (step.type === 'kingdom' && step.points) {
             return {
               ...step,
               points: step.points.map((point: any, pointIndex: number) => ({
                 ...point,
-                audioUrl: audioUrls[`step${stepIndex}-p${pointIndex}`] || null
+                audio_url: audioUrls[`step${stepIndex}-p${pointIndex}`] || null
               }))
             };
           } else if (step.type === 'listening') {
             return {
               ...step,
-              audioUrl: audioUrls[`step${stepIndex}-listening`] || null
+              audio_url: audioUrls[`step${stepIndex}-listening`] || null
             };
           }
           return step;
