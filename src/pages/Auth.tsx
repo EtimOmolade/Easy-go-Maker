@@ -119,7 +119,7 @@ const Auth = () => {
           return;
         }
 
-        const { error } = await supabase.auth.signUp({
+        const { error, data } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -129,6 +129,14 @@ const Auth = () => {
         });
 
         if (error) throw error;
+        
+        // Send welcome email (don't block on this)
+        if (data.user) {
+          supabase.functions.invoke("send-welcome-email", {
+            body: { email, name }
+          }).catch(err => console.error("Welcome email failed:", err));
+        }
+        
         toast.success("Account created! Welcome to SpiritConnect.");
         navigate("/dashboard");
       }
