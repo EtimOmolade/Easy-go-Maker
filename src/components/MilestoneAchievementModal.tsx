@@ -4,6 +4,21 @@ import confetti from "canvas-confetti";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { MILESTONES } from "@/data/mockData";
+import { Sprout, TreePine, Wheat, Flame, Gem, Crown, Globe } from "lucide-react";
+
+// Helper to get icon component from icon name
+const getMilestoneIcon = (iconName: string) => {
+  const icons: Record<string, any> = {
+    Sprout,
+    TreePine,
+    Wheat,
+    Flame,
+    Gem,
+    Crown,
+    Globe
+  };
+  return icons[iconName] || Sprout;
+};
 
 interface MilestoneAchievementModalProps {
   milestoneLevel: number;
@@ -30,7 +45,7 @@ export const MilestoneAchievementModal = ({
         console.log('Audio creation failed:', err);
       }
 
-      // Fire confetti
+      // Fire confetti in royal blue and gold
       const duration = 3000;
       const end = Date.now() + duration;
 
@@ -40,14 +55,14 @@ export const MilestoneAchievementModal = ({
           angle: 60,
           spread: 55,
           origin: { x: 0 },
-          colors: ["#8B5CF6", "#EC4899", "#F59E0B"],
+          colors: ["#2E3A87", "#D4AF37", "#4A5FC1"],
         });
         confetti({
           particleCount: 2,
           angle: 120,
           spread: 55,
           origin: { x: 1 },
-          colors: ["#8B5CF6", "#EC4899", "#F59E0B"],
+          colors: ["#2E3A87", "#D4AF37", "#4A5FC1"],
         });
 
         if (Date.now() < end) {
@@ -65,9 +80,11 @@ export const MilestoneAchievementModal = ({
 
   if (!milestone) return null;
 
+  const MilestoneIcon = getMilestoneIcon(milestone.icon);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-8 text-center border-2 border-primary/20">
+      <DialogContent className="max-w-md p-8 text-center border-2 border-primary/20 bg-gradient-to-br from-background to-primary/5">
         <AnimatePresence>
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -75,7 +92,7 @@ export const MilestoneAchievementModal = ({
             transition={{ duration: 0.5, type: "spring" }}
             className="space-y-6"
           >
-            {/* Badge Emoji */}
+            {/* Badge Icon */}
             <motion.div
               animate={{ 
                 scale: [1, 1.2, 1],
@@ -86,14 +103,16 @@ export const MilestoneAchievementModal = ({
                 repeat: 2,
                 repeatDelay: 0.5
               }}
-              className="text-8xl"
+              className="flex justify-center"
             >
-              {milestone.emoji}
+              <div className="w-32 h-32 rounded-full bg-gradient-accent flex items-center justify-center shadow-glow">
+                <MilestoneIcon className="h-16 w-16 text-white" />
+              </div>
             </motion.div>
 
             {/* Congratulations */}
             <div>
-              <h2 className="text-3xl font-heading font-bold gradient-primary bg-clip-text text-transparent mb-2">
+              <h2 className="text-3xl font-heading font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-2">
                 Milestone Unlocked!
               </h2>
               <p className="text-2xl font-semibold text-foreground">
@@ -124,7 +143,7 @@ export const MilestoneAchievementModal = ({
             {/* Close Button */}
             <Button
               onClick={onClose}
-              className="w-full"
+              className="w-full bg-gradient-accent hover:opacity-90"
               size="lg"
             >
               Continue Your Journey

@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MILESTONES } from "@/data/mockData";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone } from "lucide-react";
+import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone, Sprout, TreePine, Wheat, Gem, Crown, Globe, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import StreakBadge from "@/components/StreakBadge";
 import EncouragementPopup from "@/components/EncouragementPopup";
@@ -14,6 +14,20 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { checkMilestoneAchievement } from "@/utils/prayerHelpers";
+
+// Helper to get icon component from icon name
+const getMilestoneIcon = (iconName: string) => {
+  const icons: Record<string, any> = {
+    Sprout,
+    TreePine,
+    Wheat,
+    Flame,
+    Gem,
+    Crown,
+    Globe
+  };
+  return icons[iconName] || Sprout;
+};
 
 interface Profile {
   name: string;
@@ -314,8 +328,14 @@ const Dashboard = () => {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen gradient-subtle">
-        <div className="max-w-7xl mx-auto p-4 md:p-8">
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 relative overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 right-10 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-20 left-10 w-80 h-80 bg-accent/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+        </div>
+
+        <div className="relative max-w-7xl mx-auto p-4 md:p-8">
           <EncouragementPopup streakCount={profile?.streak_count || 0} previousStreak={previousStreak} />
           <MilestoneAchievementModal 
             milestoneLevel={achievedMilestoneLevel}
@@ -323,17 +343,17 @@ const Dashboard = () => {
             onClose={() => setShowMilestoneModal(false)}
           />
           
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-8 animate-fade-in">
             <div>
-              <h1 className="text-4xl md:text-5xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              <h1 className="text-4xl md:text-5xl font-heading font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
                 Welcome back, {profile?.name || "Friend"}!
               </h1>
-              <p className="text-muted-foreground mt-2">Continue your prayer journey today</p>
+              <p className="text-muted-foreground mt-2 text-lg">Continue your prayer journey today</p>
             </div>
             <div className="flex items-center gap-2">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" onClick={signOut}>
+                  <Button variant="outline" onClick={signOut} className="hover-lift">
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign Out
                   </Button>
@@ -345,9 +365,13 @@ const Dashboard = () => {
 
           {/* Today's Prayer Focus - Hero Section */}
           {todaysGuideline && (
-            <Card className="mb-8 shadow-elegant border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
+            <Card className="mb-8 shadow-lg hover-lift border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 animate-scale-in">
               <CardHeader className="text-center pb-4">
-                <div className="text-4xl mb-3">🙏</div>
+                <div className="flex justify-center mb-4">
+                  <div className="p-4 rounded-full bg-gradient-accent shadow-glow">
+                    <BookOpen className="h-10 w-10 text-white" />
+                  </div>
+                </div>
                 <CardTitle className="text-3xl font-heading">Today's Prayer Focus</CardTitle>
                 <CardDescription className="text-base mt-2">
                   {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -365,7 +389,7 @@ const Dashboard = () => {
                 <Button
                   onClick={() => navigate(`/guideline/${todaysGuideline.id}`)}
                   size="lg"
-                  className="w-full text-lg py-6"
+                  className="w-full text-lg py-6 bg-gradient-accent hover:opacity-90 shadow-md hover:shadow-glow transition-all"
                 >
                   <BookMarked className="mr-2 h-5 w-5" />
                   Begin Today's Prayer
@@ -376,19 +400,24 @@ const Dashboard = () => {
 
           {/* Compact Streak Badge */}
           {profile && (
-            <div className="mb-8 p-4 rounded-lg border bg-card flex items-center justify-between shadow-sm">
-              <div className="flex items-center gap-2">
-                <div className="text-4xl">{(milestoneData.lastAchieved || milestoneData.nextMilestone).emoji}</div>
+            <div className="mb-8 p-6 rounded-2xl border-2 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20 shadow-md flex items-center justify-between hover-lift">
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 rounded-full bg-gradient-accent flex items-center justify-center shadow-glow">
+                  {(() => {
+                    const MilestoneIcon = getMilestoneIcon((milestoneData.lastAchieved || milestoneData.nextMilestone).icon);
+                    return <MilestoneIcon className="h-8 w-8 text-white" />;
+                  })()}
+                </div>
                 <div>
-                  <p className="font-semibold text-foreground">{(milestoneData.lastAchieved || milestoneData.nextMilestone).name}</p>
-                  <p className="text-xs text-muted-foreground">Current Badge</p>
+                  <p className="font-heading font-semibold text-lg text-foreground">{(milestoneData.lastAchieved || milestoneData.nextMilestone).name}</p>
+                  <p className="text-sm text-muted-foreground">Current Badge</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Flame className="h-6 w-6 text-accent" />
+              <div className="flex items-center gap-3">
+                <Flame className="h-8 w-8 text-accent animate-pulse-glow" />
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-foreground">{profile.streak_count}</p>
-                  <p className="text-xs text-muted-foreground">day streak</p>
+                  <p className="text-3xl font-bold text-foreground">{profile.streak_count}</p>
+                  <p className="text-sm text-muted-foreground">day streak</p>
                 </div>
               </div>
             </div>
@@ -463,10 +492,10 @@ const Dashboard = () => {
           )}
 
         {/* Prayer Milestones Journey - Bottom Section */}
-        <Card className="mb-8 shadow-medium border-primary/10">
+        <Card className="mb-8 shadow-lg hover-lift border-2 border-primary/10 animate-fade-in-up stagger-3 opacity-0">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Flame className="h-5 w-5 text-accent" />
+            <CardTitle className="flex items-center gap-2 text-2xl font-heading">
+              <Flame className="h-6 w-6 text-accent" />
               Your Prayer Journey
             </CardTitle>
             <CardDescription>Track your spiritual growth milestones</CardDescription>
@@ -475,14 +504,21 @@ const Dashboard = () => {
             <div className="space-y-6">
               {/* Next Milestone Goal */}
               <div className="text-center">
-                <div className="text-6xl mb-3">{milestoneData.nextMilestone.emoji}</div>
+                <div className="flex justify-center mb-4">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
+                    {(() => {
+                      const MilestoneIcon = getMilestoneIcon(milestoneData.nextMilestone.icon);
+                      return <MilestoneIcon className="h-12 w-12 text-primary" />;
+                    })()}
+                  </div>
+                </div>
                 <h3 className="text-2xl font-bold text-foreground mb-2">
                   {milestoneData.nextMilestone.name}
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   {milestoneData.currentStreak} day{milestoneData.currentStreak !== 1 ? 's' : ''} streak
                 </p>
-                <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
+                <div className="p-4 bg-accent/10 rounded-lg border border-accent/20">
                   <p className="text-sm italic text-foreground/90">
                     "{milestoneData.nextMilestone.scripture}"
                   </p>
@@ -503,10 +539,14 @@ const Dashboard = () => {
                       {milestoneData.currentStreak} / {milestoneData.nextMilestone.streak_needed}
                     </span>
                   </div>
-                  <Progress value={milestoneData.progress} className="h-2" />
+                  <Progress value={milestoneData.progress} className="h-3 bg-muted" />
                   {milestoneData.lastAchieved && (
-                    <p className="text-xs text-muted-foreground mt-2 text-center">
-                      Last unlocked: {milestoneData.lastAchieved.name} {milestoneData.lastAchieved.emoji}
+                    <p className="text-xs text-muted-foreground mt-2 text-center flex items-center justify-center gap-1">
+                      Last unlocked: {milestoneData.lastAchieved.name}
+                      {(() => {
+                        const LastIcon = getMilestoneIcon(milestoneData.lastAchieved.icon);
+                        return <LastIcon className="h-4 w-4 text-primary inline" />;
+                      })()}
                     </p>
                   )}
                 </div>
@@ -515,9 +555,12 @@ const Dashboard = () => {
               {/* Max Level Achieved */}
               {milestoneData.isMaxLevel && (
                 <div className="pt-4 border-t text-center">
-                  <p className="text-sm font-medium text-accent">
-                    🎉 Maximum level achieved! Keep praying!
-                  </p>
+                  <div className="flex items-center justify-center gap-2">
+                    <Sparkles className="h-5 w-5 text-accent" />
+                    <p className="text-sm font-medium text-accent">
+                      Maximum level achieved! Keep praying!
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
