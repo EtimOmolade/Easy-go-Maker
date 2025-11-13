@@ -40,21 +40,81 @@ serve(async (req) => {
 
     // Send custom branded email via Resend
     const htmlBody = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #7E69AB;">SpiritConnect Password Reset</h2>
-        <p>Hello,</p>
-        <p>You requested to reset your password. Click the button below to set a new password:</p>
-        <p style="margin: 30px 0;">
-          <a href="${linkData.properties.action_link}" 
-             style="background-color: #7E69AB; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-            Reset Password
-          </a>
-        </p>
-        <p>If you didn't request this, please ignore this email.</p>
-        <p style="color: #666; font-size: 12px;">This link will expire in 1 hour.</p>
-        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-        <p style="color: #666; font-size: 12px;">SpiritConnect - Your Daily Prayer Companion</p>
-      </div>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+        <table role="presentation" style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td align="center" style="padding: 40px 0;">
+              <table role="presentation" style="width: 600px; max-width: 100%; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <!-- Header -->
+                <tr>
+                  <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #7E69AB 0%, #9b87c5 100%); border-radius: 8px 8px 0 0;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">🕊️ SpiritConnect</h1>
+                    <p style="margin: 8px 0 0; color: #f0e6ff; font-size: 14px;">Your Daily Prayer Companion</p>
+                  </td>
+                </tr>
+                
+                <!-- Content -->
+                <tr>
+                  <td style="padding: 40px;">
+                    <h2 style="margin: 0 0 20px; color: #333333; font-size: 24px; font-weight: 600;">Reset Your Password</h2>
+                    <p style="margin: 0 0 16px; color: #666666; font-size: 16px; line-height: 1.5;">Hello,</p>
+                    <p style="margin: 0 0 24px; color: #666666; font-size: 16px; line-height: 1.5;">
+                      We received a request to reset your password. Click the button below to create a new password:
+                    </p>
+                    
+                    <!-- CTA Button -->
+                    <table role="presentation" style="margin: 0 0 24px;">
+                      <tr>
+                        <td style="border-radius: 6px; background: linear-gradient(135deg, #7E69AB 0%, #9b87c5 100%);">
+                          <a href="${linkData.properties.action_link}" 
+                             style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 6px;">
+                            Reset Password
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                    
+                    <p style="margin: 0 0 16px; color: #666666; font-size: 14px; line-height: 1.5;">
+                      If you didn't request this password reset, you can safely ignore this email. Your password will remain unchanged.
+                    </p>
+                    
+                    <!-- Security Info -->
+                    <table role="presentation" style="width: 100%; margin: 24px 0 0; padding: 16px; background-color: #f8f5ff; border-radius: 6px; border-left: 4px solid #7E69AB;">
+                      <tr>
+                        <td>
+                          <p style="margin: 0; color: #7E69AB; font-size: 14px; font-weight: 600;">🔒 Security Note</p>
+                          <p style="margin: 8px 0 0; color: #666666; font-size: 13px; line-height: 1.5;">
+                            This link will expire in <strong>1 hour</strong> for your security.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                
+                <!-- Footer -->
+                <tr>
+                  <td style="padding: 30px 40px; background-color: #f9f9f9; border-radius: 0 0 8px 8px; text-align: center;">
+                    <p style="margin: 0 0 8px; color: #999999; font-size: 12px;">
+                      This email was sent by SpiritConnect
+                    </p>
+                    <p style="margin: 0; color: #999999; font-size: 12px;">
+                      © ${new Date().getFullYear()} SpiritConnect. All rights reserved.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
     `;
 
     const resendResponse = await fetch('https://api.resend.com/emails', {
@@ -64,7 +124,7 @@ serve(async (req) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'SpiritConnect <onboarding@resend.dev>',
+        from: 'SpiritConnect <noreply@spiritconnects.org>',
         to: [email],
         subject: 'Reset Your SpiritConnect Password',
         html: htmlBody

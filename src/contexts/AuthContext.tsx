@@ -32,52 +32,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [verifiedDeviceToken, setVerifiedDeviceToken] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Initialize mock data for prototype (needed for localStorage-based features like milestones, etc.)
-    initializeMockData();
-
-    // Initialize prayer library with real client prayers
-    ensurePrayerLibraryInitialized();
-
-    // Backend integration - Supabase ACTIVATED
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth state change:', event, session?.user?.email);
-        setSession(session);
-
-        // Don't set user on SIGNED_IN - let Auth.tsx handle 2FA check
-        // This prevents dashboard flash before OTP verification
-        if (event === 'SIGNED_IN') {
-          console.log('SIGNED_IN event - Auth.tsx will handle 2FA check');
-          return;
-        }
-
-        // For TOKEN_REFRESHED, SIGNED_OUT, etc., update user normally
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          setTimeout(() => {
-            checkAdminStatus(session.user.id);
-          }, 0);
-        } else {
-          setIsAdmin(false);
-        }
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        checkAdminStatus(session.user.id);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   // Backend integration - Supabase ACTIVATED
   const checkAdminStatus = async (userId: string) => {
     try {
@@ -99,6 +53,74 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+
+  useEffect(() => {
+    // Initialize mock data for prototype (needed for localStorage-based features like milestones, etc.)
+    initializeMockData();
+
+    // Initialize prayer library with real client prayers
+    ensurePrayerLibraryInitialized();
+
+    // Backend integration - Supabase ACTIVATED
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
+        setSession(session);
+
+        // For PASSWORD_RECOVERY, set user immediately
+        if (event === 'PASSWORD_RECOVERY') {
+          setUser(session?.user ?? null);
+          return;
+        }
+
+        // For SIGNED_IN - OAuth logins set user directly, password logins check 2FA
+        if (event === 'SIGNED_IN') {
+          // If there's no password (OAuth), authenticate immediately
+          // Otherwise, Auth.tsx will handle 2FA check
+          if (session?.user) {
+            const currentUserId = session.user.id;
+            const currentSession = session.user;
+            
+            // Check if user signed in with OAuth (no password)
+            supabase.auth.getUser().then(({ data }) => {
+              const hasPassword = data.user?.app_metadata?.provider === 'email';
+              
+              if (!hasPassword) {
+                // OAuth login - set user directly
+                setUser(currentSession);
+                checkAdminStatus(currentUserId);
+              }
+              // Password login - Auth.tsx handles 2FA
+            });
+          }
+          return;
+        }
+
+        // For TOKEN_REFRESHED, SIGNED_OUT, etc., update user normally
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          checkAdminStatus(session.user.id);
+        } else {
+          setIsAdmin(false);
+        }
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        checkAdminStatus(session.user.id);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+
   // SignIn handled automatically by Supabase onAuthStateChange listener
   const handleSignIn = (newUser: User) => {
     // Not needed anymore - Supabase handles this
@@ -118,6 +140,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(pendingUser);
       setPendingUser(null);
       setRequiresOTP(false);
+      // Check admin status immediately after setting user
+      checkAdminStatus(pendingUser.id);
       if (deviceToken) {
         setVerifiedDeviceToken(deviceToken);
         localStorage.setItem('device_trust_token', deviceToken);
@@ -130,6 +154,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(authUser);
     setPendingUser(null);
     setRequiresOTP(false);
+    // Check admin status immediately after setting user
+    checkAdminStatus(authUser.id);
   };
 
   const handleSignOut = async () => {

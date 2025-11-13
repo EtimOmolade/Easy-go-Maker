@@ -68,7 +68,7 @@ const Auth = () => {
           if (profileData?.two_factor_enabled) {
             // Generate device fingerprint
             const fingerprint = generateDeviceFingerprint();
-            
+
             // Check if this device is already trusted
             const { data: trustedDevice } = await supabase
               .from("trusted_devices")
@@ -94,19 +94,23 @@ const Auth = () => {
               // Not trusted - require OTP verification
               // DON'T sign out - keep the session but set pending state
               setPendingAuth(data.user, true);
-              
+
               // Generate and send OTP (now has valid session)
               await supabase.functions.invoke("generate-otp");
-              
+
               toast.success("Verification code sent to your email");
               navigate("/verify-otp", { state: { email: data.user.email, userId: data.user.id } });
             }
             return;
+          } else {
+            // No 2FA enabled - complete auth immediately
+            // Manually set user (onAuthStateChange won't set user for SIGNED_IN events)
+            completeTrustedDeviceAuth(data.user);
           }
         }
 
         toast.success("Welcome back!");
-        // Don't navigate - let the auth state change handle it
+        // Navigation will happen via useEffect when user is set
       } else {
         const passwordValidation = validatePassword(password);
         if (!passwordValidation.valid) {
@@ -115,7 +119,7 @@ const Auth = () => {
           return;
         }
 
-        const { error } = await supabase.auth.signUp({
+        const { error, data } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -125,7 +129,11 @@ const Auth = () => {
         });
 
         if (error) throw error;
-        toast.success("Account created! Welcome to SpiritConnect.");
+        
+        // Password signups get verification email as welcome message
+        // No need to send separate welcome email
+        
+        toast.success("Account created! Please check your email to verify your account.");
         navigate("/dashboard");
       }
     } catch (error: any) {
