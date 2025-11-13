@@ -314,8 +314,14 @@ const Dashboard = () => {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen gradient-subtle">
-        <div className="max-w-7xl mx-auto p-4 md:p-8">
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background relative overflow-hidden">
+        {/* Subtle Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
+          <div className="absolute top-20 right-10 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 left-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+        </div>
+
+        <div className="max-w-7xl mx-auto p-4 md:p-8 relative z-10">
           <EncouragementPopup streakCount={profile?.streak_count || 0} previousStreak={previousStreak} />
           <MilestoneAchievementModal 
             milestoneLevel={achievedMilestoneLevel}
@@ -323,19 +329,19 @@ const Dashboard = () => {
             onClose={() => setShowMilestoneModal(false)}
           />
           
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-4xl md:text-5xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                Welcome back, {profile?.name || "Friend"}!
+          <div className="flex justify-between items-center mb-10">
+            <div className="animate-fade-in-up">
+              <h1 className="text-4xl md:text-6xl font-heading font-bold text-foreground tracking-tight mb-2">
+                Welcome back, <span className="text-transparent bg-clip-text bg-gradient-primary">{profile?.name || "Friend"}</span>
               </h1>
-              <p className="text-muted-foreground mt-2">Continue your prayer journey today</p>
+              <p className="text-muted-foreground text-lg">Continue your prayer journey today</p>
             </div>
             <div className="flex items-center gap-2">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" onClick={signOut}>
+                  <Button variant="outline" onClick={signOut} className="rounded-xl">
                     <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
+                    <span className="hidden md:inline">Sign Out</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Sign out of your account</TooltipContent>
@@ -343,70 +349,91 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Today's Prayer Focus - Hero Section */}
+          {/* Today's Prayer Focus - Premium Hero Card */}
           {todaysGuideline && (
-            <Card className="mb-8 shadow-elegant border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
-              <CardHeader className="text-center pb-4">
-                <div className="text-4xl mb-3">🙏</div>
-                <CardTitle className="text-3xl font-heading">Today's Prayer Focus</CardTitle>
-                <CardDescription className="text-base mt-2">
+            <Card className="mb-8 shadow-large border-2 border-primary/20 rounded-3xl overflow-hidden relative group hover-lift animate-scale-in bg-gradient-to-br from-primary/5 via-background to-accent/5">
+              <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-5 transition-opacity duration-300" />
+              <CardHeader className="text-center pb-6 pt-8 relative z-10">
+                <div className="w-20 h-20 mx-auto mb-4 bg-gradient-accent rounded-full flex items-center justify-center shadow-glow-gold">
+                  <BookMarked className="h-10 w-10 text-accent-foreground" />
+                </div>
+                <CardTitle className="text-4xl font-heading font-bold tracking-tight">
+                  Today's Prayer Focus
+                </CardTitle>
+                <CardDescription className="text-lg mt-3 font-medium">
                   {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold mb-3 text-foreground">
+              <CardContent className="space-y-6 pb-8">
+                <div className="text-center max-w-2xl mx-auto">
+                  <h3 className="text-2xl font-heading font-bold mb-4 text-foreground">
                     {todaysGuideline.title}
                   </h3>
-                  <p className="text-muted-foreground leading-relaxed mb-6 whitespace-pre-wrap">
+                  <p className="text-muted-foreground leading-relaxed text-base">
                     {todaysGuideline.content?.substring(0, 200)}...
                   </p>
                 </div>
                 <Button
                   onClick={() => navigate(`/guideline/${todaysGuideline.id}`)}
                   size="lg"
-                  className="w-full text-lg py-6"
+                  variant="gold"
+                  className="w-full max-w-md mx-auto block text-lg py-7 font-semibold shadow-glow-gold hover:shadow-glow-gold"
                 >
-                  <BookMarked className="mr-2 h-5 w-5" />
+                  <BookMarked className="mr-2 h-6 w-6" />
                   Begin Today's Prayer
                 </Button>
               </CardContent>
             </Card>
           )}
 
-          {/* Compact Streak Badge */}
+          {/* Premium Streak Badge */}
           {profile && (
-            <div className="mb-8 p-4 rounded-lg border bg-card flex items-center justify-between shadow-sm">
-              <div className="flex items-center gap-2">
-                <div className="text-4xl">{(milestoneData.lastAchieved || milestoneData.nextMilestone).emoji}</div>
+            <div className="mb-8 p-6 rounded-3xl border-2 border-primary/20 bg-gradient-card flex items-center justify-between shadow-large hover-lift animate-fade-in">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-accent flex items-center justify-center text-5xl shadow-glow-gold">
+                  {(milestoneData.lastAchieved || milestoneData.nextMilestone).emoji}
+                </div>
                 <div>
-                  <p className="font-semibold text-foreground">{(milestoneData.lastAchieved || milestoneData.nextMilestone).name}</p>
-                  <p className="text-xs text-muted-foreground">Current Badge</p>
+                  <p className="font-heading font-bold text-xl text-foreground">
+                    {(milestoneData.lastAchieved || milestoneData.nextMilestone).name}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Current Achievement</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Flame className="h-6 w-6 text-accent" />
+              <div className="flex items-center gap-3">
+                <Flame className="h-8 w-8 text-accent animate-pulse-glow" />
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-foreground">{profile.streak_count}</p>
-                  <p className="text-xs text-muted-foreground">day streak</p>
+                  <p className="text-4xl font-heading font-bold text-transparent bg-clip-text bg-gradient-accent">
+                    {profile.streak_count}
+                  </p>
+                  <p className="text-sm text-muted-foreground font-medium">day streak</p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Quick Actions */}
+          {/* Premium Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {quickActions.map((action) => (
+            {quickActions.map((action, index) => (
               <Tooltip key={action.path}>
                 <TooltipTrigger asChild>
                   <Card
-                    className="cursor-pointer hover:shadow-medium transition-all hover:scale-105"
+                    className="cursor-pointer hover-lift group rounded-3xl border-2 border-transparent hover:border-primary/20 shadow-medium bg-gradient-card animate-scale-in"
                     onClick={() => navigate(action.path)}
+                    style={{ animationDelay: `${index * 0.05}s` }}
                   >
-                    <CardHeader>
-                      <action.icon className={`h-8 w-8 ${action.color} mb-2`} />
-                      <CardTitle className="text-xl">{action.title}</CardTitle>
-                      <CardDescription>{action.description}</CardDescription>
+                    <CardHeader className="space-y-4 p-6">
+                      <div className="w-14 h-14 rounded-2xl bg-gradient-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-medium">
+                        <action.icon className="h-7 w-7 text-white" />
+                      </div>
+                      <div className="space-y-2">
+                        <CardTitle className="text-xl font-heading font-bold">
+                          {action.title}
+                        </CardTitle>
+                        <CardDescription className="text-sm leading-relaxed">
+                          {action.description}
+                        </CardDescription>
+                      </div>
                     </CardHeader>
                   </Card>
                 </TooltipTrigger>
