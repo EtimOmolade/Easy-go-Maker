@@ -1077,7 +1077,7 @@ export const MILESTONES = [
     streak_needed: 1,
     scripture: "Draw near to God, and He will draw near to you.",
     scripture_ref: "James 4:8",
-    icon: "Sprout",
+    emoji: "🟢",
     message: "You've begun your Seek First journey. Welcome to a life that starts with the Kingdom."
   },
   {
@@ -1086,7 +1086,7 @@ export const MILESTONES = [
     streak_needed: 7,
     scripture: "He will be like a tree planted by streams of water.",
     scripture_ref: "Psalm 1:3",
-    icon: "TreePine",
+    emoji: "🌿",
     message: "Seven days of seeking first! You're growing roots in His presence."
   },
   {
@@ -1095,7 +1095,7 @@ export const MILESTONES = [
     streak_needed: 21,
     scripture: "Those who trust in the Lord will renew their strength.",
     scripture_ref: "Isaiah 40:31",
-    icon: "Wheat",
+    emoji: "🌾",
     message: "Three weeks of faithfulness. The rhythm of prayer is taking root."
   },
   {
@@ -1104,7 +1104,7 @@ export const MILESTONES = [
     streak_needed: 50,
     scripture: "Your kingdom come, Your will be done.",
     scripture_ref: "Matthew 6:10",
-    icon: "Flame",
+    emoji: "🔥",
     message: "Fifty days of Kingdom focus — your prayers are shaping lives."
   },
   {
@@ -1113,7 +1113,7 @@ export const MILESTONES = [
     streak_needed: 100,
     scripture: "Be steadfast, immovable, always abounding in the work of the Lord.",
     scripture_ref: "1 Corinthians 15:58",
-    icon: "Gem",
+    emoji: "💎",
     message: "One hundred days of seeking. Faithfulness is becoming your habit."
   },
   {
@@ -1122,7 +1122,7 @@ export const MILESTONES = [
     streak_needed: 365,
     scripture: "Seek first His kingdom and His righteousness.",
     scripture_ref: "Matthew 6:33",
-    icon: "Crown",
+    emoji: "👑",
     message: "A full year of daily seeking. You've built a lasting altar of prayer."
   },
   {
@@ -1131,7 +1131,7 @@ export const MILESTONES = [
     streak_needed: 545, // 365 + 180 (6 months)
     scripture: "The earth will be filled with the knowledge of the Lord.",
     scripture_ref: "Habakkuk 2:14",
-    icon: "Globe",
+    emoji: "🌍",
     message: "You're part of a global wave of prayer. Thank you for carrying the Kingdom."
   }
 ];
