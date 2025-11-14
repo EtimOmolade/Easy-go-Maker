@@ -67,7 +67,7 @@ export const MilestoneAchievementModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-8 text-center border-2 border-primary/20">
+      <DialogContent className="max-w-md p-8 text-center border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-secondary/5 backdrop-blur-xl">
         <AnimatePresence>
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { JournalSkeleton } from "@/components/LoadingSkeleton";
+import { haptics } from "@/utils/haptics";
 
 interface JournalEntry {
   id: string;
@@ -384,9 +387,63 @@ const Journal = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Show loading skeleton
+  if (loading) {
+    return (
+      <div className="min-h-screen relative overflow-hidden gradient-hero">
+        <div className="absolute inset-0 pointer-events-none">
+          <motion.div
+            className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
+            animate={{
+              y: [0, -50, 0],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+            }}
+          />
+        </div>
+        <div className="relative z-10">
+          <JournalSkeleton />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto p-4 md:p-6 max-w-7xl">
+    <div className="min-h-screen relative overflow-hidden gradient-hero">
+      {/* Animated Background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <motion.div
+          className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
+          animate={{
+            y: [0, -50, 0],
+            x: [0, 30, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-light/20 rounded-full blur-3xl"
+          animate={{
+            y: [0, 40, 0],
+            x: [0, -40, 0],
+            scale: [1, 1.3, 1],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      </div>
+
+      <div className="container relative z-10 mx-auto p-4 md:p-6 max-w-7xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -394,17 +451,28 @@ const Journal = () => {
               variant="ghost"
               size="icon"
               onClick={() => navigate("/dashboard")}
-              className="hover:bg-accent"
+              className="hover:bg-white/10 text-white border border-white/20"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-3">
-              <BookText className="h-8 w-8 text-primary" />
+              <motion.div
+                animate={{
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 5, -5, 0],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                }}
+              >
+                <BookText className="h-8 w-8 text-secondary" />
+              </motion.div>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                <h1 className="text-3xl font-bold text-white drop-shadow-lg">
                   Prayer Journal
                 </h1>
-                <p className="text-muted-foreground mt-1">
+                <p className="text-white/90 mt-1 drop-shadow">
                   Record your prayers, reflections, and answered prayers
                 </p>
               </div>
@@ -418,7 +486,7 @@ const Journal = () => {
                 New Entry
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-primary/5 via-background to-secondary/5 backdrop-blur-xl border-primary/20">
               <DialogHeader>
                 <DialogTitle>
                   {editingEntry ? "Edit Journal Entry" : "New Journal Entry"}
@@ -514,27 +582,36 @@ const Journal = () => {
 
         {/* Entries List */}
         {loading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading your journal...</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-12"
+          >
+            <p className="text-white/80">Loading your journal...</p>
+          </motion.div>
         ) : filteredEntries.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                {searchQuery ? "No entries found matching your search" : "No journal entries yet"}
-              </p>
-              {!searchQuery && (
-                <Button onClick={() => setIsDialogOpen(true)} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Your First Entry
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <Card className="text-center py-12 glass border-white/20 shadow-large">
+              <CardContent>
+                <p className="text-white/80 mb-4">
+                  {searchQuery ? "No entries found matching your search" : "No journal entries yet"}
+                </p>
+                {!searchQuery && (
+                  <Button onClick={() => setIsDialogOpen(true)} className="gap-2 bg-gradient-secondary text-white">
+                    <Plus className="h-4 w-4" />
+                    Create Your First Entry
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
         ) : (
           <div className="grid gap-4">
             {filteredEntries.map((entry) => (
-              <Card key={entry.id} className="hover:shadow-lg transition-shadow">
+              <Card key={entry.id} className="hover:shadow-lg transition-shadow bg-white/50 backdrop-blur-md border-white/30">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -577,10 +654,11 @@ const Journal = () => {
                         <TooltipTrigger asChild>
                           <Button
                             variant="outline"
-                            size="icon"
                             onClick={() => toggleAnswered(entry.id, entry.is_answered)}
+                            className="gap-1.5"
                           >
                             <CheckCircle className={`h-4 w-4 ${entry.is_answered ? 'text-green-500' : ''}`} />
+                            <span className="text-xs">{entry.is_answered ? "Answered" : "Mark"}</span>
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -595,11 +673,11 @@ const Journal = () => {
                           <TooltipTrigger asChild>
                             <Button
                               variant="outline"
-                              size="icon"
                               onClick={() => handleShareAsTestimony(entry)}
-                              className="border-green-500 text-green-600 hover:bg-green-50"
+                              className="border-green-500 text-green-600 hover:bg-green-50 gap-1.5"
                             >
                               <Heart className="h-4 w-4" />
+                              <span className="text-xs">Testimony</span>
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -611,8 +689,9 @@ const Journal = () => {
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon">
+                        <Button variant="outline" className="gap-1.5">
                           <Share2 className="h-4 w-4" />
+                          <span className="text-xs">Share</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
@@ -629,18 +708,20 @@ const Journal = () => {
 
                     <Button
                       variant="outline"
-                      size="icon"
                       onClick={() => handleEdit(entry)}
+                      className="gap-1.5"
                     >
                       <Edit className="h-4 w-4" />
+                      <span className="text-xs">Edit</span>
                     </Button>
 
                     <Button
                       variant="outline"
-                      size="icon"
                       onClick={() => handleDelete(entry.id)}
+                      className="gap-1.5"
                     >
                       <Trash2 className="h-4 w-4" />
+                      <span className="text-xs">Delete</span>
                     </Button>
                   </div>
                 </CardContent>

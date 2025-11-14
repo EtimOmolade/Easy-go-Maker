@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -386,33 +387,72 @@ const Testimonies = () => {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen gradient-subtle">
-        <div className="max-w-4xl mx-auto p-4 md:p-8">
+      <div className="min-h-screen relative overflow-hidden gradient-hero">
+        {/* Animated Background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <motion.div
+            className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
+            animate={{
+              y: [0, -50, 0],
+              x: [0, 30, 0],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          <motion.div
+            className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-light/20 rounded-full blur-3xl"
+            animate={{
+              y: [0, 40, 0],
+              x: [0, -40, 0],
+              scale: [1, 1.3, 1],
+            }}
+            transition={{
+              duration: 12,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        </div>
+
+        <div className="max-w-4xl relative z-10 mx-auto p-4 md:p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex-1 flex items-center gap-3">
-              <Heart className="h-10 w-10 text-primary" />
+              <motion.div
+                animate={{
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 5, -5, 0],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                }}
+              >
+                <Heart className="h-10 w-10 text-secondary" />
+              </motion.div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-2">
+                <h1 className="text-3xl md:text-4xl font-heading font-bold text-white drop-shadow-lg mb-2">
                   Stories of His Faithfulness
                 </h1>
-                <p className="text-sm md:text-base text-muted-foreground italic">
+                <p className="text-sm md:text-base text-white/90 italic drop-shadow">
                   "This is the Lord's doing; it is marvellous in our eyes." — Psalm 118:23
                 </p>
               </div>
             </div>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" onClick={() => navigate("/dashboard")} size="icon" className="md:hidden">
-                  <ArrowLeft className="h-4 w-4" />
+                <Button variant="outline" onClick={() => navigate("/dashboard")} className="text-white bg-white/10 hover:bg-white/20 border-white/20">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  <span className="md:hidden">Back</span>
+                  <span className="hidden md:inline">Back to Dashboard</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Back to Dashboard</TooltipContent>
             </Tooltip>
-            <Button variant="outline" onClick={() => navigate("/dashboard")} className="hidden md:flex">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
-            </Button>
           </div>
 
           {/* Tabs - Mobile Scrollable */}
@@ -719,7 +759,7 @@ const Testimonies = () => {
             setConsentChecked(false);
           }
         }}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-primary/5 via-background to-secondary/5 backdrop-blur-xl border-primary/20">
             <DialogHeader>
               <DialogTitle>Edit Testimony</DialogTitle>
             </DialogHeader>
@@ -810,7 +850,7 @@ const Testimonies = () => {
 
         {/* Full Testimony Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-gradient-to-br from-primary/5 via-background to-secondary/5 backdrop-blur-xl border-primary/20">
             <DialogHeader>
               <DialogTitle className="text-2xl">{selectedTestimony?.alias}</DialogTitle>
             </DialogHeader>

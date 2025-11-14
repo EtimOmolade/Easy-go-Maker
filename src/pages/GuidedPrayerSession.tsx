@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { motion } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -601,16 +602,16 @@ const GuidedPrayerSession = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-subtle flex items-center justify-center">
-        <p className="text-muted-foreground">Loading prayer session...</p>
+      <div className="min-h-screen relative overflow-hidden gradient-hero flex items-center justify-center">
+        <p className="text-white/80">Loading prayer session...</p>
       </div>
     );
   }
 
   if (!guideline) {
     return (
-      <div className="min-h-screen gradient-subtle flex items-center justify-center">
-        <p className="text-muted-foreground">Prayer guideline not found</p>
+      <div className="min-h-screen relative overflow-hidden gradient-hero flex items-center justify-center">
+        <p className="text-white/80">Prayer guideline not found</p>
       </div>
     );
   }
@@ -629,16 +630,47 @@ const GuidedPrayerSession = () => {
     : null;
 
   return (
-    <div className="min-h-screen gradient-subtle">
-      <div className="max-w-4xl mx-auto p-3 md:p-6 lg:p-8">
+    <div className="min-h-screen relative overflow-hidden gradient-hero">
+      {/* Animated Background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <motion.div
+          className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
+          animate={{
+            y: [0, -50, 0],
+            x: [0, 30, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-light/20 rounded-full blur-3xl"
+          animate={{
+            y: [0, 40, 0],
+            x: [0, -40, 0],
+            scale: [1, 1.3, 1],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      </div>
+
+      <div className="max-w-4xl relative z-10 mx-auto p-3 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-4 md:mb-6">
           <Button
             variant="ghost"
             size="sm"
+            className="text-white hover:bg-white/10 border border-white/20"
             onClick={() => navigate(`/guideline/${id}`)}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Back</span>
+            <span>Back</span>
           </Button>
 
           <TooltipProvider>
@@ -652,7 +684,8 @@ const GuidedPrayerSession = () => {
                     className="gap-2"
                   >
                     <Settings className="h-4 w-4" />
-                    <span className="hidden sm:inline">Audio</span>
+                    <span className="sm:hidden">Audio</span>
+                    <span className="hidden sm:inline">Audio Settings</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -715,26 +748,26 @@ const GuidedPrayerSession = () => {
           </TooltipProvider>
         </div>
 
-        <Card className="shadow-medium mb-4 md:mb-6">
+        <Card className="shadow-large glass border-white/20 mb-4 md:mb-6">
           <CardHeader className="p-4 md:p-6">
               <div className="flex items-center justify-between mb-3 md:mb-4">
-                <Badge variant="secondary" className="text-xs">{guideline.day_of_week}</Badge>
-                <span className="text-xs md:text-sm text-muted-foreground">
+                <Badge variant="secondary" className="text-xs bg-gradient-secondary text-white border-0">{guideline.day_of_week}</Badge>
+                <span className="text-xs md:text-sm text-white/80">
                   Step {currentStepIndex + 1} of {guideline.steps?.length || 0}
                 </span>
               </div>
-            <CardTitle className="text-lg md:text-xl lg:text-2xl">{guideline.title}</CardTitle>
+            <CardTitle className="text-lg md:text-xl lg:text-2xl text-white">{guideline.title}</CardTitle>
             <Progress value={progress} className="h-2 mt-3 md:mt-4" />
           </CardHeader>
         </Card>
 
         {!hasStarted ? (
-          <Card className="shadow-medium">
+          <Card className="shadow-large glass border-white/20">
             <CardHeader>
-              <CardTitle className="text-2xl text-center">Ready to Begin?</CardTitle>
+              <CardTitle className="text-2xl text-center text-white">Ready to Begin?</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <p className="text-center text-muted-foreground">
+              <p className="text-center text-white/90">
                 This guided prayer session will take you through {guideline.steps?.length || 0} steps including kingdom focused prayers, personal supplication, listening prayer, and reflection.
               </p>
               <Button 
@@ -748,10 +781,10 @@ const GuidedPrayerSession = () => {
             </CardContent>
           </Card>
         ) : currentStep && (
-          <Card className="shadow-medium">
+          <Card className="shadow-large glass border-white/20">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl">
+                <CardTitle className="text-xl text-white">
                   {currentStep.type === 'kingdom' && 'Kingdom Focused Prayer'}
                   {currentStep.type === 'personal' && 'Personal Supplication'}
                   {currentStep.type === 'listening' && 'Listening Prayer - Bible Reading'}
@@ -762,7 +795,7 @@ const GuidedPrayerSession = () => {
                 )}
               </div>
               {currentStep.type === 'kingdom' && currentStep.points && (
-                <p className="text-sm text-muted-foreground mt-2">
+                <p className="text-sm text-white/80 mt-2">
                   Point {currentPointIndex + 1} of {currentStep.points.length}
                 </p>
               )}
@@ -770,8 +803,8 @@ const GuidedPrayerSession = () => {
             <CardContent className="space-y-6">
               {currentStep.type === 'kingdom' && currentPoint && (
                 <>
-                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
-                    <h4 className="font-semibold mb-2">{currentPoint.title}</h4>
+                  <div className="p-6 bg-white/50 backdrop-blur-md rounded-lg border border-white/30 shadow-medium">
+                    <h4 className="font-semibold mb-2 text-foreground">{currentPoint.title}</h4>
                     <p className="text-foreground/90 whitespace-pre-wrap">{currentPoint.content}</p>
                   </div>
                   
@@ -810,7 +843,7 @@ const GuidedPrayerSession = () => {
 
               {currentStep.type === 'personal' && (
                 <>
-                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
+                  <div className="p-6 bg-white/50 backdrop-blur-md rounded-lg border border-white/30 shadow-medium">
                     <p className="text-foreground/90">
                       Now is the time to bring your personal requests to God. Share what's on your heart - your needs, your family, your work, your health. God is listening.
                     </p>
@@ -843,8 +876,8 @@ const GuidedPrayerSession = () => {
 
               {currentStep.type === 'listening' && listeningPrayer && (
                 <>
-                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
-                    <h4 className="font-semibold mb-3">{listeningPrayer.title || listeningPrayer.reference || 'Scripture Reading'}</h4>
+                  <div className="p-6 bg-white/50 backdrop-blur-md rounded-lg border border-white/30 shadow-medium">
+                    <h4 className="font-semibold mb-3 text-foreground">{listeningPrayer.title || listeningPrayer.reference || 'Scripture Reading'}</h4>
                     <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{listeningPrayer.content}</p>
                     {listeningPrayer.reference && (
                       <p className="text-sm text-muted-foreground mt-3 italic">— {listeningPrayer.reference}</p>
@@ -890,8 +923,8 @@ const GuidedPrayerSession = () => {
 
               {currentStep.type === 'reflection' && (
                 <>
-                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
-                    <h4 className="font-semibold text-lg mb-3">Reflection & Journaling</h4>
+                  <div className="p-6 bg-white/50 backdrop-blur-md rounded-lg border border-white/30 shadow-medium">
+                    <h4 className="font-semibold text-lg mb-3 text-foreground">Reflection & Journaling</h4>
                     <p className="text-foreground/90 leading-relaxed">
                       Take time to reflect on what you've prayed and what God has spoken to you. Write down your thoughts, insights, and what you sense God is saying.
                     </p>

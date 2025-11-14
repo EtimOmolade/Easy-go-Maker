@@ -1,19 +1,24 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { MILESTONES } from "@/data/mockData";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone } from "lucide-react";
+import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone, BookHeart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import StreakBadge from "@/components/StreakBadge";
 import EncouragementPopup from "@/components/EncouragementPopup";
 import { MilestoneAchievementModal } from "@/components/MilestoneAchievementModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { checkMilestoneAchievement } from "@/utils/prayerHelpers";
+import { CircularProgress } from "@/components/CircularProgress";
+import { WeeklyCalendar } from "@/components/WeeklyCalendar";
+import { DashboardSkeleton } from "@/components/LoadingSkeleton";
+import { haptics } from "@/utils/haptics";
+import { WelcomeWizard } from "@/components/WelcomeWizard";
+import { TutorialWalkthrough } from "@/components/TutorialWalkthrough";
 
 interface Profile {
   name: string;
@@ -38,6 +43,12 @@ const Dashboard = () => {
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
   const [achievedMilestoneLevel, setAchievedMilestoneLevel] = useState(0);
   const [todaysGuideline, setTodaysGuideline] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [completedDays, setCompletedDays] = useState<string[]>([]);
+
+  // Onboarding states
+  const [showWelcomeWizard, setShowWelcomeWizard] = useState(false);
+  const [runTutorial, setRunTutorial] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -47,12 +58,10 @@ const Dashboard = () => {
       checkReminders();
       checkForNewMilestones();
 
-      // Fetch pending testimony count for admins
       if (isAdmin) {
         fetchPendingTestimonies();
       }
-      
-      // Refresh data when returning to dashboard
+
       const handleVisibilityChange = () => {
         if (!document.hidden) {
           fetchProfile();
@@ -63,7 +72,6 @@ const Dashboard = () => {
 
       document.addEventListener('visibilitychange', handleVisibilityChange);
 
-      // Poll for updates every second
       const interval = setInterval(() => {
         fetchProfile();
         fetchEncouragementMessage();
@@ -73,58 +81,44 @@ const Dashboard = () => {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
         clearInterval(interval);
       };
-
-      // Backend integration - Supabase real-time COMMENTED OUT (Prototype mode)
-      // const channel = supabase
-      //   .channel('dashboard_updates')
-      //   .on(
-      //     'postgres_changes',
-      //     {
-      //       event: 'INSERT',
-      //       schema: 'public',
-      //       table: 'encouragement_messages'
-      //     },
-      //     (payload) => {
-      //       setEncouragementMessages((prev) => [payload.new as EncouragementMessage, ...prev].slice(0, 3));
-      //       toast.info('📢 New community announcement!', {
-      //         duration: 5000,
-      //       });
-      //     }
-      //   );
-      //
-      // if (isAdmin) {
-      //   channel.on(
-      //     'postgres_changes',
-      //     {
-      //       event: '*',
-      //       schema: 'public',
-      //       table: 'testimonies'
-      //     },
-      //     () => {
-      //       fetchPendingTestimonies();
-      //     }
-      //   );
-      // }
-      //
-      // channel.subscribe();
-      //
-      // return () => {
-      //   supabase.removeChannel(channel);
-      // };
     }
   }, [user, isAdmin]);
 
+  // Check if user should see onboarding
+  useEffect(() => {
+    if (user && !loading) {
+      const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+      if (!hasSeenWelcome) {
+        // Small delay to let the dashboard load first
+        setTimeout(() => {
+          setShowWelcomeWizard(true);
+        }, 500);
+      }
+    }
+  }, [user, loading]);
+
+  const handleWelcomeComplete = () => {
+    setShowWelcomeWizard(false);
+    localStorage.setItem('hasSeenWelcome', 'true');
+    // Start the tutorial walkthrough after welcome wizard
+    setTimeout(() => {
+      setRunTutorial(true);
+    }, 500);
+  };
+
+  const handleTutorialComplete = () => {
+    setRunTutorial(false);
+    localStorage.setItem('hasSeenTutorial', 'true');
+    toast.success("Welcome to SpiritConnect! You're all set to begin your prayer journey.");
+  };
+
   const checkReminders = () => {
     if (!user) return;
-
-    // TODO: Implement push notification reminders in Phase 4
     console.log('(Push placeholder) Checking for new updates...');
   };
 
   const checkForNewMilestones = () => {
     if (!user) return;
-
-    // Check if there's a new milestone to celebrate (based on total prayers)
     const milestone = checkMilestoneAchievement(user.id);
     if (milestone) {
       setAchievedMilestoneLevel(milestone.level);
@@ -150,14 +144,39 @@ const Dashboard = () => {
           setPreviousStreak(profile.streak_count);
         }
         setProfile(data);
+        // Only set loading to false after first successful fetch
+        if (loading) {
+          setLoading(false);
+        }
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
+      // Set loading to false even on error
+      if (loading) {
+        setLoading(false);
+      }
+    }
+  };
+
+  const fetchCompletedDays = async () => {
+    if (!user || !todaysGuideline) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("daily_prayers")
+        .select("day_of_week")
+        .eq("user_id", user.id)
+        .eq("guideline_id", todaysGuideline.id);
+
+      if (!error && data) {
+        setCompletedDays(data.map(d => d.day_of_week));
+      }
+    } catch (error) {
+      console.error("Error fetching completed days:", error);
     }
   };
 
   const fetchEncouragementMessage = async () => {
-    // Backend integration - Supabase ACTIVATED
     const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
 
     const { data, error } = await supabase
@@ -201,7 +220,6 @@ const Dashboard = () => {
   const fetchTodaysGuideline = async () => {
     try {
       const today = new Date();
-      const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
       const month = today.toLocaleDateString('en-US', { month: 'long' });
       const day = today.getDate();
 
@@ -222,61 +240,46 @@ const Dashboard = () => {
     }
   };
 
+  // Fetch completed days when guideline is loaded
+  useEffect(() => {
+    if (todaysGuideline) {
+      fetchCompletedDays();
+    }
+  }, [todaysGuideline]);
+
   const milestoneData = useMemo(() => {
     if (!user || !profile) return { current: MILESTONES[0], progress: 0, currentStreak: 0, nextMilestone: MILESTONES[0], daysToNext: 1 };
 
     const currentStreak = profile.streak_count || 0;
 
-    console.log('[Dashboard] Computing milestone data for streak:', currentStreak);
-
-    // Find the NEXT milestone to work towards (not yet achieved)
-    let nextMilestone = MILESTONES[0]; // Default to first milestone
-    let lastAchieved = null; // Track last achieved milestone
+    let nextMilestone = MILESTONES[0];
+    let lastAchieved = null;
 
     for (let i = 0; i < MILESTONES.length; i++) {
       if (currentStreak >= MILESTONES[i].streak_needed) {
-        // This milestone is achieved
         lastAchieved = MILESTONES[i];
-        console.log('[Dashboard] Milestone achieved:', MILESTONES[i].name);
       } else {
-        // This is the first milestone not yet achieved - this is our NEXT goal
         nextMilestone = MILESTONES[i];
-        console.log('[Dashboard] Next milestone to achieve:', MILESTONES[i].name);
         break;
       }
     }
 
-    // If all milestones achieved, stay at the last one
     if (currentStreak >= MILESTONES[MILESTONES.length - 1].streak_needed) {
       nextMilestone = MILESTONES[MILESTONES.length - 1];
       lastAchieved = MILESTONES[MILESTONES.length - 1];
-      console.log('[Dashboard] All milestones achieved!');
     }
 
-    // Calculate progress to NEXT milestone
     const daysToNext = Math.max(0, nextMilestone.streak_needed - currentStreak);
-
-    // Progress is simply: current streak out of next milestone's requirement
-    // Example: streak = 1, next = 7 days → progress = 1/7 = ~14%
-    // Example: streak = 5, next = 7 days → progress = 5/7 = ~71%
     const progress = nextMilestone.streak_needed > 0
       ? (currentStreak / nextMilestone.streak_needed) * 100
       : 100;
 
-    console.log('[Dashboard] Progress:', {
-      currentStreak,
-      nextMilestone: nextMilestone.name,
-      nextMilestoneRequired: nextMilestone.streak_needed,
-      daysToNext,
-      progress: Math.min(progress, 100)
-    });
-
     return {
-      nextMilestone, // The goal to work towards
+      nextMilestone,
       progress: Math.min(progress, 100),
       currentStreak,
       daysToNext,
-      lastAchieved, // Last milestone achieved (can be null)
+      lastAchieved,
       isMaxLevel: currentStreak >= MILESTONES[MILESTONES.length - 1].streak_needed
     };
   }, [user, profile]);
@@ -287,276 +290,481 @@ const Dashboard = () => {
       description: "View weekly prayer instructions",
       icon: BookMarked,
       path: "/guidelines",
-      color: "text-primary",
+      color: "from-primary to-primary-light",
+      iconBg: "bg-gradient-primary",
     },
     {
       title: "My Journal",
       description: "Write and manage your entries",
       icon: BookOpen,
       path: "/journal",
-      color: "text-accent",
+      color: "from-secondary to-secondary-glow",
+      iconBg: "bg-gradient-secondary",
     },
     {
       title: "Testimonies",
       description: "Share and read testimonies",
       icon: MessageSquare,
       path: "/testimonies",
-      color: "text-primary",
+      color: "from-primary to-primary-light",
+      iconBg: "bg-gradient-primary",
     },
     {
       title: "Profile",
       description: "Manage your settings",
       icon: User,
       path: "/profile",
-      color: "text-accent",
+      color: "from-secondary to-secondary-glow",
+      iconBg: "bg-gradient-secondary",
     },
   ];
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5
+      }
+    }
+  };
+
+  // Show loading skeleton while data is being fetched
+  if (loading) {
+    return (
+      <div className="min-h-screen relative overflow-hidden gradient-hero">
+        <div className="absolute inset-0 pointer-events-none">
+          <motion.div
+            className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
+            animate={{
+              y: [0, -50, 0],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+            }}
+          />
+        </div>
+        <div className="relative z-10">
+          <DashboardSkeleton />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <TooltipProvider>
-      <div className="min-h-screen gradient-subtle">
-        <div className="max-w-7xl mx-auto p-4 md:p-8">
+      <div className="min-h-screen relative overflow-hidden gradient-hero">
+        {/* Animated Background - More vibrant like landing page */}
+        <div className="absolute inset-0 pointer-events-none">
+          <motion.div
+            className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
+            animate={{
+              y: [0, -50, 0],
+              x: [0, 30, 0],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          <motion.div
+            className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-light/20 rounded-full blur-3xl"
+            animate={{
+              y: [0, 40, 0],
+              x: [0, -40, 0],
+              scale: [1, 1.3, 1],
+            }}
+            transition={{
+              duration: 12,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-secondary/10 rounded-full blur-3xl"
+            animate={{
+              scale: [1, 1.4, 1],
+              opacity: [0.2, 0.4, 0.2],
+            }}
+            transition={{
+              duration: 18,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto p-4 md:p-8">
           <EncouragementPopup streakCount={profile?.streak_count || 0} previousStreak={previousStreak} />
-          <MilestoneAchievementModal 
+          <MilestoneAchievementModal
             milestoneLevel={achievedMilestoneLevel}
             isOpen={showMilestoneModal}
             onClose={() => setShowMilestoneModal(false)}
           />
-          
-          <div className="flex justify-between items-center mb-8">
+
+          {/* Onboarding Components */}
+          <WelcomeWizard isOpen={showWelcomeWizard} onComplete={handleWelcomeComplete} />
+          <TutorialWalkthrough run={runTutorial} onComplete={handleTutorialComplete} />
+
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8"
+          >
             <div>
-              <h1 className="text-4xl md:text-5xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              <h1 className="text-4xl md:text-5xl font-heading font-bold text-white mb-2 drop-shadow-lg">
                 Welcome back, {profile?.name || "Friend"}!
               </h1>
-              <p className="text-muted-foreground mt-2">Continue your prayer journey today</p>
+              <p className="text-white/90 text-lg drop-shadow">Continue your prayer journey today</p>
             </div>
-            <div className="flex items-center gap-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" onClick={signOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Sign out of your account</TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
-
-          {/* Today's Prayer Focus - Hero Section */}
-          {todaysGuideline && (
-            <Card className="mb-8 shadow-elegant border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
-              <CardHeader className="text-center pb-4">
-                <div className="text-4xl mb-3">🙏</div>
-                <CardTitle className="text-3xl font-heading">Today's Prayer Focus</CardTitle>
-                <CardDescription className="text-base mt-2">
-                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold mb-3 text-foreground">
-                    {todaysGuideline.title}
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed mb-6 whitespace-pre-wrap">
-                    {todaysGuideline.content?.substring(0, 200)}...
-                  </p>
-                </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button
-                  onClick={() => navigate(`/guideline/${todaysGuideline.id}`)}
-                  size="lg"
-                  className="w-full text-lg py-6"
+                  variant="outline"
+                  onClick={() => {
+                    haptics.light();
+                    signOut();
+                  }}
+                  className="border-white/30 text-white bg-white/10 hover:border-white hover:bg-white/20 transition-all backdrop-blur-sm min-h-[44px]"
                 >
-                  <BookMarked className="mr-2 h-5 w-5" />
-                  Begin Today's Prayer
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sign Out</span>
                 </Button>
-              </CardContent>
-            </Card>
-          )}
+              </TooltipTrigger>
+              <TooltipContent>Sign out of your account</TooltipContent>
+            </Tooltip>
+          </motion.div>
 
-          {/* Compact Streak Badge */}
-          {profile && (
-            <div className="mb-8 p-4 rounded-lg border bg-card flex items-center justify-between shadow-sm">
-              <div className="flex items-center gap-2">
-                <div className="text-4xl">{(milestoneData.lastAchieved || milestoneData.nextMilestone).emoji}</div>
-                <div>
-                  <p className="font-semibold text-foreground">{(milestoneData.lastAchieved || milestoneData.nextMilestone).name}</p>
-                  <p className="text-xs text-muted-foreground">Current Badge</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Flame className="h-6 w-6 text-accent" />
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-foreground">{profile.streak_count}</p>
-                  <p className="text-xs text-muted-foreground">day streak</p>
-                </div>
-              </div>
-            </div>
-          )}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-8"
+          >
+            {/* Today's Prayer Focus - Always Show */}
+            <motion.div variants={itemVariants}>
+                <Card className="shadow-large glass border-white/20 overflow-hidden relative" data-tour="today-prayer">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10" />
+                  <motion.div
+                    className="absolute top-0 right-0 w-64 h-64 bg-secondary/10 rounded-full blur-3xl"
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.3, 0.5, 0.3],
+                    }}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                    }}
+                  />
+                  <CardHeader className="text-center pb-4 relative z-10">
+                    <motion.div
+                      className="mx-auto mb-4 w-16 h-16 bg-gradient-to-br from-primary to-primary-light rounded-2xl flex items-center justify-center shadow-glow"
+                      animate={{
+                        scale: [1, 1.05, 1],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      <BookHeart className="h-8 w-8 text-white" />
+                    </motion.div>
+                    <CardTitle className="text-3xl md:text-4xl font-heading text-white dark:text-white">Today's Prayer Focus</CardTitle>
+                    <CardDescription className="text-base mt-2 text-muted-foreground dark:text-white/80">
+                      {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6 relative z-10">
+                    {todaysGuideline ? (
+                      <>
+                        <div className="text-center">
+                          <h3 className="text-2xl font-semibold mb-4 text-white dark:text-white">
+                            {todaysGuideline.title}
+                          </h3>
+                          <p className="text-muted-foreground dark:text-white/80 leading-relaxed mb-6 whitespace-pre-wrap text-lg">
+                            {todaysGuideline.content?.substring(0, 200)}...
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => {
+                            haptics.medium();
+                            navigate(`/guideline/${todaysGuideline.id}`);
+                          }}
+                          size="lg"
+                          className="w-full text-lg text-primary-foreground min-h-[48px] h-14 bg-gradient-primary hover:shadow-glow-primary transition-all duration-300 relative overflow-hidden group"
+                        >
+                          <span className="relative z-10 flex items-center gap-2">
+                            <BookMarked className="h-5 w-5" />
+                            Begin Today's Prayer
+                          </span>
+                          <motion.div
+                            className="absolute inset-0 bg-white/20"
+                            initial={{ x: "-100%" }}
+                            whileHover={{ x: "100%" }}
+                            transition={{ duration: 0.5 }}
+                          />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-center">
+                          <p className="text-muted-foreground dark:text-white/80 leading-relaxed mb-6 text-lg">
+                            No prayer guideline scheduled for today. Explore all available prayers below or check back tomorrow.
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => {
+                            haptics.medium();
+                            navigate('/guidelines');
+                          }}
+                          size="lg"
+                          className="w-full text-lg min-h-[48px] h-14 bg-gradient-primary hover:shadow-glow-primary transition-all duration-300 relative overflow-hidden group"
+                        >
+                          <span className="relative z-10 flex items-center gap-2">
+                            <BookOpen className="h-5 w-5" />
+                            Browse All Prayers
+                          </span>
+                          <motion.div
+                            className="absolute inset-0 bg-white/20"
+                            initial={{ x: "-100%" }}
+                            whileHover={{ x: "100%" }}
+                            transition={{ duration: 0.5 }}
+                          />
+                        </Button>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {quickActions.map((action) => (
-              <Tooltip key={action.path}>
-                <TooltipTrigger asChild>
-                  <Card
-                    className="cursor-pointer hover:shadow-medium transition-all hover:scale-105"
-                    onClick={() => navigate(action.path)}
+            {/* Enhanced Streak Badge with Circular Progress */}
+            {profile && (
+              <motion.div variants={itemVariants}>
+                <Card className="shadow-large glass border-white/20 overflow-hidden relative" data-tour="prayer-streak">
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-secondary/5" />
+                  <CardHeader className="relative z-10 pb-2">
+                    <CardTitle className="flex items-center gap-2 text-white">
+                      <Flame className="h-5 w-5 text-secondary" />
+                      Your Prayer Streak
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="relative z-10 space-y-6">
+                    <div className="flex flex-col md:flex-row items-center justify-around gap-6">
+                      {/* Circular Progress */}
+                      <div className="flex flex-col items-center gap-3">
+                        <CircularProgress
+                          value={(profile.streak_count / milestoneData.nextMilestone.streak_needed) * 100}
+                          size={140}
+                          strokeWidth={12}
+                          color="hsl(var(--secondary))"
+                        >
+                          <div className="text-center">
+                            <motion.p
+                              className="text-4xl font-bold text-white"
+                              animate={{ scale: [1, 1.1, 1] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                            >
+                              {profile.streak_count}
+                            </motion.p>
+                            <p className="text-sm text-white/80">days</p>
+                          </div>
+                        </CircularProgress>
+                        <div className="text-center">
+                          <p className="text-sm text-white/90">
+                            {milestoneData.daysToNext} days to
+                          </p>
+                          <p className="font-semibold text-secondary">
+                            {milestoneData.nextMilestone.name}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Badge Display */}
+                      <div className="flex flex-col items-center gap-2">
+                        <motion.div
+                          className="text-7xl"
+                          animate={{
+                            scale: [1, 1.15, 1],
+                            rotate: [0, 5, -5, 0],
+                          }}
+                          transition={{
+                            duration: 3,
+                            repeat: Infinity,
+                          }}
+                        >
+                          {(milestoneData.lastAchieved || milestoneData.nextMilestone).emoji}
+                        </motion.div>
+                        <div className="text-center">
+                          <p className="font-bold text-lg text-white">
+                            {(milestoneData.lastAchieved || milestoneData.nextMilestone).name}
+                          </p>
+                          <p className="text-xs text-white/70">Current Badge</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Weekly Calendar */}
+                    <div className="border-t border-white/20 pt-6" data-tour="prayer-journey">
+                      <p className="text-sm text-white/90 text-center mb-4">This Week's Progress</p>
+                      <WeeklyCalendar completedDays={completedDays} />
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Quick Actions */}
+            <motion.div variants={itemVariants}>
+              <h2 className="text-2xl font-heading font-semibold mb-4 text-white drop-shadow">Quick Actions</h2>
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4" data-tour="quick-actions">
+                {quickActions.map((action) => (
+                  <motion.div
+                    key={action.path}
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <CardHeader>
-                      <action.icon className={`h-8 w-8 ${action.color} mb-2`} />
-                      <CardTitle className="text-xl">{action.title}</CardTitle>
-                      <CardDescription>{action.description}</CardDescription>
-                    </CardHeader>
-                  </Card>
-                </TooltipTrigger>
-                <TooltipContent>{action.description}</TooltipContent>
-              </Tooltip>
-            ))}
-          </div>
+                    <Card
+                      className="cursor-pointer shadow-large hover:shadow-glow-primary transition-all border-white/20 overflow-hidden group relative glass backdrop-blur-xl h-full min-h-[120px]"
+                      onClick={() => {
+                        haptics.light();
+                        navigate(action.path);
+                      }}
+                    >
+                      {/* Hover Glow Effect */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-secondary/0 via-transparent to-secondary/0 group-hover:from-secondary/20 group-hover:to-secondary/10 transition-all duration-500" />
 
-          {/* Community Announcements */}
-          {encouragementMessages.length > 0 && (
-            <Card className="mb-8 shadow-medium border-accent/10" data-encouragement-card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Megaphone className="h-5 w-5 text-accent" />
-                  Community Updates
-                </CardTitle>
-                <CardDescription>Latest news and announcements</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Show first announcement always, others collapsible */}
-                {(showAllAnnouncements ? encouragementMessages : encouragementMessages.slice(0, 1)).map((message, index) => (
-                  <div
-                    key={message.id}
-                    className={`p-4 rounded-lg ${index === 0 ? 'bg-accent/5 border-l-4 border-accent' : 'bg-muted/30'}`}
-                  >
-                    <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed text-sm">{message.content}</p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {new Date(message.created_at).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
+                      <CardHeader className="relative z-10 p-4 md:p-6 text-center">
+                        <motion.div
+                          className={`w-12 h-12 md:w-14 md:h-14 ${action.iconBg} rounded-xl flex items-center justify-center mx-auto mb-3 md:mb-4 shadow-glow-primary group-hover:shadow-glow transition-all`}
+                          whileHover={{ rotate: 360 }}
+                          transition={{ duration: 0.6 }}
+                        >
+                          <action.icon className="h-6 w-6 md:h-7 md:w-7 text-white" />
+                        </motion.div>
+                        <CardTitle className="text-base md:text-xl font-heading text-white mb-1 md:mb-2">
+                          {action.title}
+                        </CardTitle>
+                        {/* Always visible description for mobile-first approach */}
+                        <CardDescription className="text-xs md:text-sm text-white/80 leading-tight">
+                          {action.description}
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  </motion.div>
                 ))}
-
-                {/* Show More / Show Less button */}
-                {encouragementMessages.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => setShowAllAnnouncements(!showAllAnnouncements)}
-                    className="w-full"
-                  >
-                    {showAllAnnouncements
-                      ? 'Show Less'
-                      : `Show ${encouragementMessages.length - 1} More ${encouragementMessages.length - 1 === 1 ? 'Update' : 'Updates'}`
-                    }
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-        {/* Prayer Milestones Journey - Bottom Section */}
-        <Card className="mb-8 shadow-medium border-primary/10">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Flame className="h-5 w-5 text-accent" />
-              Your Prayer Journey
-            </CardTitle>
-            <CardDescription>Track your spiritual growth milestones</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {/* Next Milestone Goal */}
-              <div className="text-center">
-                <div className="text-6xl mb-3">{milestoneData.nextMilestone.emoji}</div>
-                <h3 className="text-2xl font-bold text-foreground mb-2">
-                  {milestoneData.nextMilestone.name}
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {milestoneData.currentStreak} day{milestoneData.currentStreak !== 1 ? 's' : ''} streak
-                </p>
-                <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
-                  <p className="text-sm italic text-foreground/90">
-                    "{milestoneData.nextMilestone.scripture}"
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    - {milestoneData.nextMilestone.scripture_ref}
-                  </p>
-                </div>
               </div>
+            </motion.div>
 
-              {/* Progress to Goal */}
-              {!milestoneData.isMaxLevel && (
-                <div className="pt-4 border-t">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">
-                      {milestoneData.daysToNext === 0 ? 'Achieved!' : `${milestoneData.daysToNext} day${milestoneData.daysToNext !== 1 ? 's' : ''} to go`}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      {milestoneData.currentStreak} / {milestoneData.nextMilestone.streak_needed}
-                    </span>
-                  </div>
-                  <Progress value={milestoneData.progress} className="h-2" />
-                  {milestoneData.lastAchieved && (
-                    <p className="text-xs text-muted-foreground mt-2 text-center">
-                      Last unlocked: {milestoneData.lastAchieved.name} {milestoneData.lastAchieved.emoji}
-                    </p>
-                  )}
-                </div>
-              )}
+            {/* Community Announcements */}
+            {encouragementMessages.length > 0 && (
+              <motion.div variants={itemVariants}>
+                <Card className="shadow-large glass border-white/20 overflow-hidden relative" data-encouragement-card>
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-secondary/5" />
+                  <CardHeader className="relative z-10">
+                    <CardTitle className="flex items-center gap-2 text-white">
+                      <Megaphone className="h-5 w-5 text-secondary" />
+                      Community Updates
+                    </CardTitle>
+                    <CardDescription className="text-white/80">Latest news and announcements</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4 relative z-10">
+                    {(showAllAnnouncements ? encouragementMessages : encouragementMessages.slice(0, 1)).map((message, index) => (
+                      <motion.div
+                        key={message.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className={`p-4 rounded-xl ${index === 0 ? 'bg-secondary/20 border-l-4 border-secondary' : 'bg-white/10'}`}
+                      >
+                        <p className="text-foreground dark:text-white/90 whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                        <p className="text-xs text-muted-foreground dark:text-white/60 mt-2">
+                          {new Date(message.created_at).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </motion.div>
+                    ))}
 
-              {/* Max Level Achieved */}
-              {milestoneData.isMaxLevel && (
-                <div className="pt-4 border-t text-center">
-                  <p className="text-sm font-medium text-accent">
-                    🎉 Maximum level achieved! Keep praying!
-                  </p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                    {encouragementMessages.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        onClick={() => setShowAllAnnouncements(!showAllAnnouncements)}
+                        className="w-full hover:bg-white/10 text-white"
+                      >
+                        {showAllAnnouncements
+                          ? 'Show Less'
+                          : `Show ${encouragementMessages.length - 1} More ${encouragementMessages.length - 1 === 1 ? 'Update' : 'Updates'}`
+                        }
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
 
-        {/* Admin Card */}
-        {isAdmin && (
-          <Card className="shadow-medium border-accent/10">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-6 w-6 text-accent" />
-                Admin Access
-                {pendingTestimonyCount > 0 && (
-                  <Badge variant="destructive" className="ml-2">
-                    {pendingTestimonyCount} pending
-                  </Badge>
-                )}
-              </CardTitle>
-              <CardDescription>Manage content and moderate the community</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                onClick={() => navigate("/admin")}
-                className="w-full"
-                variant="default"
-              >
-                Go to Admin Dashboard
-                {pendingTestimonyCount > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {pendingTestimonyCount}
-                  </Badge>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+            {/* Admin Card */}
+            {isAdmin && (
+              <motion.div variants={itemVariants}>
+                <Card className="shadow-large glass border-white/20 overflow-hidden relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-accent/10" />
+                  <CardHeader className="relative z-10">
+                    <CardTitle className="flex items-center gap-2 text-white">
+                      <Shield className="h-6 w-6 text-secondary" />
+                      Admin Access
+                      {pendingTestimonyCount > 0 && (
+                        <Badge variant="destructive" className="ml-2">
+                          {pendingTestimonyCount} pending
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="text-white/80">Manage content and moderate the community</CardDescription>
+                  </CardHeader>
+                  <CardContent className="relative z-10">
+                    <Button
+                      onClick={() => {
+                        haptics.medium();
+                        navigate("/admin");
+                      }}
+                      className="w-full min-h-[48px] h-12 bg-gradient-to-r from-secondary via-secondary to-accent text-gray-900 font-semibold shadow-lg hover:shadow-glow hover:scale-[1.02] hover:text-white transition-all duration-300"
+                      variant="default"
+                    >
+                      Go to Admin Dashboard
+                      {pendingTestimonyCount > 0 && (
+                        <Badge variant="secondary" className="ml-2 bg-white text-primary">
+                          {pendingTestimonyCount}
+                        </Badge>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </motion.div>
+        </div>
       </div>
-    </div>
     </TooltipProvider>
   );
 };

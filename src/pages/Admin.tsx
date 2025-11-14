@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -608,20 +609,50 @@ const Admin = () => {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen gradient-subtle">
-        <div className="max-w-6xl mx-auto p-4 md:p-8">
+      <div className="min-h-screen relative overflow-hidden gradient-hero">
+        {/* Animated Background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <motion.div
+            className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
+            animate={{
+              y: [0, -50, 0],
+              x: [0, 30, 0],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          <motion.div
+            className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-light/20 rounded-full blur-3xl"
+            animate={{
+              y: [0, 40, 0],
+              x: [0, -40, 0],
+              scale: [1, 1.3, 1],
+            }}
+            transition={{
+              duration: 12,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        </div>
+
+        <div className="max-w-6xl relative z-10 mx-auto p-4 md:p-8">
           <div className="flex items-center justify-between mb-6">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+                <Button variant="ghost" onClick={() => navigate("/dashboard")} className="text-white bg-white/10 hover:bg-white/20 border border-white/20">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back to Dashboard
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Return to Dashboard</TooltipContent>
             </Tooltip>
-            
-            <Button onClick={() => navigate('/prayer-library')}>
+
+            <Button onClick={() => navigate('/prayer-library')} className="text-white border-white/20 bg-white/10 hover:bg-white/20" variant="outline">
               <BookOpen className="mr-2 h-4 w-4" />
               <span className="hidden md:inline">Prayer Library</span>
               <span className="md:hidden">Library</span>
@@ -629,8 +660,19 @@ const Admin = () => {
           </div>
 
         <div className="flex items-center gap-3 mb-8">
-          <Shield className="h-10 w-10 text-primary" />
-          <h1 className="text-4xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+          <motion.div
+            animate={{
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+            }}
+          >
+            <Shield className="h-10 w-10 text-secondary" />
+          </motion.div>
+          <h1 className="text-4xl font-heading font-bold text-white drop-shadow-lg">
             Admin Dashboard
           </h1>
         </div>
@@ -747,13 +789,14 @@ const Admin = () => {
                             setIsEncouragementDialogOpen(true);
                           }}>
                             <Plus className="h-4 w-4 sm:mr-2" />
+                            <span className="sm:hidden">New</span>
                             <span className="hidden sm:inline">New Message</span>
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>Post a new encouragement message</TooltipContent>
                       </Tooltip>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-2xl bg-gradient-to-br from-primary/5 via-background to-secondary/5 backdrop-blur-xl border-primary/20">
                       <DialogHeader>
                         <DialogTitle>Post Community Announcement</DialogTitle>
                       </DialogHeader>
@@ -1003,7 +1046,7 @@ const Admin = () => {
 
       {/* Promote User Dialog */}
       <Dialog open={showPromoteDialog} onOpenChange={setShowPromoteDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-gradient-to-br from-primary/5 via-background to-secondary/5 backdrop-blur-xl border-primary/20">
           <DialogHeader>
             <DialogTitle>Promote User to Admin</DialogTitle>
           </DialogHeader>
@@ -1092,7 +1135,7 @@ const Admin = () => {
         setEditTitle("");
         setEditContent("");
       }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-primary/5 via-background to-secondary/5 backdrop-blur-xl border-primary/20">
           <DialogHeader>
             <DialogTitle>Edit Testimony (Admin)</DialogTitle>
           </DialogHeader>
@@ -1141,7 +1184,7 @@ const Admin = () => {
         setRejectionReason("");
         setCustomReason("");
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-gradient-to-br from-primary/5 via-background to-secondary/5 backdrop-blur-xl border-primary/20">
           <DialogHeader>
             <DialogTitle>Reject Testimony</DialogTitle>
           </DialogHeader>

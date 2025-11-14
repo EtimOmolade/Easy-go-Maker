@@ -1,5 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useFontSize } from "@/contexts/FontSizeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { MILESTONES } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Award, Scale, Smartphone, Trash2 } from "lucide-react";
+import { ArrowLeft, Award, Scale, Smartphone, Trash2, Moon, Sun, HelpCircle, Type, Minus, Plus, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +28,8 @@ interface ProfileData {
 
 const Profile = () => {
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const { fontSize, increaseFontSize, decreaseFontSize, resetFontSize } = useFontSize();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [name, setName] = useState("");
@@ -189,18 +194,48 @@ const Profile = () => {
   }, [user, profile]);
 
   return (
-    <div className="min-h-screen gradient-subtle">
-      <div className="max-w-2xl mx-auto p-4 md:p-8">
+    <div className="min-h-screen relative overflow-hidden gradient-hero">
+      {/* Animated Background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <motion.div
+          className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
+          animate={{
+            y: [0, -50, 0],
+            x: [0, 30, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-light/20 rounded-full blur-3xl"
+          animate={{
+            y: [0, 40, 0],
+            x: [0, -40, 0],
+            scale: [1, 1.3, 1],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      </div>
+
+      <div className="max-w-2xl relative z-10 mx-auto p-4 md:p-8">
         <Button
           variant="ghost"
-          className="mb-6"
+          className="mb-6 text-white hover:bg-white/10 border border-white/20"
           onClick={() => navigate("/dashboard")}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Dashboard
         </Button>
 
-        <h1 className="text-4xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-8">
+        <h1 className="text-4xl font-heading font-bold text-white drop-shadow-lg mb-8">
           Profile Settings
         </h1>
 
@@ -308,6 +343,72 @@ const Profile = () => {
 
               <div className="flex items-center justify-between space-x-2">
                 <div className="flex-1 space-y-1">
+                  <Label htmlFor="darkMode" className="flex items-center gap-2">
+                    {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                    Dark Mode
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Toggle between light and dark theme
+                  </p>
+                </div>
+                <Switch
+                  id="darkMode"
+                  checked={theme === 'dark'}
+                  onCheckedChange={toggleTheme}
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <Type className="h-4 w-4" />
+                    Text Size
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{fontSize}%</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={resetFontSize}
+                      className="h-8 w-8 p-0"
+                      title="Reset to default"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Adjust text size for better readability (85% - 125%)
+                </p>
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={decreaseFontSize}
+                    disabled={fontSize <= 85}
+                    className="flex-1"
+                  >
+                    <Minus className="h-4 w-4 mr-1" />
+                    Smaller
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={increaseFontSize}
+                    disabled={fontSize >= 125}
+                    className="flex-1"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Larger
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex-1 space-y-1">
                   <Label htmlFor="2fa">Two-Factor Authentication</Label>
                   <p className="text-xs text-muted-foreground">
                     Require a verification code sent to your email when logging in
@@ -321,9 +422,25 @@ const Profile = () => {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Saving..." : "Save Changes"}
-              </Button>
+              <div className="flex flex-col gap-3 pt-2 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    localStorage.removeItem('hasSeenWelcome');
+                    localStorage.removeItem('hasSeenTutorial');
+                    toast.success("Tutorial reset! Refresh the dashboard to see the welcome guide again.");
+                  }}
+                >
+                  <HelpCircle className="h-4 w-4 mr-2" />
+                  Restart Tutorial
+                </Button>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
