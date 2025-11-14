@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { JournalSkeleton } from "@/components/LoadingSkeleton";
 import { haptics } from "@/utils/haptics";
+import { useOfflineJournal } from "@/hooks/useOfflineJournal";
 
 interface JournalEntry {
   id: string;
@@ -58,6 +59,7 @@ const Journal = () => {
   
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { saveEntry, updateEntry, fetchEntries: fetchEntriesOffline, deleteEntry: deleteEntryOffline, isOnline } = useOfflineJournal(user?.id);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -86,14 +88,8 @@ const Journal = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from("journal_entries")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("date", { ascending: false });
-
-      if (error) throw error;
-
+      setLoading(true);
+      const data = await fetchEntriesOffline();
       setEntries(data || []);
     } catch (error) {
       console.error("Error fetching entries:", error);
@@ -142,8 +138,8 @@ const Journal = () => {
     try {
       let voiceNoteUrl: string | undefined = undefined;
 
-      // Upload audio if present
-      if (audioBlob) {
+      // Upload audio if present and online
+      if (audioBlob && isOnline) {
         const fileName = `${user.id}/${Date.now()}.webm`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('voice-notes')
@@ -164,6 +160,8 @@ const Journal = () => {
           .getPublicUrl(fileName);
 
         voiceNoteUrl = publicUrl;
+      } else if (audioBlob && !isOnline) {
+        toast.info("Audio will be uploaded when back online");
       }
 
       if (editingEntry) {
@@ -179,17 +177,15 @@ const Journal = () => {
           updateData.voice_note_url = voiceNoteUrl;
         }
 
-        const { error } = await supabase
-          .from("journal_entries")
-          .update(updateData)
-          .eq("id", editingEntry.id);
-
-        if (error) throw error;
-        toast.success("Entry updated successfully");
+        const success = await updateEntry(editingEntry.id!, updateData);
+        if (success) {
+          toast.success("Entry updated successfully");
+        } else {
+          throw new Error("Update failed");
+        }
       } else {
         // Create new entry
         const insertData: any = {
-          user_id: user.id,
           title,
           content,
           date: new Date().toISOString().split('T')[0],
@@ -202,22 +198,24 @@ const Journal = () => {
           insertData.voice_note_url = voiceNoteUrl;
         }
 
-        const { error } = await supabase
-          .from("journal_entries")
-          .insert(insertData);
+        const success = await saveEntry(insertData);
+        if (success) {
+          toast.success("📝 Your new journal entry has been saved!");
 
-        if (error) throw error;
-        toast.success("📝 Your new journal entry has been saved!");
+          // Get user's current streak if online
+          if (isOnline) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("streak_count")
+              .eq("id", user.id)
+              .single();
 
-        // Get user's current streak
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("streak_count")
-          .eq("id", user.id)
-          .single();
-
-        if (profile) {
-          await checkAndUpdateMilestone(profile.streak_count || 0);
+            if (profile) {
+              await checkAndUpdateMilestone(profile.streak_count || 0);
+            }
+          }
+        } else {
+          throw new Error("Save failed");
         }
       }
 
@@ -315,15 +313,13 @@ const Journal = () => {
     if (!confirm("Are you sure you want to delete this entry?")) return;
 
     try {
-      const { error } = await supabase
-        .from("journal_entries")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-      
-      toast.success("Entry deleted");
-      fetchEntries();
+      const success = await deleteEntryOffline(id);
+      if (success) {
+        toast.success("Entry deleted");
+        fetchEntries();
+      } else {
+        throw new Error("Delete failed");
+      }
     } catch (error) {
       console.error("Error deleting entry:", error);
       toast.error("Failed to delete entry");
@@ -332,15 +328,13 @@ const Journal = () => {
 
   const toggleAnswered = async (id: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
-        .from("journal_entries")
-        .update({ is_answered: !currentStatus })
-        .eq("id", id);
-
-      if (error) throw error;
-      
-      toast.success(!currentStatus ? "Marked as answered" : "Marked as unanswered");
-      fetchEntries();
+      const success = await updateEntry(id, { is_answered: !currentStatus });
+      if (success) {
+        toast.success(!currentStatus ? "Marked as answered" : "Marked as unanswered");
+        fetchEntries();
+      } else {
+        throw new Error("Update failed");
+      }
     } catch (error) {
       console.error("Error updating entry:", error);
       toast.error("Failed to update entry");
