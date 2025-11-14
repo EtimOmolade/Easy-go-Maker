@@ -173,7 +173,7 @@ export const getUnsyncedJournalEntries = async (): Promise<any[]> => {
     const transaction = db.transaction([STORES.JOURNAL_ENTRIES], 'readonly');
     const store = transaction.objectStore(STORES.JOURNAL_ENTRIES);
     const index = store.index('synced');
-    const request = index.getAll(false);
+    const request = index.getAll(IDBKeyRange.only(false));
 
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -206,7 +206,7 @@ export const getUnsyncedPrayerHistory = async (): Promise<any[]> => {
     const transaction = db.transaction([STORES.PRAYER_HISTORY], 'readonly');
     const store = transaction.objectStore(STORES.PRAYER_HISTORY);
     const index = store.index('synced');
-    const request = index.getAll(false);
+    const request = index.getAll(IDBKeyRange.only(false));
 
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);

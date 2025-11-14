@@ -53,11 +53,10 @@ export const OfflineProvider = ({ children }: { children: React.ReactNode }) => 
           const { error } = await supabase
             .from('journal_entries')
             .insert({
-              user_id: entry.user_id,
               content: entry.content,
               guideline_id: entry.guideline_id,
               created_at: entry.created_at,
-            });
+            } as any);
 
           if (!error && entry.id) {
             await markJournalSynced(entry.id);
@@ -72,10 +71,9 @@ export const OfflineProvider = ({ children }: { children: React.ReactNode }) => 
       const unsyncedPrayer = await getUnsyncedPrayerHistory();
       for (const history of unsyncedPrayer) {
         try {
-          const { error } = await supabase
+          const { error } = await (supabase as any)
             .from('prayer_history')
             .insert({
-              user_id: history.user_id,
               guideline_id: history.guideline_id,
               completed_at: history.date,
             });
