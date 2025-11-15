@@ -4,7 +4,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { NotebookPen, TrendingUp, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import logoOnly from "@/assets/logo-only.png";
-import prayingHandsIcon from "@/assets/praying-hands.svg";
+import prayingHandsIcon from "@/assets/pray.png";
 import { Progress } from "@/components/ui/progress";
 
 interface WelcomeWizardProps {
@@ -173,7 +173,11 @@ export const WelcomeWizard = ({ isOpen, onComplete }: WelcomeWizardProps) => {
                       ease: "easeInOut",
                     }}
                   >
-                    <img src={prayingHandsIcon} alt="Prayer" className="h-12 w-12 text-white" />
+                    <img 
+                      src={prayingHandsIcon} 
+                      alt="Prayer" 
+                      className="h-14 w-14 brightness-0 invert"
+                    />
                   </motion.div>
                 ) : (
                   <motion.div
