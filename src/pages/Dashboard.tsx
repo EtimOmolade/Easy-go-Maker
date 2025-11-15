@@ -739,68 +739,26 @@ const Dashboard = () => {
 
             {/* Community Announcements */}
             {encouragementMessages.length > 0 && <motion.div variants={itemVariants}>
-                <Card className="shadow-elegant glass border-white/10 overflow-hidden relative backdrop-blur-xl" data-encouragement-card>
-                  {/* Enhanced gradient backgrounds */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 via-accent/10 to-secondary/5" />
-                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-accent/20 via-transparent to-transparent" />
-                  
-                  {/* Animated orb */}
-                  <motion.div 
-                    className="absolute -top-16 -right-16 w-64 h-64 bg-gradient-to-br from-secondary/40 to-accent/30 rounded-full blur-3xl" 
-                    animate={{
-                      scale: [1, 1.2, 1],
-                      opacity: [0.3, 0.5, 0.3],
-                      x: [0, 20, 0],
-                      y: [0, 15, 0]
-                    }} 
-                    transition={{
-                      duration: 7,
-                      repeat: Infinity,
-                      ease: "easeInOut"
-                    }} 
-                  />
-                  
+                <Card className="shadow-large glass border-white/20 overflow-hidden relative" data-encouragement-card>
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-secondary/5" />
                   <CardHeader className="relative z-10">
-                    <CardTitle className="flex items-center gap-3 dark:text-white text-foreground">
-                      <motion.div 
-                        className="p-2.5 bg-gradient-to-br from-secondary to-accent rounded-xl shadow-lg"
-                        animate={{
-                          rotate: [0, 5, -5, 0],
-                          scale: [1, 1.05, 1]
-                        }}
-                        transition={{
-                          duration: 4,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                      >
-                        <Megaphone className="h-5 w-5 text-white" />
-                      </motion.div>
-                      <span className="font-heading text-xl">Community Updates</span>
+                    <CardTitle className="flex items-center gap-2 dark:text-white text-foreground">
+                      <Megaphone className="h-5 w-5 text-secondary" />
+                      Community Updates
                     </CardTitle>
-                    <CardDescription className="dark:text-white/70 text-muted-foreground font-medium ml-12">Latest news and announcements</CardDescription>
+                    <CardDescription className="dark:text-white/80 text-muted-foreground">Latest news and announcements</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 relative z-10">
-                    {(showAllAnnouncements ? encouragementMessages : encouragementMessages.slice(0, 1)).map((message, index) => <motion.div 
-                      key={message.id} 
-                      initial={{
-                        opacity: 0,
-                        x: -20
-                      }} 
-                      animate={{
-                        opacity: 1,
-                        x: 0
-                      }} 
-                      transition={{
-                        delay: index * 0.1
-                      }} 
-                      className={`p-5 rounded-2xl backdrop-blur-sm transition-all duration-300 hover:scale-[1.01] ${
-                        index === 0 
-                          ? 'bg-gradient-to-r from-secondary/25 via-accent/15 to-secondary/20 border-l-4 border-secondary shadow-lg' 
-                          : 'bg-white/10 hover:bg-white/15 border border-white/10'
-                      }`}
-                    >
-                    <p className="dark:text-white/90 text-foreground whitespace-pre-wrap leading-relaxed text-base">{message.content}</p>
+                    {(showAllAnnouncements ? encouragementMessages : encouragementMessages.slice(0, 1)).map((message, index) => <motion.div key={message.id} initial={{
+                  opacity: 0,
+                  x: -20
+                }} animate={{
+                  opacity: 1,
+                  x: 0
+                }} transition={{
+                  delay: index * 0.1
+                }} className={`p-4 rounded-xl ${index === 0 ? 'bg-secondary/20 border-l-4 border-secondary' : 'bg-white/10'}`}>
+                    <p className="dark:text-white/90 text-foreground whitespace-pre-wrap leading-relaxed">{message.content}</p>
                     <p className="text-xs dark:text-white/60 text-muted-foreground mt-2">
                           {new Date(message.created_at).toLocaleDateString('en-US', {
                       weekday: 'short',
@@ -812,11 +770,7 @@ const Dashboard = () => {
                         </p>
                       </motion.div>)}
 
-                    {encouragementMessages.length > 1 && <Button 
-                      variant="ghost" 
-                      onClick={() => setShowAllAnnouncements(!showAllAnnouncements)} 
-                      className="w-full hover:bg-gradient-to-r hover:from-secondary/20 hover:to-accent/20 dark:text-white text-foreground transition-all duration-300 font-medium"
-                    >
+                    {encouragementMessages.length > 1 && <Button variant="ghost" onClick={() => setShowAllAnnouncements(!showAllAnnouncements)} className="w-full hover:bg-white/10 dark:text-white text-foreground">
                         {showAllAnnouncements ? 'Show Less' : `Show ${encouragementMessages.length - 1} More ${encouragementMessages.length - 1 === 1 ? 'Update' : 'Updates'}`}
                       </Button>}
                   </CardContent>
@@ -825,83 +779,27 @@ const Dashboard = () => {
 
             {/* Admin Card */}
             {isAdmin && <motion.div variants={itemVariants}>
-                <Card className="shadow-elegant glass border-white/10 overflow-hidden relative backdrop-blur-xl">
-                  {/* Enhanced gradient backgrounds */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-accent/20 via-secondary/10 to-accent/5" />
-                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-transparent to-transparent" />
-                  
-                  {/* Animated orbs */}
-                  <motion.div 
-                    className="absolute -top-16 -left-16 w-64 h-64 bg-gradient-to-br from-accent/40 to-secondary/30 rounded-full blur-3xl" 
-                    animate={{
-                      scale: [1.1, 1.3, 1.1],
-                      opacity: [0.4, 0.6, 0.4],
-                      rotate: [0, 180, 0]
-                    }} 
-                    transition={{
-                      duration: 10,
-                      repeat: Infinity,
-                      ease: "easeInOut"
-                    }} 
-                  />
-                  
+                <Card className="shadow-large glass border-white/20 overflow-hidden relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-accent/10" />
                   <CardHeader className="relative z-10">
-                    <CardTitle className="flex items-center gap-3 dark:text-white text-foreground">
-                      <motion.div 
-                        className="p-2.5 bg-gradient-to-br from-accent to-secondary rounded-xl shadow-lg relative overflow-hidden"
-                        animate={{
-                          boxShadow: [
-                            "0 10px 30px -10px hsl(var(--accent) / 0.3)",
-                            "0 20px 40px -10px hsl(var(--accent) / 0.5)",
-                            "0 10px 30px -10px hsl(var(--accent) / 0.3)"
-                          ]
-                        }}
-                        transition={{
-                          duration: 3,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                      >
-                        <Shield className="h-6 w-6 text-white relative z-10" />
-                        <motion.div 
-                          className="absolute inset-0 bg-white/20"
-                          animate={{ rotate: [0, 360] }}
-                          transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-                        />
-                      </motion.div>
-                      <span className="font-heading text-xl">Admin Access</span>
-                      {pendingTestimonyCount > 0 && <Badge variant="destructive" className="ml-auto animate-pulse">
+                    <CardTitle className="flex items-center gap-2 dark:text-white text-foreground">
+                      <Shield className="h-6 w-6 text-secondary" />
+                      Admin Access
+                      {pendingTestimonyCount > 0 && <Badge variant="destructive" className="ml-2">
                           {pendingTestimonyCount} pending
                         </Badge>}
                     </CardTitle>
-                    <CardDescription className="dark:text-white/70 text-muted-foreground font-medium ml-12">Manage content and moderate the community</CardDescription>
+                    <CardDescription className="dark:text-white/80 text-muted-foreground">Manage content and moderate the community</CardDescription>
                   </CardHeader>
                   <CardContent className="relative z-10">
-                    <Button 
-                      onClick={() => {
-                        haptics.medium();
-                        navigate("/admin");
-                      }} 
-                      className="w-full min-h-[48px] h-14 bg-gradient-to-r from-secondary via-accent to-secondary text-white font-semibold shadow-elegant hover:shadow-glow hover:scale-[1.02] transition-all duration-300 relative overflow-hidden group" 
-                      variant="default"
-                    >
-                      <motion.div 
-                        className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0"
-                        animate={{
-                          x: ["-100%", "200%"]
-                        }}
-                        transition={{
-                          duration: 3,
-                          repeat: Infinity,
-                          ease: "linear"
-                        }}
-                      />
-                      <span className="relative z-10 flex items-center gap-2">
-                        Go to Admin Dashboard
-                        {pendingTestimonyCount > 0 && <Badge variant="secondary" className="ml-2 bg-white/90 text-primary font-bold">
-                            {pendingTestimonyCount}
-                          </Badge>}
-                      </span>
+                    <Button onClick={() => {
+                  haptics.medium();
+                  navigate("/admin");
+                }} className="w-full min-h-[48px] h-12 bg-gradient-to-r from-secondary via-secondary to-accent text-gray-900 font-semibold shadow-lg hover:shadow-glow hover:scale-[1.02] hover:text-white transition-all duration-300" variant="default">
+                      Go to Admin Dashboard
+                      {pendingTestimonyCount > 0 && <Badge variant="secondary" className="ml-2 bg-white text-primary">
+                          {pendingTestimonyCount}
+                        </Badge>}
                     </Button>
                   </CardContent>
                 </Card>
