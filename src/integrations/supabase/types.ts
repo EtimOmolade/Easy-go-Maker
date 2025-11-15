@@ -356,6 +356,59 @@ export type Database = {
         }
         Relationships: []
       }
+      prayer_reminders: {
+        Row: {
+          created_at: string
+          custom_message: string | null
+          days_of_week: number[] | null
+          enabled: boolean
+          id: string
+          last_reminded_at: string | null
+          notification_methods: string[]
+          reminder_times: string[]
+          reminder_type: string
+          snooze_until: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_message?: string | null
+          days_of_week?: number[] | null
+          enabled?: boolean
+          id?: string
+          last_reminded_at?: string | null
+          notification_methods?: string[]
+          reminder_times?: string[]
+          reminder_type?: string
+          snooze_until?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_message?: string | null
+          days_of_week?: number[] | null
+          enabled?: boolean
+          id?: string
+          last_reminded_at?: string | null
+          notification_methods?: string[]
+          reminder_times?: string[]
+          reminder_type?: string
+          snooze_until?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prayer_reminders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
