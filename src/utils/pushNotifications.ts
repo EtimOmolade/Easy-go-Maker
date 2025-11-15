@@ -57,6 +57,20 @@ async function waitForServiceWorker(timeoutMs: number = 10000): Promise<ServiceW
   ]);
 }
 
+// Helper to wrap any promise with a timeout
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  errorMessage: string
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+    ),
+  ]);
+}
+
 export async function subscribeToPushNotifications(userId: string): Promise<boolean> {
   try {
     console.log('Starting push subscription...');
@@ -93,13 +107,18 @@ export async function subscribeToPushNotifications(userId: string): Promise<bool
     const registration = await waitForServiceWorker(10000);
 
     console.log('Service worker ready, subscribing to push...');
+    console.log('Using VAPID key:', VAPID_PUBLIC_KEY.substring(0, 20) + '...');
     
-    // Subscribe to push
+    // Subscribe to push with timeout
     const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: applicationServerKey as any,
-    });
+    const subscription = await withTimeout(
+      registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: applicationServerKey as any,
+      }),
+      15000, // 15 second timeout
+      'Push subscription timeout - browser push service not responding'
+    );
 
     console.log('Push subscription obtained, saving to database...');
 
@@ -145,10 +164,18 @@ export async function subscribeToPushNotifications(userId: string): Promise<bool
     // Provide more specific error messages
     let errorMessage = "Failed to enable push notifications";
     if (error instanceof Error) {
-      if (error.message.includes('timeout')) {
+      if (error.message.includes('Service worker ready timeout')) {
         errorMessage = "Service worker not ready. Please refresh the page and try again.";
+      } else if (error.message.includes('subscription timeout')) {
+        errorMessage = "Connection timed out. Please check your internet and try again.";
       } else if (error.message.includes('AbortError')) {
         errorMessage = "Subscription was cancelled. Please try again.";
+      } else if (error.message.includes('NotAllowedError')) {
+        errorMessage = "Permission denied. Please reset browser permissions and try again.";
+      } else if (error.message.includes('InvalidStateError')) {
+        errorMessage = "Service worker not ready. Please refresh the page and try again.";
+      } else if (error.message.includes('NotSupportedError')) {
+        errorMessage = "Push notifications are not supported in your browser.";
       }
     }
     
