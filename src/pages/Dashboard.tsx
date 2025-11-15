@@ -425,7 +425,7 @@ const Dashboard = () => {
                   delay: 0.2
                 }}>
                     Welcome back,
-                    <span className="block mt-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)] dark:drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] font-bold text-indigo-950">
+                    <span className="block mt-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)] dark:drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] font-bold text-indigo-950 dark:text-white">
                       {profile?.name || "Friend"}!
                     </span>
                   </motion.h1>
