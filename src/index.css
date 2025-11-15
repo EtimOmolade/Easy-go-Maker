@@ -6,13 +6,13 @@
   :root {
     /* Client Color Palette - Royal Blue & Gold */
     --background: 0 0% 100%;
-    --foreground: 230 50% 20%;
+    --foreground: 230 60% 15%;
 
-    --card: 230 10% 98%;
-    --card-foreground: 230 50% 20%;
+    --card: 230 15% 96%;
+    --card-foreground: 230 60% 15%;
 
-    --popover: 230 10% 98%;
-    --popover-foreground: 230 50% 20%;
+    --popover: 230 15% 96%;
+    --popover-foreground: 230 60% 15%;
 
     /* Primary: Deep Royal Blue (#2E3A87) */
     --primary: 230 50% 35%;
@@ -30,12 +30,12 @@
     --accent-foreground: 230 50% 20%;
 
     --muted: 230 5% 94%;
-    --muted-foreground: 230 25% 40%;
+    --muted-foreground: 230 30% 30%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 230 20% 85%;
+    --border: 230 25% 80%;
     --input: 230 20% 92%;
     --ring: 230 50% 35%;
 
@@ -49,11 +49,11 @@
     --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
 
     /* Premium Shadows */
-    --shadow-soft: 0 4px 12px hsl(230 50% 35% / 0.15);
-    --shadow-medium: 0 8px 24px hsl(230 50% 35% / 0.20);
-    --shadow-large: 0 12px 40px hsl(230 50% 35% / 0.25);
-    --shadow-glow: 0 0 40px hsl(45 68% 53% / 0.35);
-    --shadow-glow-primary: 0 0 40px hsl(230 50% 45% / 0.3);
+    --shadow-soft: 0 4px 12px hsl(230 50% 35% / 0.20);
+    --shadow-medium: 0 8px 24px hsl(230 50% 35% / 0.25);
+    --shadow-large: 0 12px 40px hsl(230 50% 35% / 0.30);
+    --shadow-glow: 0 0 40px hsl(45 68% 53% / 0.40);
+    --shadow-glow-primary: 0 0 40px hsl(230 50% 45% / 0.35);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 230 50% 20%;
