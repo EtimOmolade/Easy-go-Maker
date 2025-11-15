@@ -5,8 +5,15 @@ const RUNTIME_CACHE = 'spirit-connect-runtime';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
-  '/manifest.json',
+  '/site.webmanifest',
 ];
+
+// Handle messages from clients
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 // Install event - cache essential assets
 self.addEventListener('install', (event) => {

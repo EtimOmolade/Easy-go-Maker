@@ -21,12 +21,23 @@ export const registerServiceWorker = async () => {
       // Wait for the service worker to be active
       if (registration.installing) {
         console.log('Service worker installing, waiting for activation...');
-        await new Promise<void>((resolve) => {
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Service worker activation timeout'));
+          }, 10000); // 10 second timeout
+          
           registration.installing!.addEventListener('statechange', (e) => {
             const sw = e.target as ServiceWorker;
             console.log('Service worker state:', sw.state);
+            
             if (sw.state === 'activated') {
+              clearTimeout(timeout);
+              console.log('✅ Service worker activated successfully');
               resolve();
+            } else if (sw.state === 'redundant') {
+              clearTimeout(timeout);
+              console.error('❌ Service worker became redundant (installation failed)');
+              reject(new Error('Service worker installation failed - check console for details'));
             }
           });
         });
