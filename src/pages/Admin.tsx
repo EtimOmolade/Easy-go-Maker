@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AudioPlayer } from "@/components/AudioPlayer";
+import { AppHeader } from "@/components/AppHeader";
 
 interface Testimony {
   id: string;
@@ -642,15 +643,7 @@ const Admin = () => {
 
         <div className="max-w-6xl relative z-10 mx-auto p-4 md:p-8">
           <div className="flex items-center justify-between mb-6">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" onClick={() => navigate("/dashboard")} className="text-white bg-white/10 hover:bg-white/20 border border-white/20">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Dashboard
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Return to Dashboard</TooltipContent>
-            </Tooltip>
+            <AppHeader showBack={true} backTo="/dashboard" />
 
             <Button onClick={() => navigate('/prayer-library')} className="text-white border-white/20 bg-white/10 hover:bg-white/20" variant="outline">
               <BookOpen className="mr-2 h-4 w-4" />

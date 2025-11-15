@@ -297,6 +297,16 @@ const ReminderSettings = () => {
             </>
           )}
           <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? "Saving..." : "Save Settings"}</Button>
+          {enabled && (
+            <Button 
+              onClick={handleTestPrayerReminder} 
+              variant="outline" 
+              className="w-full mt-2"
+            >
+              <Bell className="h-4 w-4 mr-2" />
+              Test Prayer Reminder
+            </Button>
+          )}
         </CardContent>
       </Card>
 

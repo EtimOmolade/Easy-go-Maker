@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, Check } from "lucide-react";
 import { toast } from "sonner";
+import { AppHeader } from "@/components/AppHeader";
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -244,14 +245,7 @@ const GuidelineDetails = () => {
       </div>
 
       <div className="max-w-4xl relative z-10 mx-auto p-4 md:p-6 lg:p-8">
-        <Button
-          variant="ghost"
-          className="mb-4 md:mb-6 text-white hover:bg-white/10 border border-white/20"
-          onClick={() => navigate('/guidelines')}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Guidelines
-        </Button>
+        <AppHeader showBack={true} backTo="/guidelines" />
 
         <Card className="shadow-large glass border-white/20 mb-4 md:mb-6">
           <CardHeader className="p-4 md:p-6">

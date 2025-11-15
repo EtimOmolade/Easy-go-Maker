@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
+import { AppHeader } from "@/components/AppHeader";
 
 const CATEGORIES: PrayerPointCategory[] = ['Kingdom Focus', 'Listening Prayer'];
 
@@ -343,10 +344,7 @@ const PrayerLibrary = () => {
       </div>
 
       <div className="max-w-6xl mx-auto p-4 md:p-8 relative z-10">
-        <Button variant="ghost" className="mb-6 text-white bg-white/10 hover:bg-white/20 border border-white/20" onClick={() => navigate("/admin")}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Admin
-        </Button>
+        <AppHeader title="Prayer Point Library" showBack={true} backTo="/admin" />
 
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">

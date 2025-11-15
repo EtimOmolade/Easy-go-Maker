@@ -19,6 +19,7 @@ import { DashboardSkeleton } from "@/components/LoadingSkeleton";
 import { haptics } from "@/utils/haptics";
 import { WelcomeWizard } from "@/components/WelcomeWizard";
 import { TutorialWalkthrough } from "@/components/TutorialWalkthrough";
+import NotificationDropdown from "@/components/NotificationDropdown";
 
 interface Profile {
   name: string;
@@ -434,22 +435,25 @@ const Dashboard = () => {
               </h1>
               <p className="text-white/90 text-lg drop-shadow">Continue your prayer journey today</p>
             </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    haptics.light();
-                    signOut();
-                  }}
-                  className="border-white/30 text-white bg-white/10 hover:border-white hover:bg-white/20 transition-all backdrop-blur-sm min-h-[44px]"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign Out</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Sign out of your account</TooltipContent>
-            </Tooltip>
+            <div className="flex items-center gap-4">
+              {user && <NotificationDropdown userId={user.id} isAdmin={isAdmin} />}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      haptics.light();
+                      signOut();
+                    }}
+                    className="border-white/30 text-white bg-white/10 hover:border-white hover:bg-white/20 transition-all backdrop-blur-sm min-h-[44px]"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign Out</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Sign out of your account</TooltipContent>
+              </Tooltip>
+            </div>
           </motion.div>
 
           <motion.div
