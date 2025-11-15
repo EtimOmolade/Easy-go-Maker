@@ -422,10 +422,28 @@ const Testimonies = () => {
         <div className="max-w-4xl relative z-10 mx-auto p-4 md:p-8">
           {/* Header */}
           <AppHeader 
-            title="Stories of His Faithfulness" 
             showBack={true} 
             backTo="/dashboard" 
           />
+          
+          {/* Page Title with Icon */}
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <motion.div
+              animate={{
+                scale: [1, 1.1, 1],
+                rotate: [0, 5, -5, 0],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+              }}
+            >
+              <Heart className="h-10 w-10 text-secondary" />
+            </motion.div>
+            <h1 className="text-3xl md:text-4xl font-heading font-bold text-white drop-shadow-lg">
+              Stories of His Faithfulness
+            </h1>
+          </div>
           
           <p className="text-sm md:text-base text-white/90 italic drop-shadow text-center mb-6">
             "This is the Lord's doing; it is marvellous in our eyes." — Psalm 118:23
