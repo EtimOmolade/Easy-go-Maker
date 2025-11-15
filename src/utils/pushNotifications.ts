@@ -47,13 +47,28 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   return permission;
 }
 
-// Helper to wait for service worker with timeout
-async function waitForServiceWorker(timeoutMs: number = 10000): Promise<ServiceWorkerRegistration> {
+// Ensure service worker is ready with robust state checking
+async function ensureServiceWorkerReady(timeoutMs: number = 25000): Promise<ServiceWorkerRegistration> {
+  // First check if we already have an active service worker
+  if (navigator.serviceWorker.controller) {
+    console.log('Service worker already controlling, getting registration...');
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (registration?.active) {
+      console.log('Active service worker found');
+      return registration;
+    }
+  }
+  
+  // Wait for service worker to be ready with timeout
+  console.log('Waiting for service worker to be ready...');
   return Promise.race([
     navigator.serviceWorker.ready,
-    new Promise<ServiceWorkerRegistration>((_, reject) => 
-      setTimeout(() => reject(new Error('Service worker ready timeout')), timeoutMs)
-    )
+    new Promise<ServiceWorkerRegistration>((_, reject) =>
+      setTimeout(
+        () => reject(new Error('Service worker ready timeout - try refreshing the page')),
+        timeoutMs
+      )
+    ),
   ]);
 }
 
@@ -104,7 +119,7 @@ export async function subscribeToPushNotifications(userId: string): Promise<bool
     console.log('Permission granted, waiting for service worker...');
 
     // Get service worker registration with timeout
-    const registration = await waitForServiceWorker(10000);
+    const registration = await ensureServiceWorkerReady(25000);
 
     console.log('Service worker ready, subscribing to push...');
     console.log('Using VAPID key:', VAPID_PUBLIC_KEY.substring(0, 20) + '...');
@@ -116,7 +131,7 @@ export async function subscribeToPushNotifications(userId: string): Promise<bool
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey as any,
       }),
-      15000, // 15 second timeout
+      25000, // 25 second timeout
       'Push subscription timeout - browser push service not responding'
     );
 

@@ -2,12 +2,40 @@
 export const registerServiceWorker = async () => {
   if ('serviceWorker' in navigator) {
     try {
+      // Unregister any existing service workers first (cleanup for development)
+      const existingRegistrations = await navigator.serviceWorker.getRegistrations();
+      if (existingRegistrations.length > 1) {
+        console.log('Multiple service workers found, cleaning up...');
+        for (let i = 1; i < existingRegistrations.length; i++) {
+          await existingRegistrations[i].unregister();
+        }
+      }
+
       const registration = await navigator.serviceWorker.register(
         '/service-worker.js',
         { scope: '/' }
       );
 
       console.log('Service Worker registered successfully:', registration);
+      
+      // Wait for the service worker to be active
+      if (registration.installing) {
+        console.log('Service worker installing, waiting for activation...');
+        await new Promise<void>((resolve) => {
+          registration.installing!.addEventListener('statechange', (e) => {
+            const sw = e.target as ServiceWorker;
+            console.log('Service worker state:', sw.state);
+            if (sw.state === 'activated') {
+              resolve();
+            }
+          });
+        });
+      } else if (registration.waiting) {
+        console.log('Service worker waiting, activating...');
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      } else if (registration.active) {
+        console.log('Service worker already active');
+      }
 
       // Listen for updates
       registration.addEventListener('updatefound', () => {
