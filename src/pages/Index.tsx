@@ -158,7 +158,7 @@ const Index = () => {
                 <motion.img 
                   src={logoText} 
                   alt="SpiritConnect" 
-                  className="h-32 md:h-40 w-auto drop-shadow-2xl relative z-10"
+                  className="h-40 md:h-56 w-auto drop-shadow-[0_15px_35px_rgba(0,0,0,0.5)] relative z-10 brightness-110 contrast-110"
                   animate={{
                     y: [0, -10, 0],
                   }}
