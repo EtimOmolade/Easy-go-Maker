@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { Bell, Plus, X, Clock, Smartphone, CheckCircle, XCircle, AlertCircle, Loader2, Info } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Bell, Plus, X, Clock, Smartphone, CheckCircle, XCircle, AlertCircle, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -30,7 +30,6 @@ const ReminderSettings = () => {
   const [pushPermission, setPushPermission] = useState<NotificationPermission>("default");
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
-  const [pushSubscriptions, setPushSubscriptions] = useState<any[]>([]);
   
   // Unsaved changes tracking
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -63,43 +62,30 @@ const ReminderSettings = () => {
     }
     const subscription = await getCurrentPushSubscription();
     setIsSubscribed(!!subscription);
-    if (user) fetchPushSubscriptions();
-  };
-
-  const fetchPushSubscriptions = async () => {
-    if (!user) return;
-    try {
-      const { data, error } = await supabase.from('push_subscriptions').select('*').eq('user_id', user.id);
-      if (error) throw error;
-      setPushSubscriptions(data || []);
-    } catch (error) {
-      console.error('Error fetching push subscriptions:', error);
-    }
   };
 
   const fetchReminderSettings = async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.from("prayer_reminders").select("*").eq("user_id", user.id).single();
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No settings found, create default
-          await createDefaultSettings();
-          return;
-        }
-        throw error;
-      }
-      setEnabled(data.enabled);
-      setReminderTimes(data.reminder_times || ["07:00", "20:00"]);
-      setNotificationMethods(data.notification_methods || ["in-app"]);
+      const { data, error } = await supabase.from("prayer_reminders").select("*").eq("user_id", user.id).maybeSingle();
+      if (error) throw error;
       
-      // Save initial state for comparison
-      setInitialSettings({
-        enabled: data.enabled,
-        reminderTimes: data.reminder_times || ["07:00", "20:00"],
-        notificationMethods: data.notification_methods || ["in-app"]
-      });
+      if (data) {
+        setEnabled(data.enabled);
+        setReminderTimes(data.reminder_times || ["07:00", "20:00"]);
+        setNotificationMethods(data.notification_methods || ["in-app"]);
+        
+        // Save initial state for comparison
+        setInitialSettings({
+          enabled: data.enabled,
+          reminderTimes: data.reminder_times || ["07:00", "20:00"],
+          notificationMethods: data.notification_methods || ["in-app"]
+        });
+      } else {
+        // No settings found, create default
+        await createDefaultSettings();
+      }
     } catch (error) {
       console.error("Error fetching reminder settings:", error);
       toast.error("Failed to load reminder settings");
@@ -119,6 +105,13 @@ const ReminderSettings = () => {
         enabled: true
       });
       if (error) throw error;
+      
+      // Set initial state after creating defaults
+      setInitialSettings({
+        enabled: true,
+        reminderTimes: ["07:00", "20:00"],
+        notificationMethods: ["in-app"]
+      });
     } catch (error) {
       console.error("Error creating default settings:", error);
     }
@@ -157,58 +150,6 @@ const ReminderSettings = () => {
     }
   };
 
-  const handleEnablePush = async () => {
-    if (!user) return;
-    setSubscribing(true);
-    try {
-      const success = await subscribeToPushNotifications(user.id);
-      if (success) {
-        setIsSubscribed(true);
-        setPushPermission(Notification.permission);
-        if (!notificationMethods.includes('push')) {
-          const newMethods = [...notificationMethods, 'push'];
-          setNotificationMethods(newMethods);
-          await supabase.from("prayer_reminders").upsert({ user_id: user.id, notification_methods: newMethods });
-        }
-        await fetchPushSubscriptions();
-      }
-    } catch (error) {
-      console.error('Error enabling push:', error);
-    } finally {
-      setSubscribing(false);
-    }
-  };
-
-  const handleDisablePush = async () => {
-    if (!user) return;
-    setSubscribing(true);
-    try {
-      await unsubscribeFromPushNotifications(user.id);
-      setIsSubscribed(false);
-      const newMethods = notificationMethods.filter(m => m !== 'push');
-      setNotificationMethods(newMethods);
-      await supabase.from("prayer_reminders").upsert({ user_id: user.id, notification_methods: newMethods });
-      await fetchPushSubscriptions();
-    } catch (error) {
-      console.error('Error disabling push:', error);
-    } finally {
-      setSubscribing(false);
-    }
-  };
-
-  const handleRemoveSubscription = async (subscriptionId: string) => {
-    try {
-      const { error } = await supabase.from('push_subscriptions').delete().eq('id', subscriptionId);
-      if (error) throw error;
-      toast.success('Device removed successfully');
-      await fetchPushSubscriptions();
-      const remainingSubs = pushSubscriptions.filter(s => s.id !== subscriptionId);
-      if (remainingSubs.length === 0) setIsSubscribed(false);
-    } catch (error) {
-      console.error('Error removing subscription:', error);
-      toast.error('Failed to remove device');
-    }
-  };
 
 
   const addReminderTime = () => {
@@ -228,33 +169,106 @@ const ReminderSettings = () => {
     }
   };
 
-  const toggleNotificationMethod = (method: string) => {
-    if (notificationMethods.includes(method)) {
-      if (notificationMethods.length > 1) {
-        setNotificationMethods(notificationMethods.filter(m => m !== method));
+  const toggleNotificationMethod = async (method: string) => {
+    if (method === 'push') {
+      // Check if push is currently enabled
+      const isPushEnabled = notificationMethods.includes('push');
+      
+      if (!isPushEnabled) {
+        // User wants to ENABLE push
+        if (!pushSupported) {
+          toast.error('Push notifications not supported in your browser');
+          return;
+        }
+        
+        if (pushPermission === 'denied') {
+          toast.error('Push permission denied. Please reset in browser settings.');
+          return;
+        }
+        
+        // Automatically subscribe
+        setSubscribing(true);
+        const success = await subscribeToPushNotifications(user!.id);
+        setSubscribing(false);
+        
+        if (success) {
+          setNotificationMethods([...notificationMethods, 'push']);
+          setIsSubscribed(true);
+          setPushPermission(Notification.permission);
+          toast.success('Push notifications enabled');
+        }
       } else {
-        toast.error("You must have at least one notification method");
+        // User wants to DISABLE push
+        if (notificationMethods.length === 1) {
+          toast.error("You must have at least one notification method");
+          return;
+        }
+        
+        setSubscribing(true);
+        const success = await unsubscribeFromPushNotifications(user!.id);
+        setSubscribing(false);
+        
+        if (success) {
+          setNotificationMethods(notificationMethods.filter(m => m !== 'push'));
+          setIsSubscribed(false);
+          toast.success('Push notifications disabled');
+        }
       }
     } else {
-      setNotificationMethods([...notificationMethods, method]);
+      // Toggle other methods normally (in-app)
+      if (notificationMethods.includes(method)) {
+        if (notificationMethods.length > 1) {
+          setNotificationMethods(notificationMethods.filter(m => m !== method));
+        } else {
+          toast.error("You must have at least one notification method");
+        }
+      } else {
+        setNotificationMethods([...notificationMethods, method]);
+      }
     }
   };
 
-  const getPermissionIcon = () => {
-    switch (pushPermission) {
-      case 'granted': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'denied': return <XCircle className="h-4 w-4 text-destructive" />;
-      default: return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+  const getPushStatus = () => {
+    if (!pushSupported) {
+      return {
+        icon: <XCircle className="h-4 w-4 text-muted-foreground" />,
+        text: "Not Supported",
+        description: "Your browser doesn't support push notifications",
+        badge: <Badge variant="outline" className="text-muted-foreground">Not Available</Badge>,
+        canEnable: false,
+      };
     }
+    
+    if (pushPermission === 'denied') {
+      return {
+        icon: <AlertCircle className="h-4 w-4 text-destructive" />,
+        text: "Permission Denied",
+        description: "Please reset permissions in browser settings",
+        badge: <Badge variant="destructive">Blocked</Badge>,
+        canEnable: false,
+      };
+    }
+    
+    if (isSubscribed && notificationMethods.includes('push')) {
+      return {
+        icon: <CheckCircle className="h-4 w-4 text-green-600" />,
+        text: "Active",
+        description: "You'll receive push notifications even when app is closed",
+        badge: <Badge className="bg-green-600">Enabled</Badge>,
+        canEnable: true,
+      };
+    }
+    
+    return {
+      icon: <Smartphone className="h-4 w-4 text-blue-600" />,
+      text: "Available",
+      description: "Click to enable push notifications",
+      badge: <Badge variant="secondary">Click to Enable</Badge>,
+      canEnable: true,
+    };
   };
 
-  const getPermissionText = () => {
-    switch (pushPermission) {
-      case 'granted': return 'Granted';
-      case 'denied': return 'Denied';
-      default: return 'Not Set';
-    }
-  };
+  const pushStatus = getPushStatus();
 
   if (loading) return <div>Loading...</div>;
 
@@ -262,8 +276,13 @@ const ReminderSettings = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5" />Prayer Reminders</CardTitle>
-          <CardDescription>Set up daily reminders to help you maintain your prayer practice</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Prayer Reminders
+          </CardTitle>
+          <CardDescription>
+            Set up daily reminders to help you maintain your prayer practice
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {hasUnsavedChanges && (
@@ -273,10 +292,16 @@ const ReminderSettings = () => {
               </p>
             </div>
           )}
+
           <div className="flex items-center justify-between">
             <Label htmlFor="reminders-enabled">Enable Prayer Reminders</Label>
-            <Switch id="reminders-enabled" checked={enabled} onCheckedChange={setEnabled} />
+            <Switch 
+              id="reminders-enabled" 
+              checked={enabled} 
+              onCheckedChange={setEnabled} 
+            />
           </div>
+
           {enabled && (
             <>
               <div className="space-y-4">
@@ -286,26 +311,129 @@ const ReminderSettings = () => {
                     <div key={time} className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
                       <span className="flex-1 font-mono">{time}</span>
-                      <Button variant="ghost" size="sm" onClick={() => removeReminderTime(time)}><X className="h-4 w-4" /></Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => removeReminderTime(time)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <Input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} className="flex-1" />
-                  <Button onClick={addReminderTime} variant="outline"><Plus className="h-4 w-4 mr-1" />Add Time</Button>
+                  <Input 
+                    type="time" 
+                    value={newTime} 
+                    onChange={(e) => setNewTime(e.target.value)} 
+                    className="flex-1" 
+                  />
+                  <Button onClick={addReminderTime} variant="outline">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Time
+                  </Button>
                 </div>
               </div>
-              <div className="space-y-3">
+
+              <div className="space-y-4">
                 <Label>Notification Methods</Label>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">In-App Notifications</span>
-                    <Switch checked={notificationMethods.includes("in-app")} onCheckedChange={() => toggleNotificationMethod("in-app")} />
+                
+                {/* In-App Notifications */}
+                <div className="flex items-start gap-3 p-3 rounded-lg border">
+                  <Checkbox
+                    id="in-app"
+                    checked={notificationMethods.includes("in-app")}
+                    onCheckedChange={() => toggleNotificationMethod("in-app")}
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <label 
+                      htmlFor="in-app" 
+                      className="text-sm font-medium cursor-pointer flex items-center gap-2"
+                    >
+                      In-App Notifications
+                    </label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Shows modal when app is open
+                    </p>
                   </div>
                 </div>
+
+                {/* Browser Push Notifications */}
+                <div className="flex items-start gap-3 p-3 rounded-lg border">
+                  <Checkbox
+                    id="push"
+                    checked={notificationMethods.includes("push")}
+                    onCheckedChange={() => toggleNotificationMethod("push")}
+                    disabled={subscribing || !pushStatus.canEnable}
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <label 
+                        htmlFor="push" 
+                        className="text-sm font-medium cursor-pointer flex items-center gap-2"
+                      >
+                        Browser Push Notifications
+                        {pushStatus.icon}
+                      </label>
+                      {pushStatus.badge}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {pushStatus.description}
+                    </p>
+                    
+                    {subscribing && (
+                      <p className="text-xs text-blue-600 animate-pulse">
+                        Managing subscription...
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Browser compatibility alert */}
+                {!pushSupported && (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Push Notifications Not Supported</AlertTitle>
+                    <AlertDescription>
+                      Your browser doesn't support push notifications. Try using Chrome, Firefox, Edge, or Safari on desktop.
+                      Mobile browsers may have limited support.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Permission denied alert */}
+                {pushSupported && pushPermission === 'denied' && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Permission Denied</AlertTitle>
+                    <AlertDescription>
+                      To enable push notifications:
+                      <ol className="list-decimal list-inside mt-2 space-y-1">
+                        <li>Click the lock icon in your browser's address bar</li>
+                        <li>Find "Notifications" and change it to "Allow"</li>
+                        <li>Refresh this page and try again</li>
+                      </ol>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Active push notifications info */}
+                {isSubscribed && notificationMethods.includes('push') && (
+                  <Alert>
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertTitle>Push Notifications Active</AlertTitle>
+                    <AlertDescription>
+                      You'll receive notifications in your system tray even when this tab is closed.
+                      Make sure your browser is running (not force-closed).
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             </>
           )}
+
           <Button 
             onClick={handleSave} 
             disabled={saving || !hasUnsavedChanges} 
@@ -314,99 +442,6 @@ const ReminderSettings = () => {
           >
             {saving ? "Saving..." : hasUnsavedChanges ? "Save Changes" : "No Changes"}
           </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Smartphone className="h-5 w-5" />Browser Push Notifications</CardTitle>
-          <CardDescription>Receive prayer reminders and community updates even when the app is closed</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {!pushSupported ? (
-            <div className="text-sm text-muted-foreground p-4 bg-muted rounded-lg">Push notifications are not supported in your browser.</div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <div className="flex items-center gap-2">{getPermissionIcon()}<span className="text-sm font-medium">Permission Status:</span></div>
-                <Badge variant={pushPermission === 'granted' ? 'default' : 'secondary'}>{getPermissionText()}</Badge>
-              </div>
-              {isSubscribed && pushSubscriptions.length > 0 && (
-                <div className="p-3 bg-success/10 rounded-lg border border-success/20">
-                  <p className="text-sm">✓ Push enabled on {pushSubscriptions.length} device{pushSubscriptions.length > 1 ? 's' : ''}</p>
-                </div>
-              )}
-              <div className="space-y-2">
-                {!isSubscribed ? (
-                  <Button 
-                    onClick={handleEnablePush} 
-                    disabled={subscribing || pushPermission === 'denied'} 
-                    className="w-full"
-                  >
-                    {subscribing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Subscribing...
-                      </>
-                    ) : (
-                      'Enable Push Notifications'
-                    )}
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={handleDisablePush} 
-                    disabled={subscribing} 
-                    variant="destructive" 
-                    className="w-full"
-                  >
-                    {subscribing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Unsubscribing...
-                      </>
-                    ) : (
-                      'Disable Push Notifications'
-                    )}
-                  </Button>
-                )}
-              </div>
-              {pushSubscriptions.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-sm">Active Devices ({pushSubscriptions.length})</Label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {pushSubscriptions.map((sub) => (
-                      <div key={sub.id} className="flex items-start justify-between gap-2 p-3 bg-muted rounded-lg text-sm">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{sub.user_agent || 'Unknown Device'}</p>
-                          <p className="text-xs text-muted-foreground">Added: {new Date(sub.created_at).toLocaleDateString()}</p>
-                        </div>
-                        <Button size="sm" variant="ghost" onClick={() => handleRemoveSubscription(sub.id)}><X className="h-4 w-4" /></Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {isSubscribed && (
-                <>
-                  <Separator className="my-4" />
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>How Browser Push Notifications Work</AlertTitle>
-                    <AlertDescription>
-                      <ul className="list-disc list-inside space-y-1 mt-2 text-sm">
-                        <li>Appear in your system notification tray (not just in the app)</li>
-                        <li>Work even when this tab/window is closed</li>
-                        <li>Show notifications even when browser is in background</li>
-                        <li>Require browser to be running (not force-closed)</li>
-                        <li>Queue notifications when offline (delivered when online)</li>
-                        <li>May be hidden by browser when you're actively on this page</li>
-                      </ul>
-                    </AlertDescription>
-                  </Alert>
-                </>
-              )}
-            </>
-          )}
         </CardContent>
       </Card>
     </div>
