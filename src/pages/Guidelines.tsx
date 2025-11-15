@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { AppHeader } from "@/components/AppHeader";
 
 interface Guideline {
   id: string;
@@ -130,21 +131,7 @@ const Guidelines = () => {
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto p-4 md:p-8">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <Button
-              variant="ghost"
-              className="mb-6 text-white hover:bg-white/10 border border-white/20"
-              onClick={() => navigate("/dashboard")}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Back to Dashboard</span>
-              <span className="sm:hidden">Back</span>
-            </Button>
-          </motion.div>
+          <AppHeader title="Prayer Guidelines" showBack={true} backTo="/dashboard" />
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}

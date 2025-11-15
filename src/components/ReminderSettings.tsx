@@ -174,6 +174,40 @@ const ReminderSettings = () => {
     await sendTestPushNotification(user.id);
   };
 
+  const handleTestPrayerReminder = async () => {
+    if (!user) return;
+    try {
+      // Create a test notification in the database
+      const { error: notifError } = await supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'prayer_reminder',
+        title: '🕊️ Prayer Time!',
+        message: 'Test prayer reminder - Time for your daily prayer session',
+        related_type: 'guideline'
+      });
+
+      if (notifError) throw notifError;
+
+      // Send push notification if push is enabled
+      if (notificationMethods.includes('push')) {
+        await supabase.functions.invoke('send-push-notification', {
+          body: {
+            type: 'prayer_reminder',
+            title: '🕊️ Prayer Time!',
+            message: 'Test prayer reminder - Time for your daily prayer session',
+            url: '/guidelines',
+            userId: user.id
+          }
+        });
+      }
+
+      toast.success('Test prayer reminder sent! Check your notifications.');
+    } catch (error) {
+      console.error('Error sending test reminder:', error);
+      toast.error('Failed to send test reminder');
+    }
+  };
+
   const addReminderTime = () => {
     if (!reminderTimes.includes(newTime)) {
       setReminderTimes([...reminderTimes, newTime].sort());

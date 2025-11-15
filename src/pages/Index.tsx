@@ -4,6 +4,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Heart, Users, Sparkles, ArrowRight } from "lucide-react";
+import logoText from "@/assets/logo-text.png";
 
 const Index = () => {
   const navigate = useNavigate();
