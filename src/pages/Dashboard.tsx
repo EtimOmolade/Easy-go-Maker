@@ -469,37 +469,64 @@ const Dashboard = () => {
             />
           </motion.div>
 
-          {/* Header */}
+          {/* Welcome Section */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8"
+            className="relative mb-8"
           >
-            <div>
-              <h1 className="text-4xl md:text-5xl font-heading font-bold text-white mb-2 drop-shadow-lg">
-                Welcome back, {profile?.name || "Friend"}!
-              </h1>
-              <p className="text-white/90 text-lg drop-shadow">Continue your prayer journey today</p>
-            </div>
-            <div className="flex items-center gap-4">
-              {user && <NotificationDropdown userId={user.id} isAdmin={isAdmin} />}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      haptics.light();
-                      signOut();
-                    }}
-                    className="border-white/30 text-white bg-white/10 hover:border-white hover:bg-white/20 transition-all backdrop-blur-sm min-h-[44px]"
+            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl">
+              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                {/* Welcome Text */}
+                <div className="flex-1 space-y-2">
+                  <motion.h1 
+                    className="text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-white leading-tight"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Sign Out</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Sign out of your account</TooltipContent>
-              </Tooltip>
+                    Welcome back,
+                    <span className="block text-primary mt-1 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">
+                      {profile?.name || "Friend"}!
+                    </span>
+                  </motion.h1>
+                  <motion.p 
+                    className="text-white/80 text-base md:text-lg font-light"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                  >
+                    Continue your prayer journey today
+                  </motion.p>
+                </div>
+
+                {/* Actions */}
+                <motion.div 
+                  className="flex items-center gap-3 w-full lg:w-auto"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.4 }}
+                >
+                  {user && <NotificationDropdown userId={user.id} isAdmin={isAdmin} />}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          haptics.light();
+                          signOut();
+                        }}
+                        className="border-white/20 text-white bg-white/10 hover:border-white/40 hover:bg-white/20 transition-all backdrop-blur-sm min-h-[44px] flex-1 lg:flex-initial"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Sign Out</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Sign out of your account</TooltipContent>
+                  </Tooltip>
+                </motion.div>
+              </div>
             </div>
           </motion.div>
 
