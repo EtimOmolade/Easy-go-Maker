@@ -4,6 +4,7 @@ import "./index.css";
 import { registerServiceWorker } from "./utils/registerServiceWorker";
 
 // Register service worker for offline support
-registerServiceWorker();
+// TEMPORARILY DISABLED - Uncomment when ready to test offline mode
+// registerServiceWorker();
 
 createRoot(document.getElementById("root")!).render(<App />);
