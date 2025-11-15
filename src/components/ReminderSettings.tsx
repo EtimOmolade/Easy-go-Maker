@@ -5,7 +5,9 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Plus, X, Clock, Smartphone, CheckCircle, XCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { Bell, Plus, X, Clock, Smartphone, CheckCircle, XCircle, AlertCircle, Loader2, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -14,7 +16,6 @@ import {
   subscribeToPushNotifications,
   unsubscribeFromPushNotifications,
   getCurrentPushSubscription,
-  sendTestPushNotification,
 } from "@/utils/pushNotifications";
 
 const ReminderSettings = () => {
@@ -209,57 +210,6 @@ const ReminderSettings = () => {
     }
   };
 
-  const handleTestPush = async () => {
-    if (!user) return;
-    await sendTestPushNotification(user.id);
-  };
-
-  const handleTestPrayerReminder = async () => {
-    if (!user) return;
-    try {
-      // Create a test notification in the database
-      const { data: notification, error: notifError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: user.id,
-          type: 'prayer_reminder',
-          title: '🕊️ Prayer Time!',
-          message: 'Test prayer reminder - Time for your daily prayer session',
-          related_type: 'guideline'
-        })
-        .select()
-        .single();
-
-      if (notifError) throw notifError;
-
-      // Send push notification if push is enabled
-      if (notificationMethods.includes('push')) {
-        const { error: pushError } = await supabase.functions.invoke('send-push-notification', {
-          body: {
-            type: 'prayer_reminder',
-            title: '🕊️ Prayer Time!',
-            message: 'Test prayer reminder - Time for your daily prayer session',
-            url: '/guidelines',
-            userId: user.id,
-            notificationId: notification.id
-          }
-        });
-
-        if (pushError) {
-          console.error('Error sending push:', pushError);
-          toast.error("In-app notification sent, but push notification failed");
-          return;
-        }
-
-        toast.success("Test sent! Check your notification center and browser notifications. Browser notifications appear when you're not on this page.", { duration: 5000 });
-      } else {
-        toast.success("Test sent to notification center! Enable push notifications to also receive browser alerts.", { duration: 5000 });
-      }
-    } catch (error) {
-      console.error('Error sending test reminder:', error);
-      toast.error('Failed to send test reminder');
-    }
-  };
 
   const addReminderTime = () => {
     if (!reminderTimes.includes(newTime)) {
@@ -364,16 +314,6 @@ const ReminderSettings = () => {
           >
             {saving ? "Saving..." : hasUnsavedChanges ? "Save Changes" : "No Changes"}
           </Button>
-          {enabled && (
-            <Button 
-              onClick={handleTestPrayerReminder} 
-              variant="outline" 
-              className="w-full mt-2"
-            >
-              <Bell className="h-4 w-4 mr-2" />
-              Test Prayer Reminder
-            </Button>
-          )}
         </CardContent>
       </Card>
 
@@ -447,26 +387,24 @@ const ReminderSettings = () => {
                 </div>
               )}
               {isSubscribed && (
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-green-900 dark:text-green-100">
-                        Push Notifications Active
-                      </h4>
-                      <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-                        You'll receive prayer reminders even when the app is closed. Browser notifications work best when:
-                      </p>
-                      <ul className="text-xs text-green-700 dark:text-green-300 mt-2 space-y-1 list-disc list-inside">
-                        <li>Your browser is running in the background</li>
-                        <li>You're not currently on this page (browser hides notifications from active tabs)</li>
-                        <li>Your device is online (notifications queue when offline)</li>
+                <>
+                  <Separator className="my-4" />
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>How Browser Push Notifications Work</AlertTitle>
+                    <AlertDescription>
+                      <ul className="list-disc list-inside space-y-1 mt-2 text-sm">
+                        <li>Appear in your system notification tray (not just in the app)</li>
+                        <li>Work even when this tab/window is closed</li>
+                        <li>Show notifications even when browser is in background</li>
+                        <li>Require browser to be running (not force-closed)</li>
+                        <li>Queue notifications when offline (delivered when online)</li>
+                        <li>May be hidden by browser when you're actively on this page</li>
                       </ul>
-                    </div>
-                  </div>
-                </div>
+                    </AlertDescription>
+                  </Alert>
+                </>
               )}
-              {isSubscribed && <Button onClick={handleTestPush} variant="outline" className="w-full">Send Test Notification</Button>}
             </>
           )}
         </CardContent>
