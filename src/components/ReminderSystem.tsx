@@ -48,8 +48,20 @@ const ReminderSystem = () => {
         // Check if currently snoozed
         if (reminderSettings.snooze_until) {
           const snoozeUntil = new Date(reminderSettings.snooze_until);
-          if (snoozeUntil > new Date()) {
+          const now = new Date();
+          
+          if (snoozeUntil > now) {
+            const minutesLeft = Math.round((snoozeUntil.getTime() - now.getTime()) / 60000);
+            console.log(`⏰ Reminders snoozed for ${minutesLeft} more minutes`);
             return; // Still snoozed
+          } else {
+            // Clear expired snooze from database
+            await supabase
+              .from("prayer_reminders")
+              .update({ snooze_until: null })
+              .eq("user_id", user.id);
+            
+            console.log('✅ Snooze expired, reminders resuming');
           }
         }
 
