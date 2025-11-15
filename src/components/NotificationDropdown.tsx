@@ -30,11 +30,36 @@ const NotificationDropdown = ({ userId }: NotificationDropdownProps) => {
 
   useEffect(() => {
     loadNotifications();
-    const channel = supabase.channel('notifications').on('postgres_changes', {
-      event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}`
-    }, (payload) => {
-      setNotifications((prev) => [payload.new as Notification, ...prev]);
-    }).subscribe();
+    const channel = supabase.channel('notifications')
+      .on('postgres_changes', {
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'notifications', 
+        filter: `user_id=eq.${userId}`
+      }, (payload) => {
+        setNotifications((prev) => [payload.new as Notification, ...prev]);
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`
+      }, (payload) => {
+        setNotifications((prev) => 
+          prev.filter((n) => n.id !== (payload.old as Notification).id)
+        );
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`
+      }, (payload) => {
+        setNotifications((prev) =>
+          prev.map((n) => n.id === (payload.new as Notification).id ? payload.new as Notification : n)
+        );
+      })
+      .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [userId]);
 

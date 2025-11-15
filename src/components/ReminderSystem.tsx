@@ -27,20 +27,22 @@ const ReminderSystem = () => {
           .select("*")
           .eq("user_id", user.id)
           .eq("enabled", true)
-          .maybeSingle();
+          .single();
 
-        if (settingsError) throw settingsError;
-
-        // If no settings found, create default
-        if (!reminderSettings) {
-          await supabase.from("prayer_reminders").insert({
-            user_id: user.id,
-            reminder_type: "daily",
-            reminder_times: ["07:00", "20:00"],
-            notification_methods: ["in-app"],
-            enabled: true
-          });
-          return;
+        if (settingsError) {
+          if (settingsError.code === 'PGRST116') {
+            // No settings found, create default
+            const { error: insertError } = await supabase.from("prayer_reminders").insert({
+              user_id: user.id,
+              reminder_type: "daily",
+              reminder_times: ["07:00", "20:00"],
+              notification_methods: ["in-app"],
+              enabled: true
+            });
+            if (insertError) console.error("Error creating default settings:", insertError);
+            return;
+          }
+          throw settingsError;
         }
 
         // Check if currently snoozed
