@@ -17,9 +17,14 @@ export const TutorialWalkthrough = ({ run, onComplete }: TutorialWalkthroughProp
       placement: "bottom",
     },
     {
-      target: '[data-tour="prayer-streak"]',
+      target: '[data-tour="streak-count"]',
       content: "Track your prayer streak here! Pray daily to build your streak and unlock milestones.",
-      placement: "top",
+      placement: "left",
+    },
+    {
+      target: '[data-tour="streak-badge"]',
+      content: "This is where you track your achieved and earned badges based on your prayer journey milestones.",
+      placement: "left",
     },
     {
       target: '[data-tour="quick-actions"]',
