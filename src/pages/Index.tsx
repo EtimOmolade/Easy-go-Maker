@@ -126,50 +126,98 @@ const Index = () => {
             transition={{ type: "spring", stiffness: 100, delay: 0.2 }}
             className="flex justify-center mb-8"
           >
-            <div className="relative">
-              {/* Animated Glow Effect */}
+            <motion.div
+              className="relative cursor-pointer"
+              whileHover={{ scale: 1.1 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              {/* Multi-layered Glow Effects */}
               <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-secondary/50 via-primary-light/50 to-secondary/50 rounded-full blur-3xl"
+                className="absolute -inset-8 bg-gradient-to-r from-secondary via-primary-light to-secondary rounded-lg blur-3xl opacity-60"
                 animate={{
-                  scale: [1, 1.4, 1],
-                  opacity: [0.4, 0.8, 0.4],
+                  scale: [1, 1.2, 1],
                   rotate: [0, 180, 360],
                 }}
                 transition={{
-                  duration: 8,
+                  duration: 10,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
+              />
+              <motion.div
+                className="absolute -inset-4 bg-gradient-to-br from-primary/40 via-secondary/40 to-primary/40 rounded-lg blur-2xl"
+                animate={{
+                  opacity: [0.5, 0.9, 0.5],
+                  scale: [0.95, 1.05, 0.95],
+                }}
+                transition={{
+                  duration: 3,
                   repeat: Infinity,
                   ease: "easeInOut",
                 }}
               />
-              {/* 3D Container with Shadow */}
-              <div className="relative p-8 bg-gradient-to-br from-white/30 via-white/20 to-white/10 backdrop-blur-xl rounded-full shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3),0_0_40px_rgba(255,255,255,0.2)] border-2 border-white/40">
-                {/* Inner Glow */}
-                <motion.div
-                  className="absolute inset-2 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full blur-xl"
-                  animate={{
-                    opacity: [0.3, 0.6, 0.3],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                />
-                <motion.img 
-                  src={logoText} 
-                  alt="SpiritConnect" 
-                  className="h-40 md:h-56 w-auto drop-shadow-[0_15px_35px_rgba(0,0,0,0.5)] relative z-10 brightness-110 contrast-110"
-                  animate={{
-                    y: [0, -10, 0],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                />
-              </div>
-            </div>
+              
+              {/* Logo with Interactive Animation */}
+              <motion.img 
+                src={logoText} 
+                alt="SpiritConnect" 
+                className="h-40 md:h-56 w-auto relative z-10 filter drop-shadow-[0_0_25px_rgba(255,255,255,0.8)] drop-shadow-[0_10px_40px_rgba(0,0,0,0.6)]"
+                animate={{
+                  y: [0, -15, 0],
+                  filter: [
+                    "brightness(1) drop-shadow(0 0 25px rgba(255,255,255,0.8))",
+                    "brightness(1.2) drop-shadow(0 0 35px rgba(255,255,255,1))",
+                    "brightness(1) drop-shadow(0 0 25px rgba(255,255,255,0.8))",
+                  ],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+                whileHover={{
+                  scale: 1.05,
+                  rotate: [0, -5, 5, -5, 0],
+                  filter: "brightness(1.3) drop-shadow(0 0 50px rgba(255,255,255,1))",
+                  transition: {
+                    rotate: {
+                      duration: 0.5,
+                      repeat: Infinity,
+                    },
+                    filter: {
+                      duration: 0.3,
+                    }
+                  }
+                }}
+              />
+              
+              {/* Sparkle Effects on Hover */}
+              <motion.div
+                className="absolute inset-0 pointer-events-none"
+                initial={{ opacity: 0 }}
+                whileHover={{ opacity: 1 }}
+              >
+                {[...Array(6)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-2 h-2 bg-white rounded-full"
+                    style={{
+                      left: `${20 + i * 15}%`,
+                      top: `${30 + (i % 2) * 40}%`,
+                    }}
+                    animate={{
+                      scale: [0, 1, 0],
+                      opacity: [0, 1, 0],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      delay: i * 0.2,
+                    }}
+                  />
+                ))}
+              </motion.div>
+            </motion.div>
           </motion.div>
 
           <motion.h1
