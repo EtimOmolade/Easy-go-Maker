@@ -2,7 +2,8 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { BookHeart, BookMarked, MessageSquare, Flame, ChevronRight, ChevronLeft, Check } from "lucide-react";
+import { Heart, NotebookPen, TrendingUp, ChevronRight, ChevronLeft, Check } from "lucide-react";
+import logoOnly from "@/assets/logo-only.png";
 import { Progress } from "@/components/ui/progress";
 
 interface WelcomeWizardProps {
@@ -14,28 +15,29 @@ const wizardSteps = [
   {
     title: "Welcome to SpiritConnect!",
     description: "Your personal companion for guided prayer and spiritual growth. Let us show you around in just a few steps.",
-    icon: BookHeart,
+    icon: null,
+    useLogo: true,
     color: "text-primary",
     bgGradient: "from-primary/20 to-primary-light/20",
   },
   {
     title: "Daily Prayer Focus",
     description: "Each day features a guided prayer session to help you maintain a consistent prayer routine and deepen your faith.",
-    icon: BookMarked,
-    color: "text-secondary",
-    bgGradient: "from-secondary/20 to-secondary/30",
+    icon: Heart,
+    color: "text-rose-500",
+    bgGradient: "from-rose-500/20 to-pink-500/30",
   },
   {
     title: "Track Your Journey",
     description: "Build prayer streaks, unlock milestones, and see your spiritual growth visualized through your prayer calendar.",
-    icon: Flame,
-    color: "text-orange-500",
-    bgGradient: "from-orange-500/20 to-red-500/20",
+    icon: TrendingUp,
+    color: "text-emerald-500",
+    bgGradient: "from-emerald-500/20 to-green-500/20",
   },
   {
     title: "Journal & Share",
     description: "Record your spiritual insights in your private journal and share inspiring testimonies with the community.",
-    icon: MessageSquare,
+    icon: NotebookPen,
     color: "text-primary-light",
     bgGradient: "from-primary-light/20 to-primary/20",
   },
@@ -126,19 +128,51 @@ export const WelcomeWizard = ({ isOpen, onComplete }: WelcomeWizardProps) => {
                 className="text-center py-8"
               >
                 {/* Icon */}
-                <motion.div
-                  className="mx-auto mb-6 w-24 h-24 bg-gradient-to-br from-primary to-primary-light rounded-3xl flex items-center justify-center shadow-glow"
-                  animate={{
-                    scale: [1, 1.05, 1],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <Icon className={`h-12 w-12 text-white`} />
-                </motion.div>
+                {currentStepData.useLogo ? (
+                  <motion.div
+                    className="mx-auto mb-6 w-28 h-28 bg-gradient-to-br from-primary to-primary-light rounded-3xl flex items-center justify-center shadow-glow p-4"
+                    animate={{
+                      scale: [1, 1.08, 1],
+                      rotate: [0, 2, -2, 0],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    <motion.img 
+                      src={logoOnly} 
+                      alt="SpiritConnect Logo"
+                      className="w-full h-full object-contain"
+                      animate={{
+                        filter: [
+                          "drop-shadow(0 0 8px rgba(255,255,255,0.5))",
+                          "drop-shadow(0 0 16px rgba(255,255,255,0.8))",
+                          "drop-shadow(0 0 8px rgba(255,255,255,0.5))",
+                        ],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                      }}
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    className="mx-auto mb-6 w-24 h-24 bg-gradient-to-br from-primary to-primary-light rounded-3xl flex items-center justify-center shadow-glow"
+                    animate={{
+                      scale: [1, 1.05, 1],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    <Icon className="h-12 w-12 text-white" />
+                  </motion.div>
+                )}
 
                 {/* Title */}
                 <h2 className="text-3xl font-heading font-bold mb-4">
