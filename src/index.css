@@ -8,10 +8,10 @@
     --background: 0 0% 100%;
     --foreground: 230 50% 20%;
 
-    --card: 0 0% 100%;
+    --card: 230 10% 98%;
     --card-foreground: 230 50% 20%;
 
-    --popover: 0 0% 100%;
+    --popover: 230 10% 98%;
     --popover-foreground: 230 50% 20%;
 
     /* Primary: Deep Royal Blue (#2E3A87) */
@@ -26,16 +26,16 @@
     --secondary-glow: 45 68% 65%;
 
     /* Accent: Soft Grey */
-    --accent: 0 0% 95%;
+    --accent: 230 10% 96%;
     --accent-foreground: 230 50% 20%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 230 20% 50%;
+    --muted: 230 5% 94%;
+    --muted-foreground: 230 25% 40%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 230 20% 90%;
+    --border: 230 20% 85%;
     --input: 230 20% 92%;
     --ring: 230 50% 35%;
 
@@ -45,13 +45,13 @@
     --gradient-primary: linear-gradient(135deg, hsl(230 50% 35%), hsl(230 50% 50%));
     --gradient-secondary: linear-gradient(135deg, hsl(45 68% 53%), hsl(45 68% 65%));
     --gradient-hero: linear-gradient(135deg, hsl(230 50% 35%) 0%, hsl(230 50% 45%) 40%, hsl(45 68% 53%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(230 5% 98%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(230 10% 96%));
     --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
 
     /* Premium Shadows */
-    --shadow-soft: 0 4px 12px hsl(230 50% 35% / 0.08);
-    --shadow-medium: 0 8px 24px hsl(230 50% 35% / 0.12);
-    --shadow-large: 0 12px 40px hsl(230 50% 35% / 0.16);
+    --shadow-soft: 0 4px 12px hsl(230 50% 35% / 0.15);
+    --shadow-medium: 0 8px 24px hsl(230 50% 35% / 0.20);
+    --shadow-large: 0 12px 40px hsl(230 50% 35% / 0.25);
     --shadow-glow: 0 0 40px hsl(45 68% 53% / 0.35);
     --shadow-glow-primary: 0 0 40px hsl(230 50% 45% / 0.3);
 
