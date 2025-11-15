@@ -441,33 +441,8 @@ const Journal = () => {
       <div className="container relative z-10 mx-auto p-4 md:p-6 max-w-7xl">
         {/* Header */}
         <AppHeader title="Prayer Journal" showBack={true} backTo="/dashboard" />
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex items-center gap-3">
-              <motion.div
-                animate={{
-                  scale: [1, 1.1, 1],
-                  rotate: [0, 5, -5, 0],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                }}
-              >
-                <BookText className="h-8 w-8 text-secondary" />
-              </motion.div>
-              <div>
-                <h1 className="text-3xl font-bold text-white drop-shadow-lg">
-                  Prayer Journal
-                </h1>
-                <p className="text-white/90 mt-1 drop-shadow">
-                  Record your prayers, reflections, and answered prayers
-                </p>
-              </div>
-            </div>
-          </div>
           
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -553,7 +528,6 @@ const Journal = () => {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
 
         {/* Search Bar */}
         <div className="mb-6">
