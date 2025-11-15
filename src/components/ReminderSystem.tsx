@@ -96,6 +96,36 @@ const ReminderSystem = () => {
         );
 
         if (shouldShowReminder) {
+          // Create notification in database
+          const { data: notification } = await supabase
+            .from('notifications')
+            .insert({
+              user_id: user.id,
+              type: 'prayer_reminder',
+              title: '🕊️ Time for Prayer',
+              message: `Keep your ${streakCount} day streak going!`,
+              related_type: 'guideline',
+              related_id: null,
+            })
+            .select()
+            .single();
+
+          // Send push notification if enabled
+          const notificationMethods = reminderSettings.notification_methods || [];
+          if (notificationMethods.includes('push')) {
+            await supabase.functions.invoke('send-push-notification', {
+              body: {
+                type: 'prayer_reminder',
+                title: '🕊️ Time for Prayer',
+                message: `Keep your ${streakCount} day streak going!`,
+                url: '/guidelines',
+                userId: user.id,
+                notificationId: notification?.id,
+              },
+            });
+          }
+
+          // Show in-app modal
           setShowReminderModal(true);
           
           // Update last_reminded_at

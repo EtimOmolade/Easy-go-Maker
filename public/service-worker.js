@@ -102,3 +102,73 @@ async function syncJournal() {
     });
   });
 }
+
+// Handle push events
+self.addEventListener('push', (event) => {
+  console.log('Push event received:', event);
+  
+  if (!event.data) {
+    console.log('Push event has no data');
+    return;
+  }
+
+  try {
+    const data = event.data.json();
+    console.log('Push notification data:', data);
+    
+    const options = {
+      body: data.body || data.message,
+      icon: data.icon || '/icon-192.png',
+      badge: data.badge || '/badge-72.png',
+      tag: data.tag || data.type,
+      data: data.data || { url: data.url, type: data.type },
+      actions: data.actions || [
+        { action: 'open', title: 'Open App' },
+        { action: 'dismiss', title: 'Dismiss' }
+      ],
+      vibrate: [200, 100, 200],
+      requireInteraction: data.requireInteraction || false
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(data.title, options)
+    );
+  } catch (error) {
+    console.error('Error handling push event:', error);
+  }
+});
+
+// Handle notification clicks
+self.addEventListener('notificationclick', (event) => {
+  console.log('Notification clicked:', event);
+  event.notification.close();
+
+  if (event.action === 'dismiss') {
+    return;
+  }
+
+  const urlToOpen = event.notification.data?.url || '/dashboard';
+  const notificationId = event.notification.data?.notificationId;
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((windowClients) => {
+        // Check if there's already a window open
+        for (const client of windowClients) {
+          if (client.url.includes(urlToOpen) && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Open new window if none found
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+      .then(() => {
+        // Mark notification as read if it has an ID
+        if (notificationId) {
+          console.log('Notification opened, ID:', notificationId);
+        }
+      })
+  );
+});
