@@ -26,6 +26,7 @@ import {
 import { JournalSkeleton } from "@/components/LoadingSkeleton";
 import { haptics } from "@/utils/haptics";
 import { useOfflineJournal } from "@/hooks/useOfflineJournal";
+import { AppHeader } from "@/components/AppHeader";
 
 interface JournalEntry {
   id: string;
@@ -439,14 +440,7 @@ const Journal = () => {
 
       <div className="container relative z-10 mx-auto p-4 md:p-6 max-w-7xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/dashboard")}
-              className="hover:bg-white/10 text-white border border-white/20"
-            >
+        <AppHeader title="Prayer Journal" showBack={true} backTo="/dashboard" />
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-3">

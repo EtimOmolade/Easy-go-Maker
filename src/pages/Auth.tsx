@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Loader2, BookOpen, Eye, EyeOff, Sparkles } from "lucide-react";
 import { generateDeviceFingerprint } from "@/utils/deviceFingerprint";
+import logoText from "@/assets/logo-text.png";
 
 const Auth = () => {
   const location = useLocation();
