@@ -429,10 +429,10 @@ const Dashboard = () => {
             className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8"
           >
             <div>
-              <h1 className="text-4xl md:text-5xl font-heading font-bold text-white mb-2 drop-shadow-lg">
+              <h1 className="text-4xl md:text-5xl font-heading font-bold dark:text-white text-foreground mb-2 drop-shadow-lg">
                 Welcome back, {profile?.name || "Friend"}!
               </h1>
-              <p className="text-white/90 text-lg drop-shadow">Continue your prayer journey today</p>
+              <p className="dark:text-white/90 text-muted-foreground text-lg drop-shadow">Continue your prayer journey today</p>
             </div>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -485,10 +485,10 @@ const Dashboard = () => {
                         ease: "easeInOut",
                       }}
                     >
-                      <BookHeart className="h-8 w-8 text-white" />
+                      <BookHeart className="h-8 w-8 dark:text-white text-primary" />
                     </motion.div>
-                    <CardTitle className="text-3xl md:text-4xl font-heading text-white dark:text-white">Today's Prayer Focus</CardTitle>
-                    <CardDescription className="text-base mt-2 text-muted-foreground dark:text-white/80">
+                    <CardTitle className="text-3xl md:text-4xl font-heading dark:text-white text-foreground">Today's Prayer Focus</CardTitle>
+                    <CardDescription className="text-base mt-2 dark:text-white/80 text-muted-foreground">
                       {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                     </CardDescription>
                   </CardHeader>
@@ -496,10 +496,10 @@ const Dashboard = () => {
                     {todaysGuideline ? (
                       <>
                         <div className="text-center">
-                          <h3 className="text-2xl font-semibold mb-4 text-white dark:text-white">
-                            {todaysGuideline.title}
-                          </h3>
-                          <p className="text-muted-foreground dark:text-white/80 leading-relaxed mb-6 whitespace-pre-wrap text-lg">
+                      <h3 className="text-2xl font-semibold mb-4 dark:text-white text-foreground">
+                        {todaysGuideline.title}
+                      </h3>
+                      <p className="dark:text-white/80 text-muted-foreground leading-relaxed mb-6 whitespace-pre-wrap text-lg">
                             {todaysGuideline.content?.substring(0, 200)}...
                           </p>
                         </div>
@@ -526,7 +526,7 @@ const Dashboard = () => {
                     ) : (
                       <>
                         <div className="text-center">
-                          <p className="text-muted-foreground dark:text-white/80 leading-relaxed mb-6 text-lg">
+                          <p className="dark:text-white/80 text-muted-foreground leading-relaxed mb-6 text-lg">
                             No prayer guideline scheduled for today. Explore all available prayers below or check back tomorrow.
                           </p>
                         </div>
@@ -561,7 +561,7 @@ const Dashboard = () => {
                 <Card className="shadow-large glass border-white/20 overflow-hidden relative" data-tour="prayer-streak">
                   <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-secondary/5" />
                   <CardHeader className="relative z-10 pb-2">
-                    <CardTitle className="flex items-center gap-2 text-white">
+                <CardTitle className="flex items-center gap-2 dark:text-white text-foreground">
                       <Flame className="h-5 w-5 text-secondary" />
                       Your Prayer Streak
                     </CardTitle>
@@ -578,17 +578,17 @@ const Dashboard = () => {
                         >
                           <div className="text-center">
                             <motion.p
-                              className="text-4xl font-bold text-white"
+                              className="text-4xl font-bold dark:text-white text-foreground"
                               animate={{ scale: [1, 1.1, 1] }}
                               transition={{ duration: 2, repeat: Infinity }}
                             >
                               {profile.streak_count}
                             </motion.p>
-                            <p className="text-sm text-white/80">days</p>
+                            <p className="text-sm dark:text-white/80 text-muted-foreground">days</p>
                           </div>
                         </CircularProgress>
                         <div className="text-center">
-                          <p className="text-sm text-white/90">
+                          <p className="text-sm dark:text-white/90 text-muted-foreground">
                             {milestoneData.daysToNext} days to
                           </p>
                           <p className="font-semibold text-secondary">
@@ -613,17 +613,17 @@ const Dashboard = () => {
                           {(milestoneData.lastAchieved || milestoneData.nextMilestone).emoji}
                         </motion.div>
                         <div className="text-center">
-                          <p className="font-bold text-lg text-white">
+                          <p className="font-bold text-lg dark:text-white text-foreground">
                             {(milestoneData.lastAchieved || milestoneData.nextMilestone).name}
                           </p>
-                          <p className="text-xs text-white/70">Current Badge</p>
+                          <p className="text-xs dark:text-white/70 text-muted-foreground">Current Badge</p>
                         </div>
                       </div>
                     </div>
 
                     {/* Weekly Calendar */}
                     <div className="border-t border-white/20 pt-6" data-tour="prayer-journey">
-                      <p className="text-sm text-white/90 text-center mb-4">This Week's Progress</p>
+                      <p className="text-sm dark:text-white/90 text-muted-foreground text-center mb-4">This Week's Progress</p>
                       <WeeklyCalendar completedDays={completedDays} />
                     </div>
                   </CardContent>
@@ -633,7 +633,7 @@ const Dashboard = () => {
 
             {/* Quick Actions */}
             <motion.div variants={itemVariants}>
-              <h2 className="text-2xl font-heading font-semibold mb-4 text-white drop-shadow">Quick Actions</h2>
+              <h2 className="text-2xl font-heading font-semibold mb-4 dark:text-white text-foreground drop-shadow">Quick Actions</h2>
               <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4" data-tour="quick-actions">
                 {quickActions.map((action) => (
                   <motion.div
@@ -658,13 +658,13 @@ const Dashboard = () => {
                           whileHover={{ rotate: 360 }}
                           transition={{ duration: 0.6 }}
                         >
-                          <action.icon className="h-6 w-6 md:h-7 md:w-7 text-white" />
+                          <action.icon className="h-6 w-6 md:h-7 md:w-7 dark:text-white text-primary" />
                         </motion.div>
-                        <CardTitle className="text-base md:text-xl font-heading text-white mb-1 md:mb-2">
+                        <CardTitle className="text-base md:text-xl font-heading dark:text-white text-foreground mb-1 md:mb-2">
                           {action.title}
                         </CardTitle>
                         {/* Always visible description for mobile-first approach */}
-                        <CardDescription className="text-xs md:text-sm text-white/80 leading-tight">
+                        <CardDescription className="text-xs md:text-sm dark:text-white/80 text-muted-foreground leading-tight">
                           {action.description}
                         </CardDescription>
                       </CardHeader>
@@ -680,11 +680,11 @@ const Dashboard = () => {
                 <Card className="shadow-large glass border-white/20 overflow-hidden relative" data-encouragement-card>
                   <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-secondary/5" />
                   <CardHeader className="relative z-10">
-                    <CardTitle className="flex items-center gap-2 text-white">
+                    <CardTitle className="flex items-center gap-2 dark:text-white text-foreground">
                       <Megaphone className="h-5 w-5 text-secondary" />
                       Community Updates
                     </CardTitle>
-                    <CardDescription className="text-white/80">Latest news and announcements</CardDescription>
+                    <CardDescription className="dark:text-white/80 text-muted-foreground">Latest news and announcements</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 relative z-10">
                     {(showAllAnnouncements ? encouragementMessages : encouragementMessages.slice(0, 1)).map((message, index) => (
@@ -695,8 +695,8 @@ const Dashboard = () => {
                         transition={{ delay: index * 0.1 }}
                         className={`p-4 rounded-xl ${index === 0 ? 'bg-secondary/20 border-l-4 border-secondary' : 'bg-white/10'}`}
                       >
-                        <p className="text-foreground dark:text-white/90 whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                        <p className="text-xs text-muted-foreground dark:text-white/60 mt-2">
+                    <p className="dark:text-white/90 text-foreground whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                    <p className="text-xs dark:text-white/60 text-muted-foreground mt-2">
                           {new Date(message.created_at).toLocaleDateString('en-US', {
                             weekday: 'short',
                             month: 'short',
@@ -712,7 +712,7 @@ const Dashboard = () => {
                       <Button
                         variant="ghost"
                         onClick={() => setShowAllAnnouncements(!showAllAnnouncements)}
-                        className="w-full hover:bg-white/10 text-white"
+                        className="w-full hover:bg-white/10 dark:text-white text-foreground"
                       >
                         {showAllAnnouncements
                           ? 'Show Less'
@@ -731,7 +731,7 @@ const Dashboard = () => {
                 <Card className="shadow-large glass border-white/20 overflow-hidden relative">
                   <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-accent/10" />
                   <CardHeader className="relative z-10">
-                    <CardTitle className="flex items-center gap-2 text-white">
+                    <CardTitle className="flex items-center gap-2 dark:text-white text-foreground">
                       <Shield className="h-6 w-6 text-secondary" />
                       Admin Access
                       {pendingTestimonyCount > 0 && (
@@ -740,7 +740,7 @@ const Dashboard = () => {
                         </Badge>
                       )}
                     </CardTitle>
-                    <CardDescription className="text-white/80">Manage content and moderate the community</CardDescription>
+                    <CardDescription className="dark:text-white/80 text-muted-foreground">Manage content and moderate the community</CardDescription>
                   </CardHeader>
                   <CardContent className="relative z-10">
                     <Button
