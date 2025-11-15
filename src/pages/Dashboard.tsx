@@ -487,7 +487,7 @@ const Dashboard = () => {
                     transition={{ duration: 0.5, delay: 0.2 }}
                   >
                     Welcome back,
-                    <span className="block text-primary mt-1 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">
+                    <span className="block text-purple-900 dark:text-primary mt-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)] dark:drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] font-bold">
                       {profile?.name || "Friend"}!
                     </span>
                   </motion.h1>
