@@ -126,19 +126,50 @@ const Index = () => {
             transition={{ type: "spring", stiffness: 100, delay: 0.2 }}
             className="flex justify-center mb-8"
           >
-            <motion.img 
-              src={logoText} 
-              alt="SpiritConnect" 
-              className="h-32 md:h-40 w-auto drop-shadow-2xl"
-              animate={{
-                y: [0, -10, 0],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            />
+            <div className="relative">
+              {/* Animated Glow Effect */}
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-secondary/50 via-primary-light/50 to-secondary/50 rounded-full blur-3xl"
+                animate={{
+                  scale: [1, 1.4, 1],
+                  opacity: [0.4, 0.8, 0.4],
+                  rotate: [0, 180, 360],
+                }}
+                transition={{
+                  duration: 8,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+              {/* 3D Container with Shadow */}
+              <div className="relative p-8 bg-gradient-to-br from-white/30 via-white/20 to-white/10 backdrop-blur-xl rounded-full shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3),0_0_40px_rgba(255,255,255,0.2)] border-2 border-white/40">
+                {/* Inner Glow */}
+                <motion.div
+                  className="absolute inset-2 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full blur-xl"
+                  animate={{
+                    opacity: [0.3, 0.6, 0.3],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+                <motion.img 
+                  src={logoText} 
+                  alt="SpiritConnect" 
+                  className="h-32 md:h-40 w-auto drop-shadow-2xl relative z-10"
+                  animate={{
+                    y: [0, -10, 0],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+              </div>
+            </div>
           </motion.div>
 
           <motion.h1
