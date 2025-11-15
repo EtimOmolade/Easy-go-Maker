@@ -118,8 +118,10 @@ export const OfflineProvider = ({ children }: { children: React.ReactNode }) => 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Check pending sync on mount
-    checkPendingSync();
+    // Check pending sync after a short delay to ensure DB is initialized
+    setTimeout(() => {
+      checkPendingSync();
+    }, 1000);
 
     // Auto-sync every 30 seconds if online
     const syncInterval = setInterval(() => {

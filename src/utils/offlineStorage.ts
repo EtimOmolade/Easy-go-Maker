@@ -168,16 +168,32 @@ export const saveJournalOffline = async (entry: any): Promise<void> => {
 
 // Get unsynced journal entries
 export const getUnsyncedJournalEntries = async (): Promise<any[]> => {
-  const db = await initDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORES.JOURNAL_ENTRIES], 'readonly');
-    const store = transaction.objectStore(STORES.JOURNAL_ENTRIES);
-    const index = store.index('synced');
-    const request = index.getAll(IDBKeyRange.only(false));
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([STORES.JOURNAL_ENTRIES], 'readonly');
+      const store = transaction.objectStore(STORES.JOURNAL_ENTRIES);
+      
+      // Check if index exists
+      if (!store.indexNames.contains('synced')) {
+        console.warn('Index "synced" not found in journal entries, returning empty array');
+        resolve([]);
+        return;
+      }
+      
+      const index = store.index('synced');
+      const request = index.getAll(IDBKeyRange.only(false));
 
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => {
+        console.error('Error fetching unsynced journal entries:', request.error);
+        resolve([]); // Return empty array instead of rejecting
+      };
+    });
+  } catch (error) {
+    console.error('Error in getUnsyncedJournalEntries:', error);
+    return []; // Return empty array on error
+  }
 };
 
 // Mark journal entry as synced
@@ -201,14 +217,30 @@ export const savePrayerHistoryOffline = async (
 
 // Get unsynced prayer history
 export const getUnsyncedPrayerHistory = async (): Promise<any[]> => {
-  const db = await initDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORES.PRAYER_HISTORY], 'readonly');
-    const store = transaction.objectStore(STORES.PRAYER_HISTORY);
-    const index = store.index('synced');
-    const request = index.getAll(IDBKeyRange.only(false));
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([STORES.PRAYER_HISTORY], 'readonly');
+      const store = transaction.objectStore(STORES.PRAYER_HISTORY);
+      
+      // Check if index exists
+      if (!store.indexNames.contains('synced')) {
+        console.warn('Index "synced" not found in prayer history, returning empty array');
+        resolve([]);
+        return;
+      }
+      
+      const index = store.index('synced');
+      const request = index.getAll(IDBKeyRange.only(false));
 
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => {
+        console.error('Error fetching unsynced prayer history:', request.error);
+        resolve([]); // Return empty array instead of rejecting
+      };
+    });
+  } catch (error) {
+    console.error('Error in getUnsyncedPrayerHistory:', error);
+    return []; // Return empty array on error
+  }
 };
