@@ -41,7 +41,9 @@ const ReminderSettings = () => {
 
   useEffect(() => {
     fetchReminderSettings();
-    checkPushStatus();
+    checkPushStatus().then(() => {
+      checkForOrphanedPermissions();
+    });
   }, [user]);
 
   // Track unsaved changes
@@ -62,6 +64,13 @@ const ReminderSettings = () => {
     }
     const subscription = await getCurrentPushSubscription();
     setIsSubscribed(!!subscription);
+  };
+
+  const checkForOrphanedPermissions = async () => {
+    // If permission is granted but no subscription exists, offer to retry
+    if (pushSupported && pushPermission === 'granted' && !isSubscribed && !notificationMethods.includes('push')) {
+      console.log('Found granted permission without subscription - user can retry');
+    }
   };
 
   const fetchReminderSettings = async () => {
@@ -433,6 +442,24 @@ const toggleNotificationMethod = async (method: string) => {
                     <AlertDescription>
                       You'll receive notifications in your system tray even when this tab is closed.
                       Make sure your browser is running (not force-closed).
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Permission granted but subscription incomplete */}
+                {pushSupported && pushPermission === 'granted' && !isSubscribed && !notificationMethods.includes('push') && (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Push Permission Granted</AlertTitle>
+                    <AlertDescription className="space-y-3">
+                      <p>Your browser has granted push notification permission, but the subscription wasn't completed.</p>
+                      <Button 
+                        size="sm" 
+                        onClick={() => toggleNotificationMethod('push')}
+                        disabled={subscribing}
+                      >
+                        {subscribing ? 'Subscribing...' : 'Complete Push Setup'}
+                      </Button>
                     </AlertDescription>
                   </Alert>
                 )}
