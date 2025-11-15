@@ -18,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 import { generateDeviceFingerprint } from "@/utils/deviceFingerprint";
+import NotificationDropdown from "@/components/NotificationDropdown";
+import { TutorialWalkthrough } from "@/components/TutorialWalkthrough";
 
 interface ProfileData {
   name: string;
@@ -40,11 +42,16 @@ const Profile = () => {
   const [toggling2FA, setToggling2FA] = useState(false);
   const [trustedDevices, setTrustedDevices] = useState<any[]>([]);
   const [currentFingerprint, setCurrentFingerprint] = useState<string>("");
+  const [tutorialEnabled, setTutorialEnabled] = useState(false);
+  const [runTutorial, setRunTutorial] = useState(false);
 
   useEffect(() => {
     fetchProfile();
     fetchTrustedDevices();
     setCurrentFingerprint(generateDeviceFingerprint());
+    // Check tutorial status
+    const hasSeenTutorial = localStorage.getItem('hasSeenTutorial');
+    setTutorialEnabled(!hasSeenTutorial);
   }, [user]);
 
   // DON'T refetch every second - it causes the name field to reset while typing!
@@ -227,14 +234,20 @@ const Profile = () => {
       </div>
 
       <div className="max-w-2xl relative z-10 mx-auto p-4 md:p-8">
-        <Button
-          variant="ghost"
-          className="mb-6 text-white hover:bg-white/10 border border-white/20"
-          onClick={() => navigate("/dashboard")}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
-        </Button>
+        <div className="flex items-center justify-between mb-6">
+          <Button
+            variant="ghost"
+            className="text-white hover:bg-white/10 border border-white/20"
+            onClick={() => navigate("/dashboard")}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Button>
+          
+          {user && (
+            <NotificationDropdown userId={user.id} isAdmin={false} />
+          )}
+        </div>
 
         <h1 className="text-4xl font-heading font-bold text-white drop-shadow-lg mb-8">
           Profile Settings
@@ -423,21 +436,34 @@ const Profile = () => {
                 />
               </div>
 
-              <div className="flex flex-col gap-3 pt-2 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    localStorage.removeItem('hasSeenWelcome');
-                    localStorage.removeItem('hasSeenTutorial');
-                    toast.success("Tutorial reset! Refresh the dashboard to see the welcome guide again.");
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="tutorial" className="flex items-center gap-2">
+                    <HelpCircle className="h-4 w-4" />
+                    Tutorial
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Enable to go through the tutorial guide again
+                  </p>
+                </div>
+                <Switch
+                  id="tutorial"
+                  checked={tutorialEnabled}
+                  onCheckedChange={(checked) => {
+                    setTutorialEnabled(checked);
+                    if (checked) {
+                      localStorage.removeItem('hasSeenWelcome');
+                      localStorage.removeItem('hasSeenTutorial');
+                      toast.success("Tutorial enabled! Starting guide...");
+                      setTimeout(() => {
+                        setRunTutorial(true);
+                      }, 500);
+                    }
                   }}
-                >
-                  <HelpCircle className="h-4 w-4 mr-2" />
-                  Restart Tutorial
-                </Button>
+                />
+              </div>
 
+              <div className="flex flex-col gap-3 pt-2 border-t">
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Saving..." : "Save Changes"}
                 </Button>
@@ -570,6 +596,17 @@ const Profile = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Tutorial Walkthrough */}
+      <TutorialWalkthrough 
+        run={runTutorial}
+        onComplete={() => {
+          setRunTutorial(false);
+          setTutorialEnabled(false);
+          localStorage.setItem('hasSeenTutorial', 'true');
+          toast.success("Tutorial completed!");
+        }}
+      />
     </div>
   );
 };
