@@ -62,15 +62,18 @@ const ReminderSettings = () => {
     if (!user) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.from("prayer_reminders").select("*").eq("user_id", user.id).maybeSingle();
-      if (error) throw error;
-      if (data) {
-        setEnabled(data.enabled);
-        setReminderTimes(data.reminder_times || ["07:00", "20:00"]);
-        setNotificationMethods(data.notification_methods || ["in-app"]);
-      } else {
-        await createDefaultSettings();
+      const { data, error } = await supabase.from("prayer_reminders").select("*").eq("user_id", user.id).single();
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No settings found, create default
+          await createDefaultSettings();
+          return;
+        }
+        throw error;
       }
+      setEnabled(data.enabled);
+      setReminderTimes(data.reminder_times || ["07:00", "20:00"]);
+      setNotificationMethods(data.notification_methods || ["in-app"]);
     } catch (error) {
       console.error("Error fetching reminder settings:", error);
       toast.error("Failed to load reminder settings");
@@ -105,6 +108,9 @@ const ReminderSettings = () => {
         reminder_times: reminderTimes,
         notification_methods: notificationMethods,
         reminder_type: "daily"
+      }, {
+        onConflict: 'user_id',
+        ignoreDuplicates: false
       });
       if (error) throw error;
       toast.success("Reminder settings saved successfully");
