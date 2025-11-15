@@ -157,17 +157,17 @@ const Index = () => {
                 }}
               />
               
-              {/* Logo with Interactive Animation */}
+              {/* Logo with Animated Lighting */}
               <motion.img 
                 src={logoText} 
                 alt="SpiritConnect" 
-                className="h-40 md:h-56 w-auto relative z-10 filter drop-shadow-[0_0_25px_rgba(255,255,255,0.8)] drop-shadow-[0_10px_40px_rgba(0,0,0,0.6)]"
+                className="h-40 md:h-56 w-auto relative z-10 filter brightness-[1.2]"
                 animate={{
                   y: [0, -15, 0],
                   filter: [
-                    "brightness(1) drop-shadow(0 0 25px rgba(255,255,255,0.8))",
-                    "brightness(1.2) drop-shadow(0 0 35px rgba(255,255,255,1))",
-                    "brightness(1) drop-shadow(0 0 25px rgba(255,255,255,0.8))",
+                    "brightness(1.2) drop-shadow(0 0 30px rgba(255,255,255,0.9))",
+                    "brightness(1.3) drop-shadow(0 0 40px rgba(255,255,255,1))",
+                    "brightness(1.2) drop-shadow(0 0 30px rgba(255,255,255,0.9))",
                   ],
                 }}
                 transition={{
@@ -175,48 +175,7 @@ const Index = () => {
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
-                whileHover={{
-                  scale: 1.05,
-                  rotate: [0, -5, 5, -5, 0],
-                  filter: "brightness(1.3) drop-shadow(0 0 50px rgba(255,255,255,1))",
-                  transition: {
-                    rotate: {
-                      duration: 0.5,
-                      repeat: Infinity,
-                    },
-                    filter: {
-                      duration: 0.3,
-                    }
-                  }
-                }}
               />
-              
-              {/* Sparkle Effects on Hover */}
-              <motion.div
-                className="absolute inset-0 pointer-events-none"
-                initial={{ opacity: 0 }}
-                whileHover={{ opacity: 1 }}
-              >
-                {[...Array(6)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="absolute w-2 h-2 bg-white rounded-full"
-                    style={{
-                      left: `${20 + i * 15}%`,
-                      top: `${30 + (i % 2) * 40}%`,
-                    }}
-                    animate={{
-                      scale: [0, 1, 0],
-                      opacity: [0, 1, 0],
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      delay: i * 0.2,
-                    }}
-                  />
-                ))}
-              </motion.div>
             </motion.div>
           </motion.div>
 
