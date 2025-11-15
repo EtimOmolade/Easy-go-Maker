@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Send, Heart, BookOpen, Edit, Trash2 } from "lucide-react";
+import { Send, Heart, BookOpen, Edit, Trash2 } from "lucide-react";
+import { AppHeader } from "@/components/AppHeader";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -420,40 +421,15 @@ const Testimonies = () => {
 
         <div className="max-w-4xl relative z-10 mx-auto p-4 md:p-8">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex-1 flex items-center gap-3">
-              <motion.div
-                animate={{
-                  scale: [1, 1.1, 1],
-                  rotate: [0, 5, -5, 0],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                }}
-              >
-                <Heart className="h-10 w-10 text-secondary" />
-              </motion.div>
-              <div>
-                <h1 className="text-3xl md:text-4xl font-heading font-bold text-white drop-shadow-lg mb-2">
-                  Stories of His Faithfulness
-                </h1>
-                <p className="text-sm md:text-base text-white/90 italic drop-shadow">
-                  "This is the Lord's doing; it is marvellous in our eyes." — Psalm 118:23
-                </p>
-              </div>
-            </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" onClick={() => navigate("/dashboard")} className="text-white bg-white/10 hover:bg-white/20 border-white/20">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  <span className="md:hidden">Back</span>
-                  <span className="hidden md:inline">Back to Dashboard</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Back to Dashboard</TooltipContent>
-            </Tooltip>
-          </div>
+          <AppHeader 
+            title="Stories of His Faithfulness" 
+            showBack={true} 
+            backTo="/dashboard" 
+          />
+          
+          <p className="text-sm md:text-base text-white/90 italic drop-shadow text-center mb-6">
+            "This is the Lord's doing; it is marvellous in our eyes." — Psalm 118:23
+          </p>
 
           {/* Tabs - Mobile Scrollable */}
           <div className="mb-6 overflow-x-auto">
