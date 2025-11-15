@@ -130,7 +130,7 @@ export const WelcomeWizard = ({ isOpen, onComplete }: WelcomeWizardProps) => {
                 {/* Icon */}
                 {currentStepData.useLogo ? (
                   <motion.div
-                    className="mx-auto mb-6 w-28 h-28 bg-gradient-to-br from-primary to-primary-light rounded-3xl flex items-center justify-center shadow-glow p-4"
+                    className="mx-auto mb-6 w-40 h-40 bg-gradient-to-br from-primary to-primary-light rounded-3xl flex items-center justify-center shadow-glow p-3"
                     animate={{
                       scale: [1, 1.08, 1],
                       rotate: [0, 2, -2, 0],
@@ -144,12 +144,13 @@ export const WelcomeWizard = ({ isOpen, onComplete }: WelcomeWizardProps) => {
                     <motion.img 
                       src={logoOnly} 
                       alt="SpiritConnect Logo"
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain drop-shadow-2xl"
+                      style={{ filter: 'brightness(1.1) contrast(1.2)' }}
                       animate={{
                         filter: [
-                          "drop-shadow(0 0 8px rgba(255,255,255,0.5))",
-                          "drop-shadow(0 0 16px rgba(255,255,255,0.8))",
-                          "drop-shadow(0 0 8px rgba(255,255,255,0.5))",
+                          "drop-shadow(0 0 12px rgba(255,255,255,0.6))",
+                          "drop-shadow(0 0 20px rgba(255,255,255,0.9))",
+                          "drop-shadow(0 0 12px rgba(255,255,255,0.6))",
                         ],
                       }}
                       transition={{
