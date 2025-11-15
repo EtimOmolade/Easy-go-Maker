@@ -361,7 +361,7 @@ const toggleNotificationMethod = async (method: string) => {
                 </div>
                 */}
 
-                {/* Browser compatibility alert */}
+                {/* TEMPORARILY DISABLED - Push Notification Status Alerts
                 {!pushSupported && (
                   <Alert>
                     <Info className="h-4 w-4" />
@@ -373,7 +373,6 @@ const toggleNotificationMethod = async (method: string) => {
                   </Alert>
                 )}
 
-                {/* Permission denied alert */}
                 {pushSupported && pushPermission === 'denied' && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
@@ -389,7 +388,6 @@ const toggleNotificationMethod = async (method: string) => {
                   </Alert>
                 )}
 
-                {/* Active push notifications info */}
                 {isSubscribed && notificationMethods.includes('push') && (
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
@@ -401,7 +399,6 @@ const toggleNotificationMethod = async (method: string) => {
                   </Alert>
                 )}
 
-                {/* Permission granted but subscription incomplete */}
                 {pushSupported && pushPermission === 'granted' && !isSubscribed && !notificationMethods.includes('push') && (
                   <Alert>
                     <Info className="h-4 w-4" />
@@ -418,6 +415,7 @@ const toggleNotificationMethod = async (method: string) => {
                     </AlertDescription>
                   </Alert>
                 )}
+                */}
               </div>
             </>
           )}
