@@ -169,27 +169,27 @@ const ReminderSettings = () => {
     }
   };
 
-  const toggleNotificationMethod = async (method: string) => {
-    if (method === 'push') {
-      // Check if push is currently enabled
-      const isPushEnabled = notificationMethods.includes('push');
+const toggleNotificationMethod = async (method: string) => {
+  if (method === 'push') {
+    // Check if push is currently enabled
+    const isPushEnabled = notificationMethods.includes('push');
+    
+    if (!isPushEnabled) {
+      // User wants to ENABLE push
+      if (!pushSupported) {
+        toast.error('Push notifications not supported in your browser');
+        return;
+      }
       
-      if (!isPushEnabled) {
-        // User wants to ENABLE push
-        if (!pushSupported) {
-          toast.error('Push notifications not supported in your browser');
-          return;
-        }
-        
-        if (pushPermission === 'denied') {
-          toast.error('Push permission denied. Please reset in browser settings.');
-          return;
-        }
-        
-        // Automatically subscribe
-        setSubscribing(true);
+      if (pushPermission === 'denied') {
+        toast.error('Push permission denied. Please reset in browser settings.');
+        return;
+      }
+      
+      // Automatically subscribe
+      setSubscribing(true);
+      try {
         const success = await subscribeToPushNotifications(user!.id);
-        setSubscribing(false);
         
         if (success) {
           setNotificationMethods([...notificationMethods, 'push']);
@@ -197,36 +197,42 @@ const ReminderSettings = () => {
           setPushPermission(Notification.permission);
           toast.success('Push notifications enabled');
         }
-      } else {
-        // User wants to DISABLE push
-        if (notificationMethods.length === 1) {
-          toast.error("You must have at least one notification method");
-          return;
-        }
-        
-        setSubscribing(true);
-        const success = await unsubscribeFromPushNotifications(user!.id);
+      } finally {
         setSubscribing(false);
+      }
+    } else {
+      // User wants to DISABLE push
+      if (notificationMethods.length === 1) {
+        toast.error("You must have at least one notification method");
+        return;
+      }
+      
+      setSubscribing(true);
+      try {
+        const success = await unsubscribeFromPushNotifications(user!.id);
         
         if (success) {
           setNotificationMethods(notificationMethods.filter(m => m !== 'push'));
           setIsSubscribed(false);
           toast.success('Push notifications disabled');
         }
-      }
-    } else {
-      // Toggle other methods normally (in-app)
-      if (notificationMethods.includes(method)) {
-        if (notificationMethods.length > 1) {
-          setNotificationMethods(notificationMethods.filter(m => m !== method));
-        } else {
-          toast.error("You must have at least one notification method");
-        }
-      } else {
-        setNotificationMethods([...notificationMethods, method]);
+      } finally {
+        setSubscribing(false);
       }
     }
-  };
+  } else {
+    // Toggle other methods normally (in-app)
+    if (notificationMethods.includes(method)) {
+      if (notificationMethods.length > 1) {
+        setNotificationMethods(notificationMethods.filter(m => m !== method));
+      } else {
+        toast.error("You must have at least one notification method");
+      }
+    } else {
+      setNotificationMethods([...notificationMethods, method]);
+    }
+  }
+};
 
   const getPushStatus = () => {
     if (!pushSupported) {

@@ -47,11 +47,24 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   return permission;
 }
 
+// Helper to wait for service worker with timeout
+async function waitForServiceWorker(timeoutMs: number = 10000): Promise<ServiceWorkerRegistration> {
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<ServiceWorkerRegistration>((_, reject) => 
+      setTimeout(() => reject(new Error('Service worker ready timeout')), timeoutMs)
+    )
+  ]);
+}
+
 export async function subscribeToPushNotifications(userId: string): Promise<boolean> {
   try {
+    console.log('Starting push subscription...');
+    
     // Check support
     const isSupported = await checkPushSupport();
     if (!isSupported) {
+      console.log('Push not supported');
       toast({
         title: "Not Supported",
         description: "Push notifications are not supported in your browser",
@@ -60,9 +73,12 @@ export async function subscribeToPushNotifications(userId: string): Promise<bool
       return false;
     }
 
+    console.log('Push supported, requesting permission...');
+    
     // Request permission
     const permission = await requestNotificationPermission();
     if (permission !== 'granted') {
+      console.log('Permission denied:', permission);
       toast({
         title: "Permission Denied",
         description: "Please allow notifications to enable push alerts",
@@ -71,15 +87,21 @@ export async function subscribeToPushNotifications(userId: string): Promise<bool
       return false;
     }
 
-    // Get service worker registration
-    const registration = await navigator.serviceWorker.ready;
+    console.log('Permission granted, waiting for service worker...');
 
+    // Get service worker registration with timeout
+    const registration = await waitForServiceWorker(10000);
+
+    console.log('Service worker ready, subscribing to push...');
+    
     // Subscribe to push
     const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: applicationServerKey as any,
     });
+
+    console.log('Push subscription obtained, saving to database...');
 
     // Extract subscription details
     const subscriptionJson = subscription.toJSON();
@@ -110,6 +132,7 @@ export async function subscribeToPushNotifications(userId: string): Promise<bool
       return false;
     }
 
+    console.log('Push subscription saved successfully');
     toast({
       title: "Success",
       description: "Push notifications enabled successfully",
@@ -118,9 +141,20 @@ export async function subscribeToPushNotifications(userId: string): Promise<bool
     return true;
   } catch (error) {
     console.error('Error subscribing to push:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = "Failed to enable push notifications";
+    if (error instanceof Error) {
+      if (error.message.includes('timeout')) {
+        errorMessage = "Service worker not ready. Please refresh the page and try again.";
+      } else if (error.message.includes('AbortError')) {
+        errorMessage = "Subscription was cancelled. Please try again.";
+      }
+    }
+    
     toast({
       title: "Error",
-      description: "Failed to enable push notifications",
+      description: errorMessage,
       variant: "destructive",
     });
     return false;
