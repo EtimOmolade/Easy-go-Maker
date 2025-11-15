@@ -27,7 +27,7 @@ const PrayerReminderModal = ({ isOpen, onClose, streakCount = 0, scriptureVerse 
 
   const handleSnooze = async () => {
     if (!user) return;
-    
+
     setIsSnoozing(true);
     try {
       const snoozeUntil = new Date();
@@ -52,11 +52,11 @@ const PrayerReminderModal = ({ isOpen, onClose, streakCount = 0, scriptureVerse 
 
   const handleMarkComplete = async () => {
     if (!user) return;
-    
+
     setIsMarking(true);
     try {
       // Check if already prayed today
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split("T")[0];
       const { data: existingPrayer } = await supabase
         .from("daily_prayers")
         .select("id")
@@ -71,12 +71,10 @@ const PrayerReminderModal = ({ isOpen, onClose, streakCount = 0, scriptureVerse 
       }
 
       // Create daily prayer entry
-      const { error } = await supabase
-        .from("daily_prayers")
-        .insert({
-          user_id: user.id,
-          day_of_week: new Date().toLocaleDateString('en-US', { weekday: 'long' })
-        });
+      const { error } = await supabase.from("daily_prayers").insert({
+        user_id: user.id,
+        day_of_week: new Date().toLocaleDateString("en-US", { weekday: "long" }),
+      });
 
       if (error) throw error;
 
@@ -94,16 +92,14 @@ const PrayerReminderModal = ({ isOpen, onClose, streakCount = 0, scriptureVerse 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10 rounded-lg -z-10" />
-        
+
         <DialogHeader className="space-y-4">
           <div className="mx-auto w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center animate-pulse">
             <Clock className="w-8 h-8 text-white" />
           </div>
-          
-          <DialogTitle className="text-2xl text-center font-heading">
-            Time for Prayer 🕊️
-          </DialogTitle>
-          
+
+          <DialogTitle className="text-2xl text-center font-heading">Time for Prayer 🕊️</DialogTitle>
+
           <DialogDescription className="text-center space-y-3">
             {streakCount > 0 && (
               <div className="flex items-center justify-center gap-2 text-primary font-semibold">
@@ -111,16 +107,12 @@ const PrayerReminderModal = ({ isOpen, onClose, streakCount = 0, scriptureVerse 
                 <span>{streakCount} day streak - Keep it going!</span>
               </div>
             )}
-            
+
             {scriptureVerse && (
-              <p className="text-sm italic bg-muted/50 p-3 rounded-lg border border-border">
-                "{scriptureVerse}"
-              </p>
+              <p className="text-sm italic bg-muted/50 p-3 rounded-lg border border-border">"{scriptureVerse}"</p>
             )}
-            
-            <p className="text-base">
-              Take a moment to connect with God through prayer and reflection.
-            </p>
+
+            <p className="text-base">Take a moment to connect with God through prayer and reflection.</p>
           </DialogDescription>
         </DialogHeader>
 
@@ -128,30 +120,18 @@ const PrayerReminderModal = ({ isOpen, onClose, streakCount = 0, scriptureVerse 
           <Button
             onClick={handleStartPraying}
             size="lg"
-            className="w-full bg-gradient-primary hover:opacity-90 transition-all"
+            className="w-full bg-gradient-primary opacity-90 hover:opacity-90 transition-all"
           >
             Start Praying Now
           </Button>
 
           <div className="flex gap-2">
-            <Button
-              onClick={handleSnooze}
-              variant="outline"
-              size="sm"
-              className="flex-1"
-              disabled={isSnoozing}
-            >
+            <Button onClick={handleSnooze} variant="outline" size="sm" className="flex-1" disabled={isSnoozing}>
               <Clock className="w-4 h-4 mr-2" />
               {isSnoozing ? "Snoozing..." : "Remind in 30min"}
             </Button>
 
-            <Button
-              onClick={handleMarkComplete}
-              variant="outline"
-              size="sm"
-              className="flex-1"
-              disabled={isMarking}
-            >
+            <Button onClick={handleMarkComplete} variant="outline" size="sm" className="flex-1" disabled={isMarking}>
               <CheckCircle className="w-4 h-4 mr-2" />
               {isMarking ? "Saving..." : "Already Prayed"}
             </Button>
