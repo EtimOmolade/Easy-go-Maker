@@ -34,7 +34,9 @@ export const OfflineProvider = ({ children }: { children: React.ReactNode }) => 
         queue.length + unsyncedJournal.length + unsyncedPrayer.length
       );
     } catch (error) {
-      console.error('Error checking pending sync:', error);
+      // Silently handle IndexedDB errors - database may not be initialized yet
+      console.debug('IndexedDB check skipped:', error);
+      setPendingSync(0);
     }
   }, []);
 

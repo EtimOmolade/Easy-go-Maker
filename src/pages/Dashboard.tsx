@@ -71,13 +71,33 @@ const Dashboard = () => {
         }
       };
       document.addEventListener('visibilitychange', handleVisibilityChange);
-      const interval = setInterval(() => {
+      
+      // Realtime subscription for announcements
+      const channel = supabase
+        .channel('encouragement-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // Listen to INSERT, UPDATE, DELETE
+            schema: 'public',
+            table: 'encouragement_messages'
+          },
+          (payload) => {
+            console.log('Realtime announcement change:', payload);
+            fetchEncouragementMessage();
+          }
+        )
+        .subscribe();
+      
+      // Poll profile every 5 minutes
+      const profileInterval = setInterval(() => {
         fetchProfile();
-        fetchEncouragementMessage();
-      }, 1000);
+      }, 300000);
+      
       return () => {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
-        clearInterval(interval);
+        clearInterval(profileInterval);
+        supabase.removeChannel(channel);
       };
     }
   }, [user, isAdmin]);
