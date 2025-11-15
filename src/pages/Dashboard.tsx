@@ -22,6 +22,7 @@ import { TutorialWalkthrough } from "@/components/TutorialWalkthrough";
 import NotificationDropdown from "@/components/NotificationDropdown";
 import logoText from "@/assets/logo-text.png";
 import logoOnly from "@/assets/logo-only.png";
+import prayIcon from "@/assets/pray.png";
 interface Profile {
   name: string;
   streak_count: number;
@@ -495,27 +496,80 @@ const Dashboard = () => {
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8">
             {/* Today's Prayer Focus - Always Show */}
             <motion.div variants={itemVariants}>
-                <Card className="shadow-large glass border-white/20 overflow-hidden relative" data-tour="today-prayer">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10" />
-                  <motion.div className="absolute top-0 right-0 w-64 h-64 bg-secondary/10 rounded-full blur-3xl" animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.3, 0.5, 0.3]
-              }} transition={{
-                duration: 4,
-                repeat: Infinity
-              }} />
-                  <CardHeader className="text-center pb-4 relative z-10">
-                    <motion.div className="mx-auto mb-4 w-16 h-16 bg-gradient-to-br from-primary to-primary-light rounded-2xl flex items-center justify-center shadow-glow" animate={{
-                  scale: [1, 1.05, 1]
-                }} transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}>
-                      <BookHeart className="h-8 w-8 dark:text-white text-primary" />
+                <Card className="shadow-elegant glass border-white/10 overflow-hidden relative backdrop-blur-xl" data-tour="today-prayer">
+                  {/* Enhanced gradient backgrounds */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-primary/5" />
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-transparent to-transparent" />
+                  
+                  {/* Animated orb effects */}
+                  <motion.div 
+                    className="absolute -top-20 -right-20 w-80 h-80 bg-gradient-to-br from-secondary/30 to-primary/20 rounded-full blur-3xl" 
+                    animate={{
+                      scale: [1, 1.3, 1],
+                      opacity: [0.4, 0.6, 0.4],
+                      rotate: [0, 90, 0]
+                    }} 
+                    transition={{
+                      duration: 8,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }} 
+                  />
+                  <motion.div 
+                    className="absolute -bottom-20 -left-20 w-80 h-80 bg-gradient-to-tr from-primary/20 to-secondary/30 rounded-full blur-3xl" 
+                    animate={{
+                      scale: [1.2, 1, 1.2],
+                      opacity: [0.3, 0.5, 0.3],
+                      rotate: [0, -90, 0]
+                    }} 
+                    transition={{
+                      duration: 10,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }} 
+                  />
+                  
+                  <CardHeader className="text-center pb-6 relative z-10">
+                    {/* Enhanced icon container with prayer image */}
+                    <motion.div 
+                      className="mx-auto mb-6 w-20 h-20 bg-gradient-to-br from-primary via-primary-light to-secondary rounded-3xl flex items-center justify-center shadow-elegant relative overflow-hidden" 
+                      animate={{
+                        scale: [1, 1.08, 1],
+                        boxShadow: [
+                          "0 10px 30px -10px hsl(var(--primary) / 0.3)",
+                          "0 20px 40px -10px hsl(var(--primary) / 0.5)",
+                          "0 10px 30px -10px hsl(var(--primary) / 0.3)"
+                        ]
+                      }} 
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
+                      {/* Rotating gradient overlay */}
+                      <motion.div 
+                        className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"
+                        animate={{
+                          rotate: [0, 360]
+                        }}
+                        transition={{
+                          duration: 8,
+                          repeat: Infinity,
+                          ease: "linear"
+                        }}
+                      />
+                      <img 
+                        src={prayIcon} 
+                        alt="Prayer" 
+                        className="h-10 w-10 brightness-0 invert relative z-10"
+                      />
                     </motion.div>
-                    <CardTitle className="text-3xl md:text-4xl font-heading dark:text-white text-foreground">Today's Prayer Focus</CardTitle>
-                    <CardDescription className="text-base mt-2 dark:text-white/80 text-muted-foreground">
+                    
+                    <CardTitle className="text-3xl md:text-4xl font-heading dark:text-white text-foreground bg-clip-text">
+                      Today's Prayer Focus
+                    </CardTitle>
+                    <CardDescription className="text-base mt-3 dark:text-white/70 text-muted-foreground font-medium">
                       {new Date().toLocaleDateString('en-US', {
                     weekday: 'long',
                     month: 'long',
