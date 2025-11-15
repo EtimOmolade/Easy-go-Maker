@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Award, Scale, Smartphone, Trash2, Moon, Sun, HelpCircle, Type, Minus, Plus, RotateCcw } from "lucide-react";
+import ReminderSettings from "@/components/ReminderSettings";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -444,6 +445,9 @@ const Profile = () => {
             </form>
           </CardContent>
         </Card>
+
+        {/* Prayer Reminders Settings */}
+        <ReminderSettings />
 
         {/* Trusted Devices Card - Only show if 2FA is enabled */}
         {twoFactorEnabled && (
