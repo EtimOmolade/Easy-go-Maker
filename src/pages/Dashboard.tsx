@@ -589,7 +589,7 @@ const Dashboard = () => {
                   <CardContent className="relative z-10 space-y-6">
                     <div className="flex flex-col md:flex-row items-center justify-around gap-6">
                       {/* Circular Progress */}
-                      <div className="flex flex-col items-center gap-3">
+                      <div className="flex flex-col items-center gap-3" data-tour="streak-count">
                         <CircularProgress value={profile.streak_count / milestoneData.nextMilestone.streak_needed * 100} size={140} strokeWidth={12} color="hsl(var(--secondary))">
                           <div className="text-center">
                             <motion.p className="text-4xl font-bold dark:text-white text-foreground" animate={{
@@ -614,7 +614,7 @@ const Dashboard = () => {
                       </div>
 
                       {/* Badge Display */}
-                      <div className="flex flex-col items-center gap-2">
+                      <div className="flex flex-col items-center gap-2" data-tour="streak-badge">
                         <motion.div className="text-7xl" animate={{
                       scale: [1, 1.15, 1],
                       rotate: [0, 5, -5, 0]
