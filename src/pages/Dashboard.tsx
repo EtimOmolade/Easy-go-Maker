@@ -434,13 +434,13 @@ const Dashboard = () => {
             <motion.img
               src={logoText}
               alt="SpiritConnect"
-              className="h-16 md:h-20 w-auto hidden md:block filter brightness-[1.15] drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]"
+              className="h-20 lg:h-24 w-auto hidden lg:block filter brightness-[1.3] contrast-[1.1] drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]"
               animate={{
                 y: [0, -8, 0],
                 filter: [
-                  "brightness(1.15) drop-shadow(0 0 20px rgba(255,255,255,0.5))",
-                  "brightness(1.25) drop-shadow(0 0 25px rgba(255,255,255,0.7))",
-                  "brightness(1.15) drop-shadow(0 0 20px rgba(255,255,255,0.5))",
+                  "brightness(1.3) contrast(1.1) drop-shadow(0 0 25px rgba(255,255,255,0.6))",
+                  "brightness(1.4) contrast(1.15) drop-shadow(0 0 30px rgba(255,255,255,0.8))",
+                  "brightness(1.3) contrast(1.1) drop-shadow(0 0 25px rgba(255,255,255,0.6))",
                 ],
               }}
               transition={{
@@ -452,13 +452,13 @@ const Dashboard = () => {
             <motion.img
               src={logoOnly}
               alt="SpiritConnect"
-              className="h-12 w-auto md:hidden filter brightness-[1.15] drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+              className="h-14 w-auto lg:hidden filter brightness-[1.3] contrast-[1.1] drop-shadow-[0_0_20px_rgba(255,255,255,0.6)]"
               animate={{
                 y: [0, -6, 0],
                 filter: [
-                  "brightness(1.15) drop-shadow(0 0 15px rgba(255,255,255,0.5))",
-                  "brightness(1.25) drop-shadow(0 0 20px rgba(255,255,255,0.7))",
-                  "brightness(1.15) drop-shadow(0 0 15px rgba(255,255,255,0.5))",
+                  "brightness(1.3) contrast(1.1) drop-shadow(0 0 20px rgba(255,255,255,0.6))",
+                  "brightness(1.4) contrast(1.15) drop-shadow(0 0 25px rgba(255,255,255,0.8))",
+                  "brightness(1.3) contrast(1.1) drop-shadow(0 0 20px rgba(255,255,255,0.6))",
                 ],
               }}
               transition={{
