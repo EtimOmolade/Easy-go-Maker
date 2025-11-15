@@ -2,8 +2,9 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Cross, NotebookPen, TrendingUp, ChevronRight, ChevronLeft, Check } from "lucide-react";
+import { NotebookPen, TrendingUp, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import logoOnly from "@/assets/logo-only.png";
+import prayingHandsIcon from "@/assets/praying-hands.svg";
 import { Progress } from "@/components/ui/progress";
 
 interface WelcomeWizardProps {
@@ -23,7 +24,8 @@ const wizardSteps = [
   {
     title: "Daily Prayer Focus",
     description: "Each day features a guided prayer session to help you maintain a consistent prayer routine and deepen your faith.",
-    icon: Cross,
+    icon: null,
+    usePrayingHands: true,
     color: "text-rose-500",
     bgGradient: "from-rose-500/20 to-pink-500/30",
   },
@@ -158,6 +160,20 @@ export const WelcomeWizard = ({ isOpen, onComplete }: WelcomeWizardProps) => {
                         repeat: Infinity,
                       }}
                     />
+                  </motion.div>
+                ) : currentStepData.usePrayingHands ? (
+                  <motion.div
+                    className="mx-auto mb-6 w-24 h-24 bg-gradient-to-br from-primary to-primary-light rounded-3xl flex items-center justify-center shadow-glow"
+                    animate={{
+                      scale: [1, 1.05, 1],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    <img src={prayingHandsIcon} alt="Prayer" className="h-12 w-12 text-white" />
                   </motion.div>
                 ) : (
                   <motion.div
