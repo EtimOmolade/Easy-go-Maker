@@ -366,7 +366,7 @@ const Dashboard = () => {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen relative overflow-hidden gradient-hero">
+      <div className="min-h-screen relative overflow-hidden bg-accent">{/* TEST CHANGE - Should see different background */}
         {/* Animated Background - More vibrant like landing page */}
         <div className="absolute inset-0 pointer-events-none">
           <motion.div
