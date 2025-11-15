@@ -22,21 +22,22 @@ import { TutorialWalkthrough } from "@/components/TutorialWalkthrough";
 import NotificationDropdown from "@/components/NotificationDropdown";
 import logoText from "@/assets/logo-text.png";
 import logoOnly from "@/assets/logo-only.png";
-
 interface Profile {
   name: string;
   streak_count: number;
   reminders_enabled: boolean;
 }
-
 interface EncouragementMessage {
   id: string;
   content: string;
   created_at: string;
 }
-
 const Dashboard = () => {
-  const { user, signOut, isAdmin } = useAuth();
+  const {
+    user,
+    signOut,
+    isAdmin
+  } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [previousStreak, setPreviousStreak] = useState(0);
@@ -52,7 +53,6 @@ const Dashboard = () => {
   // Onboarding states
   const [showWelcomeWizard, setShowWelcomeWizard] = useState(false);
   const [runTutorial, setRunTutorial] = useState(false);
-
   useEffect(() => {
     if (user) {
       fetchProfile();
@@ -60,11 +60,9 @@ const Dashboard = () => {
       fetchTodaysGuideline();
       checkReminders();
       checkForNewMilestones();
-
       if (isAdmin) {
         fetchPendingTestimonies();
       }
-
       const handleVisibilityChange = () => {
         if (!document.hidden) {
           fetchProfile();
@@ -72,14 +70,11 @@ const Dashboard = () => {
           checkForNewMilestones();
         }
       };
-
       document.addEventListener('visibilitychange', handleVisibilityChange);
-
       const interval = setInterval(() => {
         fetchProfile();
         fetchEncouragementMessage();
       }, 1000);
-
       return () => {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
         clearInterval(interval);
@@ -99,7 +94,6 @@ const Dashboard = () => {
       }
     }
   }, [user, loading]);
-
   const handleWelcomeComplete = () => {
     setShowWelcomeWizard(false);
     localStorage.setItem('hasSeenWelcome', 'true');
@@ -108,18 +102,15 @@ const Dashboard = () => {
       setRunTutorial(true);
     }, 500);
   };
-
   const handleTutorialComplete = () => {
     setRunTutorial(false);
     localStorage.setItem('hasSeenTutorial', 'true');
     toast.success("Welcome to SpiritConnect! You're all set to begin your prayer journey.");
   };
-
   const checkReminders = () => {
     if (!user) return;
     console.log('(Push placeholder) Checking for new updates...');
   };
-
   const checkForNewMilestones = () => {
     if (!user) return;
     const milestone = checkMilestoneAchievement(user.id);
@@ -128,17 +119,13 @@ const Dashboard = () => {
       setShowMilestoneModal(true);
     }
   };
-
   const fetchProfile = async () => {
     if (!user) return;
-
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("name, streak_count, reminders_enabled")
-        .eq("id", user.id)
-        .single();
-
+      const {
+        data,
+        error
+      } = await supabase.from("profiles").select("name, streak_count, reminders_enabled").eq("id", user.id).single();
       if (error) {
         console.error("Error fetching profile:", error);
         toast.error("Failed to load profile data");
@@ -160,17 +147,13 @@ const Dashboard = () => {
       }
     }
   };
-
   const fetchCompletedDays = async () => {
     if (!user || !todaysGuideline) return;
-
     try {
-      const { data, error } = await supabase
-        .from("daily_prayers")
-        .select("day_of_week")
-        .eq("user_id", user.id)
-        .eq("guideline_id", todaysGuideline.id);
-
+      const {
+        data,
+        error
+      } = await supabase.from("daily_prayers").select("day_of_week").eq("user_id", user.id).eq("guideline_id", todaysGuideline.id);
       if (!error && data) {
         setCompletedDays(data.map(d => d.day_of_week));
       }
@@ -178,17 +161,14 @@ const Dashboard = () => {
       console.error("Error fetching completed days:", error);
     }
   };
-
   const fetchEncouragementMessage = async () => {
     const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
-
-    const { data, error } = await supabase
-      .from("encouragement_messages")
-      .select("*")
-      .gte("created_at", twoDaysAgo)
-      .order("created_at", { ascending: false })
-      .limit(3);
-
+    const {
+      data,
+      error
+    } = await supabase.from("encouragement_messages").select("*").gte("created_at", twoDaysAgo).order("created_at", {
+      ascending: false
+    }).limit(3);
     if (error) {
       console.error("Error fetching encouragement messages:", error);
       toast.error("Failed to load announcements");
@@ -196,20 +176,20 @@ const Dashboard = () => {
       console.log("Fetched announcements:", data);
       console.log("Number of announcements:", data?.length || 0);
       setEncouragementMessages(data || []);
-
       if (!data || data.length === 0) {
         console.warn("No announcements found in the last 48 hours");
       }
     }
   };
-
   const fetchPendingTestimonies = async () => {
     try {
-      const { count, error } = await supabase
-        .from("testimonies")
-        .select("*", { count: 'exact', head: true })
-        .eq("status", "pending");
-
+      const {
+        count,
+        error
+      } = await supabase.from("testimonies").select("*", {
+        count: 'exact',
+        head: true
+      }).eq("status", "pending");
       if (error) {
         console.error("Error fetching pending testimonies:", error);
       } else {
@@ -219,20 +199,17 @@ const Dashboard = () => {
       console.error("Error fetching pending testimonies:", error);
     }
   };
-
   const fetchTodaysGuideline = async () => {
     try {
       const today = new Date();
-      const month = today.toLocaleDateString('en-US', { month: 'long' });
+      const month = today.toLocaleDateString('en-US', {
+        month: 'long'
+      });
       const day = today.getDate();
-
-      const { data, error } = await supabase
-        .from("guidelines")
-        .select("*")
-        .eq("month", month)
-        .eq("day", day)
-        .single();
-
+      const {
+        data,
+        error
+      } = await supabase.from("guidelines").select("*").eq("month", month).eq("day", day).single();
       if (error) {
         console.error("Error fetching today's guideline:", error);
       } else {
@@ -249,15 +226,17 @@ const Dashboard = () => {
       fetchCompletedDays();
     }
   }, [todaysGuideline]);
-
   const milestoneData = useMemo(() => {
-    if (!user || !profile) return { current: MILESTONES[0], progress: 0, currentStreak: 0, nextMilestone: MILESTONES[0], daysToNext: 1 };
-
+    if (!user || !profile) return {
+      current: MILESTONES[0],
+      progress: 0,
+      currentStreak: 0,
+      nextMilestone: MILESTONES[0],
+      daysToNext: 1
+    };
     const currentStreak = profile.streak_count || 0;
-
     let nextMilestone = MILESTONES[0];
     let lastAchieved = null;
-
     for (let i = 0; i < MILESTONES.length; i++) {
       if (currentStreak >= MILESTONES[i].streak_needed) {
         lastAchieved = MILESTONES[i];
@@ -266,17 +245,12 @@ const Dashboard = () => {
         break;
       }
     }
-
     if (currentStreak >= MILESTONES[MILESTONES.length - 1].streak_needed) {
       nextMilestone = MILESTONES[MILESTONES.length - 1];
       lastAchieved = MILESTONES[MILESTONES.length - 1];
     }
-
     const daysToNext = Math.max(0, nextMilestone.streak_needed - currentStreak);
-    const progress = nextMilestone.streak_needed > 0
-      ? (currentStreak / nextMilestone.streak_needed) * 100
-      : 100;
-
+    const progress = nextMilestone.streak_needed > 0 ? currentStreak / nextMilestone.streak_needed * 100 : 100;
     return {
       nextMilestone,
       progress: Math.min(progress, 100),
@@ -286,44 +260,39 @@ const Dashboard = () => {
       isMaxLevel: currentStreak >= MILESTONES[MILESTONES.length - 1].streak_needed
     };
   }, [user, profile]);
-
-  const quickActions = [
-    {
-      title: "Prayer Guidelines",
-      description: "View weekly prayer instructions",
-      icon: BookMarked,
-      path: "/guidelines",
-      color: "from-primary to-primary-light",
-      iconBg: "bg-gradient-primary",
-    },
-    {
-      title: "My Journal",
-      description: "Write and manage your entries",
-      icon: BookOpen,
-      path: "/journal",
-      color: "from-secondary to-secondary-glow",
-      iconBg: "bg-gradient-secondary",
-    },
-    {
-      title: "Testimonies",
-      description: "Share and read testimonies",
-      icon: MessageSquare,
-      path: "/testimonies",
-      color: "from-primary to-primary-light",
-      iconBg: "bg-gradient-primary",
-    },
-    {
-      title: "Profile",
-      description: "Manage your settings",
-      icon: User,
-      path: "/profile",
-      color: "from-secondary to-secondary-glow",
-      iconBg: "bg-gradient-secondary",
-    },
-  ];
-
+  const quickActions = [{
+    title: "Prayer Guidelines",
+    description: "View weekly prayer instructions",
+    icon: BookMarked,
+    path: "/guidelines",
+    color: "from-primary to-primary-light",
+    iconBg: "bg-gradient-primary"
+  }, {
+    title: "My Journal",
+    description: "Write and manage your entries",
+    icon: BookOpen,
+    path: "/journal",
+    color: "from-secondary to-secondary-glow",
+    iconBg: "bg-gradient-secondary"
+  }, {
+    title: "Testimonies",
+    description: "Share and read testimonies",
+    icon: MessageSquare,
+    path: "/testimonies",
+    color: "from-primary to-primary-light",
+    iconBg: "bg-gradient-primary"
+  }, {
+    title: "Profile",
+    description: "Manage your settings",
+    icon: User,
+    path: "/profile",
+    color: "from-secondary to-secondary-glow",
+    iconBg: "bg-gradient-secondary"
+  }];
   const containerVariants = {
-    hidden: { opacity: 0 },
+    hidden: {
+      opacity: 0
+    },
     visible: {
       opacity: 1,
       transition: {
@@ -331,9 +300,11 @@ const Dashboard = () => {
       }
     }
   };
-
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: {
+      opacity: 0,
+      y: 20
+    },
     visible: {
       opacity: 1,
       y: 0,
@@ -345,180 +316,151 @@ const Dashboard = () => {
 
   // Show loading skeleton while data is being fetched
   if (loading) {
-    return (
-      <div className="min-h-screen relative overflow-hidden gradient-hero">
+    return <div className="min-h-screen relative overflow-hidden gradient-hero">
         <div className="absolute inset-0 pointer-events-none">
-          <motion.div
-            className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
-            animate={{
-              y: [0, -50, 0],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 15,
-              repeat: Infinity,
-            }}
-          />
+          <motion.div className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl" animate={{
+          y: [0, -50, 0],
+          scale: [1, 1.2, 1]
+        }} transition={{
+          duration: 15,
+          repeat: Infinity
+        }} />
         </div>
         <div className="relative z-10">
           <DashboardSkeleton />
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <TooltipProvider>
+  return <TooltipProvider>
       <div className="min-h-screen relative overflow-hidden gradient-hero">
         {/* Animated Background - More vibrant like landing page */}
         <div className="absolute inset-0 pointer-events-none">
-          <motion.div
-            className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
-            animate={{
-              y: [0, -50, 0],
-              x: [0, 30, 0],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 15,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-          <motion.div
-            className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-light/20 rounded-full blur-3xl"
-            animate={{
-              y: [0, 40, 0],
-              x: [0, -40, 0],
-              scale: [1, 1.3, 1],
-            }}
-            transition={{
-              duration: 12,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-          <motion.div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-secondary/10 rounded-full blur-3xl"
-            animate={{
-              scale: [1, 1.4, 1],
-              opacity: [0.2, 0.4, 0.2],
-            }}
-            transition={{
-              duration: 18,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
+          <motion.div className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl" animate={{
+          y: [0, -50, 0],
+          x: [0, 30, 0],
+          scale: [1, 1.2, 1]
+        }} transition={{
+          duration: 15,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }} />
+          <motion.div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-light/20 rounded-full blur-3xl" animate={{
+          y: [0, 40, 0],
+          x: [0, -40, 0],
+          scale: [1, 1.3, 1]
+        }} transition={{
+          duration: 12,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }} />
+          <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-secondary/10 rounded-full blur-3xl" animate={{
+          scale: [1, 1.4, 1],
+          opacity: [0.2, 0.4, 0.2]
+        }} transition={{
+          duration: 18,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }} />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto p-4 md:p-8">
           <EncouragementPopup streakCount={profile?.streak_count || 0} previousStreak={previousStreak} />
-          <MilestoneAchievementModal
-            milestoneLevel={achievedMilestoneLevel}
-            isOpen={showMilestoneModal}
-            onClose={() => setShowMilestoneModal(false)}
-          />
+          <MilestoneAchievementModal milestoneLevel={achievedMilestoneLevel} isOpen={showMilestoneModal} onClose={() => setShowMilestoneModal(false)} />
 
           {/* Onboarding Components */}
           <WelcomeWizard isOpen={showWelcomeWizard} onComplete={handleWelcomeComplete} />
           <TutorialWalkthrough run={runTutorial} onComplete={handleTutorialComplete} />
 
           {/* Logo Section */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex justify-center mb-6"
-          >
-            <motion.img
-              src={logoText}
-              alt="SpiritConnect"
-              className="h-20 lg:h-24 w-auto hidden lg:block filter brightness-[1.3] contrast-[1.1] drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]"
-              animate={{
-                y: [0, -8, 0],
-                filter: [
-                  "brightness(1.3) contrast(1.1) drop-shadow(0 0 25px rgba(255,255,255,0.6))",
-                  "brightness(1.4) contrast(1.15) drop-shadow(0 0 30px rgba(255,255,255,0.8))",
-                  "brightness(1.3) contrast(1.1) drop-shadow(0 0 25px rgba(255,255,255,0.6))",
-                ],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-            <motion.img
-              src={logoOnly}
-              alt="SpiritConnect"
-              className="h-14 w-auto lg:hidden filter brightness-[1.3] contrast-[1.1] drop-shadow-[0_0_20px_rgba(255,255,255,0.6)]"
-              animate={{
-                y: [0, -6, 0],
-                filter: [
-                  "brightness(1.3) contrast(1.1) drop-shadow(0 0 20px rgba(255,255,255,0.6))",
-                  "brightness(1.4) contrast(1.15) drop-shadow(0 0 25px rgba(255,255,255,0.8))",
-                  "brightness(1.3) contrast(1.1) drop-shadow(0 0 20px rgba(255,255,255,0.6))",
-                ],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
+          <motion.div initial={{
+          opacity: 0,
+          y: -20
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }} transition={{
+          duration: 0.5
+        }} className="flex justify-center mb-6">
+            <motion.img src={logoText} alt="SpiritConnect" className="h-20 lg:h-24 w-auto hidden lg:block filter brightness-[1.3] contrast-[1.1] drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]" animate={{
+            y: [0, -8, 0],
+            filter: ["brightness(1.3) contrast(1.1) drop-shadow(0 0 25px rgba(255,255,255,0.6))", "brightness(1.4) contrast(1.15) drop-shadow(0 0 30px rgba(255,255,255,0.8))", "brightness(1.3) contrast(1.1) drop-shadow(0 0 25px rgba(255,255,255,0.6))"]
+          }} transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }} />
+            <motion.img src={logoOnly} alt="SpiritConnect" className="h-14 w-auto lg:hidden filter brightness-[1.3] contrast-[1.1] drop-shadow-[0_0_20px_rgba(255,255,255,0.6)]" animate={{
+            y: [0, -6, 0],
+            filter: ["brightness(1.3) contrast(1.1) drop-shadow(0 0 20px rgba(255,255,255,0.6))", "brightness(1.4) contrast(1.15) drop-shadow(0 0 25px rgba(255,255,255,0.8))", "brightness(1.3) contrast(1.1) drop-shadow(0 0 20px rgba(255,255,255,0.6))"]
+          }} transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }} />
           </motion.div>
 
           {/* Welcome Section */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="relative mb-8"
-          >
+          <motion.div initial={{
+          opacity: 0,
+          y: -20
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }} transition={{
+          duration: 0.6,
+          delay: 0.1
+        }} className="relative mb-8">
             <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl">
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 {/* Welcome Text */}
                 <div className="flex-1 space-y-2">
-                  <motion.h1 
-                    className="text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-white leading-tight"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                  >
+                  <motion.h1 className="text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-white leading-tight" initial={{
+                  opacity: 0,
+                  x: -20
+                }} animate={{
+                  opacity: 1,
+                  x: 0
+                }} transition={{
+                  duration: 0.5,
+                  delay: 0.2
+                }}>
                     Welcome back,
-                    <span className="block text-purple-900 dark:text-primary mt-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)] dark:drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] font-bold">
+                    <span className="block mt-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)] dark:drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] font-bold text-indigo-950">
                       {profile?.name || "Friend"}!
                     </span>
                   </motion.h1>
-                  <motion.p 
-                    className="text-white/80 text-base md:text-lg font-light"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: 0.3 }}
-                  >
+                  <motion.p className="text-white/80 text-base md:text-lg font-light" initial={{
+                  opacity: 0,
+                  x: -20
+                }} animate={{
+                  opacity: 1,
+                  x: 0
+                }} transition={{
+                  duration: 0.5,
+                  delay: 0.3
+                }}>
                     Continue your prayer journey today
                   </motion.p>
                 </div>
 
                 {/* Actions */}
-                <motion.div 
-                  className="flex items-center gap-3 w-full lg:w-auto"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                >
+                <motion.div className="flex items-center gap-3 w-full lg:w-auto" initial={{
+                opacity: 0,
+                x: 20
+              }} animate={{
+                opacity: 1,
+                x: 0
+              }} transition={{
+                duration: 0.5,
+                delay: 0.4
+              }}>
                   {user && <NotificationDropdown userId={user.id} isAdmin={isAdmin} />}
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          haptics.light();
-                          signOut();
-                        }}
-                        className="border-white/20 text-white bg-white/10 hover:border-white/40 hover:bg-white/20 transition-all backdrop-blur-sm min-h-[44px] flex-1 lg:flex-initial"
-                      >
+                      <Button variant="outline" onClick={() => {
+                      haptics.light();
+                      signOut();
+                    }} className="border-white/20 text-white bg-white/10 hover:border-white/40 hover:bg-white/20 transition-all backdrop-blur-sm min-h-[44px] flex-1 lg:flex-initial">
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Sign Out</span>
                       </Button>
@@ -530,49 +472,39 @@ const Dashboard = () => {
             </div>
           </motion.div>
 
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="space-y-8"
-          >
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8">
             {/* Today's Prayer Focus - Always Show */}
             <motion.div variants={itemVariants}>
                 <Card className="shadow-large glass border-white/20 overflow-hidden relative" data-tour="today-prayer">
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10" />
-                  <motion.div
-                    className="absolute top-0 right-0 w-64 h-64 bg-secondary/10 rounded-full blur-3xl"
-                    animate={{
-                      scale: [1, 1.2, 1],
-                      opacity: [0.3, 0.5, 0.3],
-                    }}
-                    transition={{
-                      duration: 4,
-                      repeat: Infinity,
-                    }}
-                  />
+                  <motion.div className="absolute top-0 right-0 w-64 h-64 bg-secondary/10 rounded-full blur-3xl" animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.3, 0.5, 0.3]
+              }} transition={{
+                duration: 4,
+                repeat: Infinity
+              }} />
                   <CardHeader className="text-center pb-4 relative z-10">
-                    <motion.div
-                      className="mx-auto mb-4 w-16 h-16 bg-gradient-to-br from-primary to-primary-light rounded-2xl flex items-center justify-center shadow-glow"
-                      animate={{
-                        scale: [1, 1.05, 1],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    >
+                    <motion.div className="mx-auto mb-4 w-16 h-16 bg-gradient-to-br from-primary to-primary-light rounded-2xl flex items-center justify-center shadow-glow" animate={{
+                  scale: [1, 1.05, 1]
+                }} transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}>
                       <BookHeart className="h-8 w-8 dark:text-white text-primary" />
                     </motion.div>
                     <CardTitle className="text-3xl md:text-4xl font-heading dark:text-white text-foreground">Today's Prayer Focus</CardTitle>
                     <CardDescription className="text-base mt-2 dark:text-white/80 text-muted-foreground">
-                      {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                      {new Date().toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6 relative z-10">
-                    {todaysGuideline ? (
-                      <>
+                    {todaysGuideline ? <>
                         <div className="text-center">
                       <h3 className="text-2xl font-semibold mb-4 dark:text-white text-foreground">
                         {todaysGuideline.title}
@@ -581,61 +513,51 @@ const Dashboard = () => {
                             {todaysGuideline.content?.substring(0, 200)}...
                           </p>
                         </div>
-                        <Button
-                          onClick={() => {
-                            haptics.medium();
-                            navigate(`/guideline/${todaysGuideline.id}`);
-                          }}
-                          size="lg"
-                          className="w-full text-lg text-primary-foreground min-h-[48px] h-14 bg-gradient-primary hover:shadow-glow-primary transition-all duration-300 relative overflow-hidden group"
-                        >
+                        <Button onClick={() => {
+                    haptics.medium();
+                    navigate(`/guideline/${todaysGuideline.id}`);
+                  }} size="lg" className="w-full text-lg text-primary-foreground min-h-[48px] h-14 bg-gradient-primary hover:shadow-glow-primary transition-all duration-300 relative overflow-hidden group">
                           <span className="relative z-10 flex items-center gap-2">
                             <BookMarked className="h-5 w-5" />
                             Begin Today's Prayer
                           </span>
-                          <motion.div
-                            className="absolute inset-0 bg-white/20"
-                            initial={{ x: "-100%" }}
-                            whileHover={{ x: "100%" }}
-                            transition={{ duration: 0.5 }}
-                          />
+                          <motion.div className="absolute inset-0 bg-white/20" initial={{
+                      x: "-100%"
+                    }} whileHover={{
+                      x: "100%"
+                    }} transition={{
+                      duration: 0.5
+                    }} />
                         </Button>
-                      </>
-                    ) : (
-                      <>
+                      </> : <>
                         <div className="text-center">
                           <p className="dark:text-white/80 text-muted-foreground leading-relaxed mb-6 text-lg">
                             No prayer guideline scheduled for today. Explore all available prayers below or check back tomorrow.
                           </p>
                         </div>
-                        <Button
-                          onClick={() => {
-                            haptics.medium();
-                            navigate('/guidelines');
-                          }}
-                          size="lg"
-                          className="w-full text-lg min-h-[48px] h-14 bg-gradient-primary hover:shadow-glow-primary transition-all duration-300 relative overflow-hidden group"
-                        >
+                        <Button onClick={() => {
+                    haptics.medium();
+                    navigate('/guidelines');
+                  }} size="lg" className="w-full text-lg min-h-[48px] h-14 bg-gradient-primary hover:shadow-glow-primary transition-all duration-300 relative overflow-hidden group">
                           <span className="relative z-10 flex items-center gap-2">
                             <BookOpen className="h-5 w-5" />
                             Browse All Prayers
                           </span>
-                          <motion.div
-                            className="absolute inset-0 bg-white/20"
-                            initial={{ x: "-100%" }}
-                            whileHover={{ x: "100%" }}
-                            transition={{ duration: 0.5 }}
-                          />
+                          <motion.div className="absolute inset-0 bg-white/20" initial={{
+                      x: "-100%"
+                    }} whileHover={{
+                      x: "100%"
+                    }} transition={{
+                      duration: 0.5
+                    }} />
                         </Button>
-                      </>
-                    )}
+                      </>}
                   </CardContent>
                 </Card>
               </motion.div>
 
             {/* Enhanced Streak Badge with Circular Progress */}
-            {profile && (
-              <motion.div variants={itemVariants}>
+            {profile && <motion.div variants={itemVariants}>
                 <Card className="shadow-large glass border-white/20 overflow-hidden relative" data-tour="prayer-streak">
                   <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-secondary/5" />
                   <CardHeader className="relative z-10 pb-2">
@@ -648,18 +570,14 @@ const Dashboard = () => {
                     <div className="flex flex-col md:flex-row items-center justify-around gap-6">
                       {/* Circular Progress */}
                       <div className="flex flex-col items-center gap-3">
-                        <CircularProgress
-                          value={(profile.streak_count / milestoneData.nextMilestone.streak_needed) * 100}
-                          size={140}
-                          strokeWidth={12}
-                          color="hsl(var(--secondary))"
-                        >
+                        <CircularProgress value={profile.streak_count / milestoneData.nextMilestone.streak_needed * 100} size={140} strokeWidth={12} color="hsl(var(--secondary))">
                           <div className="text-center">
-                            <motion.p
-                              className="text-4xl font-bold dark:text-white text-foreground"
-                              animate={{ scale: [1, 1.1, 1] }}
-                              transition={{ duration: 2, repeat: Infinity }}
-                            >
+                            <motion.p className="text-4xl font-bold dark:text-white text-foreground" animate={{
+                          scale: [1, 1.1, 1]
+                        }} transition={{
+                          duration: 2,
+                          repeat: Infinity
+                        }}>
                               {profile.streak_count}
                             </motion.p>
                             <p className="text-sm dark:text-white/80 text-muted-foreground">days</p>
@@ -677,17 +595,13 @@ const Dashboard = () => {
 
                       {/* Badge Display */}
                       <div className="flex flex-col items-center gap-2">
-                        <motion.div
-                          className="text-7xl"
-                          animate={{
-                            scale: [1, 1.15, 1],
-                            rotate: [0, 5, -5, 0],
-                          }}
-                          transition={{
-                            duration: 3,
-                            repeat: Infinity,
-                          }}
-                        >
+                        <motion.div className="text-7xl" animate={{
+                      scale: [1, 1.15, 1],
+                      rotate: [0, 5, -5, 0]
+                    }} transition={{
+                      duration: 3,
+                      repeat: Infinity
+                    }}>
                           {(milestoneData.lastAchieved || milestoneData.nextMilestone).emoji}
                         </motion.div>
                         <div className="text-center">
@@ -706,36 +620,34 @@ const Dashboard = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </motion.div>
-            )}
+              </motion.div>}
 
             {/* Quick Actions */}
             <motion.div variants={itemVariants}>
               <h2 className="text-2xl font-heading font-semibold mb-4 dark:text-white text-foreground drop-shadow">Quick Actions</h2>
               <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4" data-tour="quick-actions">
-                {quickActions.map((action) => (
-                  <motion.div
-                    key={action.path}
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                  >
-                    <Card
-                      className="cursor-pointer shadow-large hover:shadow-glow-primary transition-all border-white/20 overflow-hidden group relative glass backdrop-blur-xl h-full min-h-[120px]"
-                      onClick={() => {
-                        haptics.light();
-                        navigate(action.path);
-                      }}
-                    >
+                {quickActions.map(action => <motion.div key={action.path} whileHover={{
+                scale: 1.05,
+                y: -5
+              }} whileTap={{
+                scale: 0.98
+              }} transition={{
+                type: "spring",
+                stiffness: 300
+              }}>
+                    <Card className="cursor-pointer shadow-large hover:shadow-glow-primary transition-all border-white/20 overflow-hidden group relative glass backdrop-blur-xl h-full min-h-[120px]" onClick={() => {
+                  haptics.light();
+                  navigate(action.path);
+                }}>
                       {/* Hover Glow Effect */}
                       <div className="absolute inset-0 bg-gradient-to-br from-secondary/0 via-transparent to-secondary/0 group-hover:from-secondary/20 group-hover:to-secondary/10 transition-all duration-500" />
 
                       <CardHeader className="relative z-10 p-4 md:p-6 text-center">
-                        <motion.div
-                          className={`w-12 h-12 md:w-14 md:h-14 ${action.iconBg} rounded-xl flex items-center justify-center mx-auto mb-3 md:mb-4 shadow-glow-primary group-hover:shadow-glow transition-all`}
-                          whileHover={{ rotate: 360 }}
-                          transition={{ duration: 0.6 }}
-                        >
+                        <motion.div className={`w-12 h-12 md:w-14 md:h-14 ${action.iconBg} rounded-xl flex items-center justify-center mx-auto mb-3 md:mb-4 shadow-glow-primary group-hover:shadow-glow transition-all`} whileHover={{
+                      rotate: 360
+                    }} transition={{
+                      duration: 0.6
+                    }}>
                           <action.icon className="h-6 w-6 md:h-7 md:w-7 dark:text-white text-primary" />
                         </motion.div>
                         <CardTitle className="text-base md:text-xl font-heading dark:text-white text-foreground mb-1 md:mb-2">
@@ -747,14 +659,12 @@ const Dashboard = () => {
                         </CardDescription>
                       </CardHeader>
                     </Card>
-                  </motion.div>
-                ))}
+                  </motion.div>)}
               </div>
             </motion.div>
 
             {/* Community Announcements */}
-            {encouragementMessages.length > 0 && (
-              <motion.div variants={itemVariants}>
+            {encouragementMessages.length > 0 && <motion.div variants={itemVariants}>
                 <Card className="shadow-large glass border-white/20 overflow-hidden relative" data-encouragement-card>
                   <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-secondary/5" />
                   <CardHeader className="relative z-10">
@@ -765,86 +675,64 @@ const Dashboard = () => {
                     <CardDescription className="dark:text-white/80 text-muted-foreground">Latest news and announcements</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 relative z-10">
-                    {(showAllAnnouncements ? encouragementMessages : encouragementMessages.slice(0, 1)).map((message, index) => (
-                      <motion.div
-                        key={message.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className={`p-4 rounded-xl ${index === 0 ? 'bg-secondary/20 border-l-4 border-secondary' : 'bg-white/10'}`}
-                      >
+                    {(showAllAnnouncements ? encouragementMessages : encouragementMessages.slice(0, 1)).map((message, index) => <motion.div key={message.id} initial={{
+                  opacity: 0,
+                  x: -20
+                }} animate={{
+                  opacity: 1,
+                  x: 0
+                }} transition={{
+                  delay: index * 0.1
+                }} className={`p-4 rounded-xl ${index === 0 ? 'bg-secondary/20 border-l-4 border-secondary' : 'bg-white/10'}`}>
                     <p className="dark:text-white/90 text-foreground whitespace-pre-wrap leading-relaxed">{message.content}</p>
                     <p className="text-xs dark:text-white/60 text-muted-foreground mt-2">
                           {new Date(message.created_at).toLocaleDateString('en-US', {
-                            weekday: 'short',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
                         </p>
-                      </motion.div>
-                    ))}
+                      </motion.div>)}
 
-                    {encouragementMessages.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => setShowAllAnnouncements(!showAllAnnouncements)}
-                        className="w-full hover:bg-white/10 dark:text-white text-foreground"
-                      >
-                        {showAllAnnouncements
-                          ? 'Show Less'
-                          : `Show ${encouragementMessages.length - 1} More ${encouragementMessages.length - 1 === 1 ? 'Update' : 'Updates'}`
-                        }
-                      </Button>
-                    )}
+                    {encouragementMessages.length > 1 && <Button variant="ghost" onClick={() => setShowAllAnnouncements(!showAllAnnouncements)} className="w-full hover:bg-white/10 dark:text-white text-foreground">
+                        {showAllAnnouncements ? 'Show Less' : `Show ${encouragementMessages.length - 1} More ${encouragementMessages.length - 1 === 1 ? 'Update' : 'Updates'}`}
+                      </Button>}
                   </CardContent>
                 </Card>
-              </motion.div>
-            )}
+              </motion.div>}
 
             {/* Admin Card */}
-            {isAdmin && (
-              <motion.div variants={itemVariants}>
+            {isAdmin && <motion.div variants={itemVariants}>
                 <Card className="shadow-large glass border-white/20 overflow-hidden relative">
                   <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-accent/10" />
                   <CardHeader className="relative z-10">
                     <CardTitle className="flex items-center gap-2 dark:text-white text-foreground">
                       <Shield className="h-6 w-6 text-secondary" />
                       Admin Access
-                      {pendingTestimonyCount > 0 && (
-                        <Badge variant="destructive" className="ml-2">
+                      {pendingTestimonyCount > 0 && <Badge variant="destructive" className="ml-2">
                           {pendingTestimonyCount} pending
-                        </Badge>
-                      )}
+                        </Badge>}
                     </CardTitle>
                     <CardDescription className="dark:text-white/80 text-muted-foreground">Manage content and moderate the community</CardDescription>
                   </CardHeader>
                   <CardContent className="relative z-10">
-                    <Button
-                      onClick={() => {
-                        haptics.medium();
-                        navigate("/admin");
-                      }}
-                      className="w-full min-h-[48px] h-12 bg-gradient-to-r from-secondary via-secondary to-accent text-gray-900 font-semibold shadow-lg hover:shadow-glow hover:scale-[1.02] hover:text-white transition-all duration-300"
-                      variant="default"
-                    >
+                    <Button onClick={() => {
+                  haptics.medium();
+                  navigate("/admin");
+                }} className="w-full min-h-[48px] h-12 bg-gradient-to-r from-secondary via-secondary to-accent text-gray-900 font-semibold shadow-lg hover:shadow-glow hover:scale-[1.02] hover:text-white transition-all duration-300" variant="default">
                       Go to Admin Dashboard
-                      {pendingTestimonyCount > 0 && (
-                        <Badge variant="secondary" className="ml-2 bg-white text-primary">
+                      {pendingTestimonyCount > 0 && <Badge variant="secondary" className="ml-2 bg-white text-primary">
                           {pendingTestimonyCount}
-                        </Badge>
-                      )}
+                        </Badge>}
                     </Button>
                   </CardContent>
                 </Card>
-              </motion.div>
-            )}
+              </motion.div>}
           </motion.div>
         </div>
       </div>
-    </TooltipProvider>
-  );
+    </TooltipProvider>;
 };
-
 export default Dashboard;
