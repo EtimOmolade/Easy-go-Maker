@@ -126,22 +126,19 @@ const Index = () => {
             transition={{ type: "spring", stiffness: 100, delay: 0.2 }}
             className="flex justify-center mb-8"
           >
-            <div className="relative">
-              <motion.div
-                className="absolute inset-0 bg-secondary/40 rounded-full blur-2xl"
-                animate={{
-                  scale: [1, 1.3, 1],
-                  opacity: [0.5, 0.8, 0.5],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                }}
-              />
-              <div className="relative p-6 bg-white/20 backdrop-blur-md rounded-full shadow-glow border border-white/30">
-                <BookOpen className="h-16 w-16 text-white" />
-              </div>
-            </div>
+            <motion.img 
+              src={logoText} 
+              alt="SpiritConnect" 
+              className="h-24 md:h-32 w-auto drop-shadow-2xl"
+              animate={{
+                y: [0, -10, 0],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            />
           </motion.div>
 
           <motion.h1

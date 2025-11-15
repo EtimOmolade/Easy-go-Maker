@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Mail, KeyRound } from "lucide-react";
+import logoText from "@/assets/logo-text.png";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -83,18 +84,27 @@ const ForgotPassword = () => {
       >
         <Card className="glass shadow-large border-white/20 backdrop-blur-xl">
           <CardHeader className="space-y-4">
-            <div className="flex items-center gap-3">
+            <motion.div 
+              className="flex justify-center"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              <img src={logoText} alt="SpiritConnect" className="h-16 w-auto" />
+            </motion.div>
+            {!sent && (
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={() => navigate("/auth")}
-                className="h-10 w-10 hover:bg-primary/10 transition-colors"
+                className="hover:bg-white/10 self-start"
               >
-                <ArrowLeft className="h-5 w-5" />
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Sign In
               </Button>
-              <div className="flex-1">
-                <CardTitle className="text-2xl font-heading text-primary">Forgot Password</CardTitle>
-              </div>
+            )}
+            <div>
+              <CardTitle className="text-2xl font-heading text-primary">Forgot Password</CardTitle>
             </div>
             <CardDescription className="text-base text-foreground/70">
               {sent

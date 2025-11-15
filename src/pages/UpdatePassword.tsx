@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Eye, EyeOff, CheckCircle2, Lock, Shield } from "lucide-react";
+import logoText from "@/assets/logo-text.png";
 
 const UpdatePassword = () => {
   const navigate = useNavigate();
