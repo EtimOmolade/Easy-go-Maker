@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Heart, NotebookPen, TrendingUp, ChevronRight, ChevronLeft, Check } from "lucide-react";
+import { Hand, NotebookPen, TrendingUp, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import logoOnly from "@/assets/logo-only.png";
 import { Progress } from "@/components/ui/progress";
 
@@ -23,7 +23,7 @@ const wizardSteps = [
   {
     title: "Daily Prayer Focus",
     description: "Each day features a guided prayer session to help you maintain a consistent prayer routine and deepen your faith.",
-    icon: Heart,
+    icon: Hand,
     color: "text-rose-500",
     bgGradient: "from-rose-500/20 to-pink-500/30",
   },
