@@ -206,23 +206,14 @@ const Auth = () => {
         <Card className="glass shadow-large border-white/20 backdrop-blur-xl">
           <CardHeader className="text-center space-y-4 pb-6">
             {/* Logo */}
-            <motion.div
-              className="flex justify-center"
+            <motion.img
+              src={logoText}
+              alt="SpiritConnect"
+              className="h-20 w-auto mx-auto"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            >
-              <div className="relative">
-                <motion.div
-                  className="absolute inset-0 bg-secondary/20 rounded-full blur-xl"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                />
-                <div className="relative p-4 bg-gradient-primary rounded-full shadow-glow">
-                  <BookOpen className="h-10 w-10 text-white" />
-                </div>
-              </div>
-            </motion.div>
+            />
 
             {/* Title */}
             <motion.div

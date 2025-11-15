@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Loader2, Shield, RefreshCw, ArrowLeft, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { generateDeviceFingerprint, getDeviceName, generateTrustToken } from "@/utils/deviceFingerprint";
+import logoText from "@/assets/logo-text.png";
 
 const VerifyOTP = () => {
   const navigate = useNavigate();

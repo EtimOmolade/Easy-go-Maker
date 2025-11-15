@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, CheckCheck, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -69,6 +69,29 @@ const NotificationDropdown = ({ userId }: NotificationDropdownProps) => {
     }
   };
 
+  const handleDeleteNotification = async (notificationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const { error } = await supabase.from('notifications').delete().eq('id', notificationId);
+      if (error) throw error;
+      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
+  const handleClearRead = async () => {
+    try {
+      const readIds = notifications.filter(n => n.is_read).map(n => n.id);
+      const { error } = await supabase.from('notifications').delete().in('id', readIds);
+      if (error) throw error;
+      setNotifications((prev) => prev.filter((n) => !n.is_read));
+      setOpen(false);
+    } catch (error) {
+      console.error('Error clearing read notifications:', error);
+    }
+  };
+
   const handleNotificationClick = (notification: Notification) => {
     handleMarkAsRead(notification.id);
     switch (notification.related_type) {
@@ -116,8 +139,24 @@ const NotificationDropdown = ({ userId }: NotificationDropdownProps) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 p-0 bg-background">
         <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold">Notifications</h3>
-          {unreadCount > 0 && <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead} className="h-8 text-xs"><CheckCheck className="h-3 w-3 mr-1" />Mark all read</Button>}
+          <div>
+            <h3 className="font-semibold">Notifications</h3>
+            <p className="text-xs text-muted-foreground">
+              {notifications.length} total{unreadCount > 0 && ` · ${unreadCount} unread`}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {notifications.filter(n => n.is_read).length > 0 && (
+              <Button variant="ghost" size="sm" onClick={handleClearRead} className="h-8 text-xs">
+                <Trash2 className="h-3 w-3 mr-1" />Clear Read
+              </Button>
+            )}
+            {unreadCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead} className="h-8 text-xs">
+                <CheckCheck className="h-3 w-3 mr-1" />Mark all read
+              </Button>
+            )}
+          </div>
         </div>
         <ScrollArea className="h-[400px]">
           {notifications.length === 0 ? (
@@ -128,13 +167,23 @@ const NotificationDropdown = ({ userId }: NotificationDropdownProps) => {
           ) : (
             <div className="divide-y">
               {notifications.map((notification) => (
-                <button key={notification.id} onClick={() => handleNotificationClick(notification)} className={`w-full text-left p-4 hover:bg-accent transition-colors ${!notification.is_read ? 'bg-primary/5' : ''}`}>
+                <button key={notification.id} onClick={() => handleNotificationClick(notification)} className={`w-full text-left p-4 hover:bg-accent transition-colors relative group ${!notification.is_read ? 'bg-primary/5' : ''}`}>
                   <div className="flex items-start gap-3">
                     <span className="text-2xl flex-shrink-0">{getNotificationIcon(notification.type)}</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <p className="font-medium text-sm truncate">{notification.title}</p>
-                        {!notification.is_read && <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />}
+                        <div className="flex items-center gap-2">
+                          {!notification.is_read && <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => handleDeleteNotification(notification.id, e)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                       <p className="text-xs text-muted-foreground line-clamp-2 mb-1">{notification.message}</p>
                       <p className="text-xs text-muted-foreground">{getTimeAgo(notification.created_at)}</p>
