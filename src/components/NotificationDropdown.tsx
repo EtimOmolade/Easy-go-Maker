@@ -207,7 +207,8 @@ const NotificationDropdown = ({
             {notifications.filter(n => n.is_read).length > 0 && <Button variant="ghost" size="sm" onClick={handleClearRead} className="h-8 text-xs">
                 <Trash2 className="h-3 w-3 mr-1" />Clear Read
               </Button>}
-            {unreadCount > 0 && <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead} className="h-8 text-xs mx-0 px-0">Read All<CheckCheck className="h-3 w-3 mr-1" />Mark all read
+            {unreadCount > 0 && <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead} className="h-8 text-xs">
+                <CheckCheck className="h-3 w-3 mr-1" />Read All
               </Button>}
           </div>
         </div>
