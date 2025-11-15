@@ -37,6 +37,7 @@ const NotificationDropdown = ({ userId }: NotificationDropdownProps) => {
         table: 'notifications', 
         filter: `user_id=eq.${userId}`
       }, (payload) => {
+        console.log('🔔 New notification received (real-time):', payload.new);
         setNotifications((prev) => [payload.new as Notification, ...prev]);
       })
       .on('postgres_changes', {
@@ -45,6 +46,7 @@ const NotificationDropdown = ({ userId }: NotificationDropdownProps) => {
         table: 'notifications',
         filter: `user_id=eq.${userId}`
       }, (payload) => {
+        console.log('🗑️ Notification deleted (real-time):', payload.old);
         setNotifications((prev) => 
           prev.filter((n) => n.id !== (payload.old as Notification).id)
         );
@@ -55,6 +57,7 @@ const NotificationDropdown = ({ userId }: NotificationDropdownProps) => {
         table: 'notifications',
         filter: `user_id=eq.${userId}`
       }, (payload) => {
+        console.log('✏️ Notification updated (real-time):', payload.new);
         setNotifications((prev) =>
           prev.map((n) => n.id === (payload.new as Notification).id ? payload.new as Notification : n)
         );
@@ -96,24 +99,40 @@ const NotificationDropdown = ({ userId }: NotificationDropdownProps) => {
 
   const handleDeleteNotification = async (notificationId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // Optimistically update UI first
+    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+    
     try {
       const { error } = await supabase.from('notifications').delete().eq('id', notificationId);
-      if (error) throw error;
-      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+      if (error) {
+        console.error('Error deleting notification:', error);
+        // Revert optimistic update on error
+        await loadNotifications();
+      }
     } catch (error) {
       console.error('Error deleting notification:', error);
+      // Revert optimistic update on error
+      await loadNotifications();
     }
   };
 
   const handleClearRead = async () => {
+    const readIds = notifications.filter(n => n.is_read).map(n => n.id);
+    
+    // Optimistically update UI
+    setNotifications((prev) => prev.filter((n) => !n.is_read));
+    
     try {
-      const readIds = notifications.filter(n => n.is_read).map(n => n.id);
       const { error } = await supabase.from('notifications').delete().in('id', readIds);
-      if (error) throw error;
-      setNotifications((prev) => prev.filter((n) => !n.is_read));
+      if (error) {
+        console.error('Error clearing read notifications:', error);
+        await loadNotifications();
+      }
       setOpen(false);
     } catch (error) {
       console.error('Error clearing read notifications:', error);
+      await loadNotifications();
     }
   };
 

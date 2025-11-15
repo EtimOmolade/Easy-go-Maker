@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Plus, X, Clock, Smartphone, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Bell, Plus, X, Clock, Smartphone, CheckCircle, XCircle, AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -30,11 +30,29 @@ const ReminderSettings = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [pushSubscriptions, setPushSubscriptions] = useState<any[]>([]);
+  
+  // Unsaved changes tracking
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [initialSettings, setInitialSettings] = useState({
+    enabled: true,
+    reminderTimes: ["07:00", "20:00"],
+    notificationMethods: ["in-app"]
+  });
 
   useEffect(() => {
     fetchReminderSettings();
     checkPushStatus();
   }, [user]);
+
+  // Track unsaved changes
+  useEffect(() => {
+    const settingsChanged = 
+      enabled !== initialSettings.enabled ||
+      JSON.stringify(reminderTimes) !== JSON.stringify(initialSettings.reminderTimes) ||
+      JSON.stringify(notificationMethods) !== JSON.stringify(initialSettings.notificationMethods);
+    
+    setHasUnsavedChanges(settingsChanged);
+  }, [enabled, reminderTimes, notificationMethods, initialSettings]);
 
   const checkPushStatus = async () => {
     const supported = await checkPushSupport();
@@ -74,6 +92,13 @@ const ReminderSettings = () => {
       setEnabled(data.enabled);
       setReminderTimes(data.reminder_times || ["07:00", "20:00"]);
       setNotificationMethods(data.notification_methods || ["in-app"]);
+      
+      // Save initial state for comparison
+      setInitialSettings({
+        enabled: data.enabled,
+        reminderTimes: data.reminder_times || ["07:00", "20:00"],
+        notificationMethods: data.notification_methods || ["in-app"]
+      });
     } catch (error) {
       console.error("Error fetching reminder settings:", error);
       toast.error("Failed to load reminder settings");
@@ -113,7 +138,16 @@ const ReminderSettings = () => {
         ignoreDuplicates: false
       });
       if (error) throw error;
-      toast.success("Reminder settings saved successfully");
+      
+      // Reset unsaved changes state after successful save
+      setInitialSettings({
+        enabled,
+        reminderTimes,
+        notificationMethods
+      });
+      setHasUnsavedChanges(false);
+      
+      toast.success("Reminder settings saved successfully!");
     } catch (error) {
       console.error("Error saving reminder settings:", error);
       toast.error("Failed to save reminder settings");
@@ -184,30 +218,43 @@ const ReminderSettings = () => {
     if (!user) return;
     try {
       // Create a test notification in the database
-      const { error: notifError } = await supabase.from('notifications').insert({
-        user_id: user.id,
-        type: 'prayer_reminder',
-        title: '🕊️ Prayer Time!',
-        message: 'Test prayer reminder - Time for your daily prayer session',
-        related_type: 'guideline'
-      });
+      const { data: notification, error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          type: 'prayer_reminder',
+          title: '🕊️ Prayer Time!',
+          message: 'Test prayer reminder - Time for your daily prayer session',
+          related_type: 'guideline'
+        })
+        .select()
+        .single();
 
       if (notifError) throw notifError;
 
       // Send push notification if push is enabled
       if (notificationMethods.includes('push')) {
-        await supabase.functions.invoke('send-push-notification', {
+        const { error: pushError } = await supabase.functions.invoke('send-push-notification', {
           body: {
             type: 'prayer_reminder',
             title: '🕊️ Prayer Time!',
             message: 'Test prayer reminder - Time for your daily prayer session',
             url: '/guidelines',
-            userId: user.id
+            userId: user.id,
+            notificationId: notification.id
           }
         });
-      }
 
-      toast.success('Test prayer reminder sent! Check your notifications.');
+        if (pushError) {
+          console.error('Error sending push:', pushError);
+          toast.error("In-app notification sent, but push notification failed");
+          return;
+        }
+
+        toast.success("Test sent! Check your notification center and browser notifications. Browser notifications appear when you're not on this page.", { duration: 5000 });
+      } else {
+        toast.success("Test sent to notification center! Enable push notifications to also receive browser alerts.", { duration: 5000 });
+      }
     } catch (error) {
       console.error('Error sending test reminder:', error);
       toast.error('Failed to send test reminder');
@@ -269,6 +316,13 @@ const ReminderSettings = () => {
           <CardDescription>Set up daily reminders to help you maintain your prayer practice</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {hasUnsavedChanges && (
+            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                ⚠️ You have unsaved changes. Click "Save Changes" to apply them.
+              </p>
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <Label htmlFor="reminders-enabled">Enable Prayer Reminders</Label>
             <Switch id="reminders-enabled" checked={enabled} onCheckedChange={setEnabled} />
@@ -302,7 +356,14 @@ const ReminderSettings = () => {
               </div>
             </>
           )}
-          <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? "Saving..." : "Save Settings"}</Button>
+          <Button 
+            onClick={handleSave} 
+            disabled={saving || !hasUnsavedChanges} 
+            className="w-full"
+            variant={hasUnsavedChanges ? "default" : "outline"}
+          >
+            {saving ? "Saving..." : hasUnsavedChanges ? "Save Changes" : "No Changes"}
+          </Button>
           {enabled && (
             <Button 
               onClick={handleTestPrayerReminder} 
@@ -337,12 +398,35 @@ const ReminderSettings = () => {
               )}
               <div className="space-y-2">
                 {!isSubscribed ? (
-                  <Button onClick={handleEnablePush} disabled={subscribing || pushPermission === 'denied'} className="w-full">
-                    {subscribing ? 'Subscribing...' : 'Enable Push Notifications'}
+                  <Button 
+                    onClick={handleEnablePush} 
+                    disabled={subscribing || pushPermission === 'denied'} 
+                    className="w-full"
+                  >
+                    {subscribing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Subscribing...
+                      </>
+                    ) : (
+                      'Enable Push Notifications'
+                    )}
                   </Button>
                 ) : (
-                  <Button onClick={handleDisablePush} disabled={subscribing} variant="outline" className="w-full">
-                    {subscribing ? 'Unsubscribing...' : 'Disable Push Notifications'}
+                  <Button 
+                    onClick={handleDisablePush} 
+                    disabled={subscribing} 
+                    variant="destructive" 
+                    className="w-full"
+                  >
+                    {subscribing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Unsubscribing...
+                      </>
+                    ) : (
+                      'Disable Push Notifications'
+                    )}
                   </Button>
                 )}
               </div>
@@ -359,6 +443,26 @@ const ReminderSettings = () => {
                         <Button size="sm" variant="ghost" onClick={() => handleRemoveSubscription(sub.id)}><X className="h-4 w-4" /></Button>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+              {isSubscribed && (
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-green-900 dark:text-green-100">
+                        Push Notifications Active
+                      </h4>
+                      <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                        You'll receive prayer reminders even when the app is closed. Browser notifications work best when:
+                      </p>
+                      <ul className="text-xs text-green-700 dark:text-green-300 mt-2 space-y-1 list-disc list-inside">
+                        <li>Your browser is running in the background</li>
+                        <li>You're not currently on this page (browser hides notifications from active tabs)</li>
+                        <li>Your device is online (notifications queue when offline)</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               )}
