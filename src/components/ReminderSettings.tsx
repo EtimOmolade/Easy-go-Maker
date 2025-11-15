@@ -179,67 +179,21 @@ const ReminderSettings = () => {
   };
 
 const toggleNotificationMethod = async (method: string) => {
+  // TEMPORARILY DISABLED: Push notifications
   if (method === 'push') {
-    // Check if push is currently enabled
-    const isPushEnabled = notificationMethods.includes('push');
-    
-    if (!isPushEnabled) {
-      // User wants to ENABLE push
-      if (!pushSupported) {
-        toast.error('Push notifications not supported in your browser');
-        return;
-      }
-      
-      if (pushPermission === 'denied') {
-        toast.error('Push permission denied. Please reset in browser settings.');
-        return;
-      }
-      
-      // Automatically subscribe
-      setSubscribing(true);
-      try {
-        const success = await subscribeToPushNotifications(user!.id);
-        
-        if (success) {
-          setNotificationMethods([...notificationMethods, 'push']);
-          setIsSubscribed(true);
-          setPushPermission(Notification.permission);
-          toast.success('Push notifications enabled');
-        }
-      } finally {
-        setSubscribing(false);
-      }
+    toast.info('Push notifications are temporarily disabled while we configure them properly.');
+    return;
+  }
+  
+  // Toggle in-app notifications
+  if (notificationMethods.includes(method)) {
+    if (notificationMethods.length > 1) {
+      setNotificationMethods(notificationMethods.filter(m => m !== method));
     } else {
-      // User wants to DISABLE push
-      if (notificationMethods.length === 1) {
-        toast.error("You must have at least one notification method");
-        return;
-      }
-      
-      setSubscribing(true);
-      try {
-        const success = await unsubscribeFromPushNotifications(user!.id);
-        
-        if (success) {
-          setNotificationMethods(notificationMethods.filter(m => m !== 'push'));
-          setIsSubscribed(false);
-          toast.success('Push notifications disabled');
-        }
-      } finally {
-        setSubscribing(false);
-      }
+      toast.error("You must have at least one notification method");
     }
   } else {
-    // Toggle other methods normally (in-app)
-    if (notificationMethods.includes(method)) {
-      if (notificationMethods.length > 1) {
-        setNotificationMethods(notificationMethods.filter(m => m !== method));
-      } else {
-        toast.error("You must have at least one notification method");
-      }
-    } else {
-      setNotificationMethods([...notificationMethods, method]);
-    }
+    setNotificationMethods([...notificationMethods, method]);
   }
 };
 
@@ -374,7 +328,7 @@ const toggleNotificationMethod = async (method: string) => {
                   </div>
                 </div>
 
-                {/* Browser Push Notifications */}
+                {/* TEMPORARILY DISABLED - Browser Push Notifications
                 <div className="flex items-start gap-3 p-3 rounded-lg border">
                   <Checkbox
                     id="push"
@@ -405,6 +359,7 @@ const toggleNotificationMethod = async (method: string) => {
                     )}
                   </div>
                 </div>
+                */}
 
                 {/* Browser compatibility alert */}
                 {!pushSupported && (
