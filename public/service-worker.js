@@ -118,8 +118,8 @@ self.addEventListener('push', (event) => {
     
     const options = {
       body: data.body || data.message,
-      icon: data.icon || '/icon-192.png',
-      badge: data.badge || '/badge-72.png',
+      icon: data.icon || '/logo-192.png',
+      badge: data.badge || '/logo-192.png',
       tag: data.tag || data.type,
       data: data.data || { url: data.url, type: data.type },
       actions: data.actions || [

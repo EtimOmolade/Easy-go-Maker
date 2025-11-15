@@ -75,8 +75,8 @@ Deno.serve(async (req) => {
     const notificationPayload = {
       title,
       body: message,
-      icon: '/icon-192.png',
-      badge: '/badge-72.png',
+      icon: '/logo-192.png',
+      badge: '/logo-192.png',
       tag: type,
       data: {
         url,

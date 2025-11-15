@@ -15,6 +15,7 @@ import { MilestoneAchievementModal } from "@/components/MilestoneAchievementModa
 import { speak, speakTwice, cancelSpeech } from "@/services/tts";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AppHeader } from "@/components/AppHeader";
 
 interface PrayerStep {
   id: string;
@@ -663,15 +664,7 @@ const GuidedPrayerSession = () => {
 
       <div className="max-w-4xl relative z-10 mx-auto p-3 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-4 md:mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-white hover:bg-white/10 border border-white/20"
-            onClick={() => navigate(`/guideline/${id}`)}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            <span>Back</span>
-          </Button>
+          <AppHeader showBack={true} backTo={`/guideline/${id}`} />
 
           <TooltipProvider>
             <div className="flex gap-2">
