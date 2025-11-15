@@ -20,6 +20,8 @@ import { haptics } from "@/utils/haptics";
 import { WelcomeWizard } from "@/components/WelcomeWizard";
 import { TutorialWalkthrough } from "@/components/TutorialWalkthrough";
 import NotificationDropdown from "@/components/NotificationDropdown";
+import logoText from "@/assets/logo-text.png";
+import logoOnly from "@/assets/logo-only.png";
 
 interface Profile {
   name: string;
@@ -422,11 +424,56 @@ const Dashboard = () => {
           <WelcomeWizard isOpen={showWelcomeWizard} onComplete={handleWelcomeComplete} />
           <TutorialWalkthrough run={runTutorial} onComplete={handleTutorialComplete} />
 
+          {/* Logo Section */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex justify-center mb-6"
+          >
+            <motion.img
+              src={logoText}
+              alt="SpiritConnect"
+              className="h-16 md:h-20 w-auto hidden md:block filter brightness-[1.15] drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]"
+              animate={{
+                y: [0, -8, 0],
+                filter: [
+                  "brightness(1.15) drop-shadow(0 0 20px rgba(255,255,255,0.5))",
+                  "brightness(1.25) drop-shadow(0 0 25px rgba(255,255,255,0.7))",
+                  "brightness(1.15) drop-shadow(0 0 20px rgba(255,255,255,0.5))",
+                ],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+            <motion.img
+              src={logoOnly}
+              alt="SpiritConnect"
+              className="h-12 w-auto md:hidden filter brightness-[1.15] drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+              animate={{
+                y: [0, -6, 0],
+                filter: [
+                  "brightness(1.15) drop-shadow(0 0 15px rgba(255,255,255,0.5))",
+                  "brightness(1.25) drop-shadow(0 0 20px rgba(255,255,255,0.7))",
+                  "brightness(1.15) drop-shadow(0 0 15px rgba(255,255,255,0.5))",
+                ],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+          </motion.div>
+
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
             className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8"
           >
             <div>
