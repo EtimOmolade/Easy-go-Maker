@@ -429,10 +429,10 @@ const Dashboard = () => {
             className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8"
           >
             <div>
-              <h1 className="text-4xl md:text-5xl font-heading font-bold dark:text-white text-foreground mb-2 drop-shadow-lg">
+              <h1 className="text-4xl md:text-5xl font-heading font-bold text-white mb-2 drop-shadow-lg">
                 Welcome back, {profile?.name || "Friend"}!
               </h1>
-              <p className="dark:text-white/90 text-muted-foreground text-lg drop-shadow">Continue your prayer journey today</p>
+              <p className="text-white/90 text-lg drop-shadow">Continue your prayer journey today</p>
             </div>
             <Tooltip>
               <TooltipTrigger asChild>
