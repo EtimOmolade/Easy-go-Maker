@@ -14,39 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      announcements: {
-        Row: {
-          content: string
-          created_at: string | null
-          created_by: string | null
-          id: string
-          is_active: boolean | null
-          related_id: string | null
-          title: string
-          type: string | null
-        }
-        Insert: {
-          content: string
-          created_at?: string | null
-          created_by?: string | null
-          id?: string
-          is_active?: boolean | null
-          related_id?: string | null
-          title: string
-          type?: string | null
-        }
-        Update: {
-          content?: string
-          created_at?: string | null
-          created_by?: string | null
-          id?: string
-          is_active?: boolean | null
-          related_id?: string | null
-          title?: string
-          type?: string | null
-        }
-        Relationships: []
-      }
       audit_logs: {
         Row: {
           action: string
@@ -367,36 +334,6 @@ export type Database = {
           title?: string
           week_number?: number | null
           year?: number | null
-        }
-        Relationships: []
-      }
-      prayer_points: {
-        Row: {
-          category: string
-          content: string
-          created_at: string
-          created_by: string | null
-          id: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          category: string
-          content: string
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          category?: string
-          content?: string
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          title?: string
-          updated_at?: string
         }
         Relationships: []
       }
