@@ -339,6 +339,7 @@ const Admin = () => {
         .insert([{
           content: `✨ New Testimony Approved!\n\n${alias} shared how God is working in their life. Visit the Testimonies page to read their story! 🙌`,
           type: 'testimony_approved',
+          created_by: user?.id,
           created_at: new Date().toISOString()
         }]);
 
