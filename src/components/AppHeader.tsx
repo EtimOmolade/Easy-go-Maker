@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ interface AppHeaderProps {
 
 export const AppHeader = ({ title, showBack = true, backTo = "/dashboard", onBackClick }: AppHeaderProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAdmin } = useAuth();
 
   const handleBack = () => {
@@ -28,6 +29,12 @@ export const AppHeader = ({ title, showBack = true, backTo = "/dashboard", onBac
   const handleLogoClick = () => {
     navigate("/dashboard");
   };
+
+  // Hide notification center for admins ONLY on Admin Dashboard and Guided-Session pages
+  const shouldHideNotification = isAdmin && (
+    location.pathname === '/admin' ||
+    location.pathname.includes('/guided-session')
+  );
 
   return (
     <div className="flex items-center justify-between mb-6">
@@ -61,7 +68,7 @@ export const AppHeader = ({ title, showBack = true, backTo = "/dashboard", onBac
         )}
       </div>
       
-      {user && (
+      {user && !shouldHideNotification && (
         <NotificationDropdown userId={user.id} isAdmin={isAdmin} />
       )}
     </div>

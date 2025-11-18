@@ -8,9 +8,10 @@ interface PrayerTimerProps {
   onComplete: () => void;
   autoStart?: boolean;
   label?: string;
+  onPauseToggle?: (isPaused: boolean) => void; // NEW: Notify parent when pause/play is toggled
 }
 
-export const PrayerTimer = ({ duration, onComplete, autoStart = true, label }: PrayerTimerProps) => {
+export const PrayerTimer = ({ duration, onComplete, autoStart = true, label, onPauseToggle }: PrayerTimerProps) => {
   const [timeLeft, setTimeLeft] = useState(duration);
   const [isRunning, setIsRunning] = useState(autoStart);
 
@@ -31,7 +32,14 @@ export const PrayerTimer = ({ duration, onComplete, autoStart = true, label }: P
     return () => clearInterval(timer);
   }, [isRunning, timeLeft, onComplete]);
 
-  const toggleTimer = () => setIsRunning(!isRunning);
+  const toggleTimer = () => {
+    const newRunningState = !isRunning;
+    setIsRunning(newRunningState);
+    // Notify parent: isPaused = !isRunning
+    if (onPauseToggle) {
+      onPauseToggle(!newRunningState);
+    }
+  };
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;

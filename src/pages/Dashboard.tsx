@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +40,7 @@ const Dashboard = () => {
     isAdmin
   } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [previousStreak, setPreviousStreak] = useState(0);
   const [encouragementMessages, setEncouragementMessages] = useState<EncouragementMessage[]>([]);
@@ -335,6 +336,12 @@ const Dashboard = () => {
     }
   };
 
+  // Hide notification center for admins ONLY on Admin Dashboard and Guided-Session pages
+  const shouldHideNotification = isAdmin && (
+    location.pathname === '/admin' ||
+    location.pathname.includes('/guided-session')
+  );
+
   // Show loading skeleton while data is being fetched
   if (loading) {
     return <div className="min-h-screen relative overflow-hidden gradient-hero">
@@ -475,7 +482,7 @@ const Dashboard = () => {
                 duration: 0.5,
                 delay: 0.4
               }}>
-                  {user && <NotificationDropdown userId={user.id} isAdmin={isAdmin} />}
+                  {user && !shouldHideNotification && <NotificationDropdown userId={user.id} isAdmin={isAdmin} />}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button variant="outline" onClick={() => {

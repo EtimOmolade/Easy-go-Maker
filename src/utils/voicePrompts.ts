@@ -30,7 +30,28 @@ const PROMPT_AUDIO_URLS: Record<string, string> = {
 
 let currentAudio: HTMLAudioElement | null = null;
 
-export const playVoicePrompt = async (text: string) => {
+// Track which prompts have been played in this session to prevent replays
+const playedPrompts = new Set<string>();
+
+/**
+ * Plays a voice prompt with automatic replay prevention
+ * @param text - The prompt text to play
+ * @param options - Optional configuration
+ * @param options.force - Force play even if already played (default: false)
+ * @param options.onEnd - Callback when prompt finishes playing
+ */
+export const playVoicePrompt = async (
+  text: string,
+  options?: { force?: boolean; onEnd?: () => void }
+) => {
+  const { force = false, onEnd } = options || {};
+
+  // Check if already played (unless forced)
+  if (!force && playedPrompts.has(text)) {
+    console.log(`⏭️ Voice prompt already played, skipping: "${text.substring(0, 40)}..."`);
+    return;
+  }
+
   // Stop any currently playing audio
   if (currentAudio) {
     currentAudio.pause();
@@ -47,7 +68,17 @@ export const playVoicePrompt = async (text: string) => {
     try {
       currentAudio = new Audio(PROMPT_AUDIO_URLS[promptKey]);
       currentAudio.volume = 0.95;
+
+      // Add onended handler for callback and cleanup
+      currentAudio.onended = () => {
+        currentAudio = null;
+        if (onEnd) onEnd();
+      };
+
       await currentAudio.play();
+
+      // Mark as played AFTER successful playback start
+      playedPrompts.add(text);
       console.log(`✅ Playing Speechmatics voice prompt: ${promptKey}`);
       return;
     } catch (error) {
@@ -91,7 +122,15 @@ export const playVoicePrompt = async (text: string) => {
     utterance.pitch = 0.8;
     utterance.volume = 0.95;
 
+    // Add onend handler for callback
+    utterance.onend = () => {
+      if (onEnd) onEnd();
+    };
+
     window.speechSynthesis.speak(utterance);
+
+    // Mark as played AFTER starting TTS
+    playedPrompts.add(text);
     console.log('⚠️ Using fallback browser TTS for voice prompt');
   }
 };
@@ -107,4 +146,37 @@ export const stopVoicePrompt = () => {
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
   }
+};
+
+export const pauseVoicePrompt = () => {
+  // Pause Speechmatics audio (don't stop, keep reference)
+  if (currentAudio && !currentAudio.paused) {
+    currentAudio.pause();
+  }
+
+  // Pause browser speech synthesis
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.pause();
+  }
+};
+
+export const resumeVoicePrompt = () => {
+  // Resume Speechmatics audio
+  if (currentAudio && currentAudio.paused) {
+    currentAudio.play().catch(err => console.warn('Resume voice prompt failed:', err));
+  }
+
+  // Resume browser speech synthesis
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.resume();
+  }
+};
+
+/**
+ * Resets voice prompt tracking for a new prayer session
+ * Call this when starting a new session to allow prompts to play again
+ */
+export const resetVoicePromptTracking = () => {
+  playedPrompts.clear();
+  console.log('🔄 Voice prompt tracking reset for new session');
 };
