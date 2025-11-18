@@ -14,39 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      announcements: {
-        Row: {
-          content: string
-          created_at: string | null
-          created_by: string | null
-          id: string
-          is_active: boolean | null
-          related_id: string | null
-          title: string
-          type: string | null
-        }
-        Insert: {
-          content: string
-          created_at?: string | null
-          created_by?: string | null
-          id?: string
-          is_active?: boolean | null
-          related_id?: string | null
-          title: string
-          type?: string | null
-        }
-        Update: {
-          content?: string
-          created_at?: string | null
-          created_by?: string | null
-          id?: string
-          is_active?: boolean | null
-          related_id?: string | null
-          title?: string
-          type?: string | null
-        }
-        Relationships: []
-      }
       audit_logs: {
         Row: {
           action: string
@@ -251,6 +218,50 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          related_id: string | null
+          related_type: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          related_id?: string | null
+          related_type?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          related_id?: string | null
+          related_type?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prayer_library: {
         Row: {
           audio_url: string | null
@@ -326,35 +337,58 @@ export type Database = {
         }
         Relationships: []
       }
-      prayer_points: {
+      prayer_reminders: {
         Row: {
-          category: string
-          content: string
           created_at: string
-          created_by: string | null
+          custom_message: string | null
+          days_of_week: number[] | null
+          enabled: boolean
           id: string
-          title: string
+          last_reminded_at: string | null
+          notification_methods: string[]
+          reminder_times: string[]
+          reminder_type: string
+          snooze_until: string | null
           updated_at: string
+          user_id: string
         }
         Insert: {
-          category: string
-          content: string
           created_at?: string
-          created_by?: string | null
+          custom_message?: string | null
+          days_of_week?: number[] | null
+          enabled?: boolean
           id?: string
-          title: string
+          last_reminded_at?: string | null
+          notification_methods?: string[]
+          reminder_times?: string[]
+          reminder_type?: string
+          snooze_until?: string | null
           updated_at?: string
+          user_id: string
         }
         Update: {
-          category?: string
-          content?: string
           created_at?: string
-          created_by?: string | null
+          custom_message?: string | null
+          days_of_week?: number[] | null
+          enabled?: boolean
           id?: string
-          title?: string
+          last_reminded_at?: string | null
+          notification_methods?: string[]
+          reminder_times?: string[]
+          reminder_type?: string
+          snooze_until?: string | null
           updated_at?: string
+          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "prayer_reminders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -388,6 +422,47 @@ export type Database = {
           two_factor_enabled?: boolean | null
         }
         Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          created_at: string | null
+          endpoint: string
+          id: string
+          last_used_at: string | null
+          p256dh_key: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          last_used_at?: string | null
+          p256dh_key: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          last_used_at?: string | null
+          p256dh_key?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       testimonies: {
         Row: {

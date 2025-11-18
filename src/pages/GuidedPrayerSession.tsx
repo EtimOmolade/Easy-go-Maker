@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { motion } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,12 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Check, Volume2, VolumeX, Play, Pause, Music2, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { PrayerTimer } from "@/components/PrayerTimer";
-import { playVoicePrompt, stopVoicePrompt, VOICE_PROMPTS } from "@/utils/voicePrompts";
+import { playVoicePrompt, stopVoicePrompt, pauseVoicePrompt, resumeVoicePrompt, resetVoicePromptTracking, VOICE_PROMPTS } from "@/utils/voicePrompts";
 import { Progress } from "@/components/ui/progress";
 import { MilestoneAchievementModal } from "@/components/MilestoneAchievementModal";
-import { speak, speakTwice, cancelSpeech } from "@/services/tts";
+import { speak, speakTwice, cancelSpeech, pauseTTS, resumeTTS } from "@/services/tts";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AppHeader } from "@/components/AppHeader";
 
 interface PrayerStep {
   id: string;
@@ -60,11 +62,105 @@ const GuidedPrayerSession = () => {
   const [bgAudio, setBgAudio] = useState<HTMLAudioElement | null>(null);
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const [isPlayingVoicePrompt, setIsPlayingVoicePrompt] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
 
   // Use ref for synchronous audio tracking (prevents race conditions when switching steps)
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const isPausedRef = useRef<boolean>(false); // Ref for synchronous pause state checks
 
   const currentDay = DAYS[new Date().getDay()];
+
+  // Helper function to add fade-out effect to audio
+  const addFadeOut = (audio: HTMLAudioElement, fadeStartSeconds = 1.5) => {
+    const handleTimeUpdate = () => {
+      const timeRemaining = audio.duration - audio.currentTime;
+
+      if (timeRemaining <= fadeStartSeconds && timeRemaining > 0) {
+        // Calculate fade-out progress (1 = full volume, 0 = silent)
+        const fadeProgress = timeRemaining / fadeStartSeconds;
+        audio.volume = Math.max(0, Math.min(1, fadeProgress));
+      } else if (audio.volume !== 1 && timeRemaining > fadeStartSeconds) {
+        // Reset volume if we're not in fade-out zone
+        audio.volume = 1;
+      }
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+
+    // Cleanup function to remove listener
+    return () => audio.removeEventListener('timeupdate', handleTimeUpdate);
+  };
+
+  // Helper function to format scripture for better TTS pronunciation
+  // Improves pronunciation of scripture references for browser TTS fallback
+  const formatScriptureForTTS = (text: string): string => {
+    // Replace verse references like "17:1-9" with "17, verses 1 to 9."
+    // Use "to" instead of "through" to avoid sounding like "three"
+    let formatted = text.replace(/(\d+):(\d+)-(\d+)/g, '$1, verses $2 to $3.')
+                        .replace(/(\d+):(\d+)(?!-)/g, '$1, verse $2.'); // Handle single verses like "17:1"
+
+    // Add full stop after Bible version (KJV, NIV, etc.) for pause before scripture content
+    // Pattern: "(KJV)" becomes "(KJV). " or "KJV" becomes "KJV. "
+    formatted = formatted.replace(/\(([A-Z]{2,5})\)/g, '($1). ')
+                         .replace(/([A-Z]{2,5})(?=\s+[A-Z])/g, '$1. '); // Version followed by capital letter (verse start)
+
+    // Add commas for better pacing between phrases
+    formatted = formatted.replace(/\.\s+/g, '. , '); // Add comma after periods for slight pause
+
+    return formatted;
+  };
+
+  // Helper function to check if we can start new audio (not paused)
+  const canStartAudio = (): boolean => {
+    if (isPausedRef.current) {
+      console.log('⏸️ Audio start blocked - session is paused');
+      return false;
+    }
+    return true;
+  };
+
+  // Helper function to pause/resume all audio and session flow
+  const handleTimerPauseToggle = (isPausedNow: boolean) => {
+    // Update both state and ref for synchronous access
+    setIsPaused(isPausedNow);
+    isPausedRef.current = isPausedNow;
+
+    if (isPausedNow) {
+      // PAUSE: Freeze entire session flow
+      console.log('🛑 Session paused - freezing all audio and flow');
+
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+      }
+      if (currentAudio) {
+        currentAudio.pause();
+      }
+      if (bgAudio) {
+        bgAudio.pause();
+      }
+      // Pause voice prompts (both Speechmatics audio and TTS)
+      pauseVoicePrompt();
+      // Pause TTS service (for listening prayers using browser TTS or Google TTS)
+      pauseTTS();
+    } else {
+      // RESUME: Continue session flow from where it was paused
+      console.log('▶️ Session resumed - continuing from pause point');
+
+      if (currentAudioRef.current && currentAudioRef.current.paused) {
+        currentAudioRef.current.play().catch(err => console.warn('Resume audio failed:', err));
+      }
+      if (currentAudio && currentAudio.paused) {
+        currentAudio.play().catch(err => console.warn('Resume audio failed:', err));
+      }
+      if (bgAudio && bgAudio.paused) {
+        bgAudio.play().catch(err => console.warn('Resume background music failed:', err));
+      }
+      // Resume voice prompts (both Speechmatics audio and TTS)
+      resumeVoicePrompt();
+      // Resume TTS service (for listening prayers using browser TTS or Google TTS)
+      resumeTTS();
+    }
+  };
 
   // Helper function to stop all audio
   const stopAllAudio = () => {
@@ -141,6 +237,11 @@ const GuidedPrayerSession = () => {
     stopAllAudio();
 
     const playPrayerAudio = () => {
+      if (!canStartAudio()) {
+        console.log('⏸️ Prayer audio start blocked - session is paused');
+        return;
+      }
+
       if (step?.type === 'kingdom' && step.points?.[currentPointIndex]) {
         const point = step.points[currentPointIndex];
 
@@ -148,6 +249,10 @@ const GuidedPrayerSession = () => {
         if (point.audio_url) {
           const audio = new Audio(point.audio_url);
           audio.playbackRate = 0.85; // Slow down Speechmatics audio (85% speed)
+          audio.volume = 1; // Start at full volume
+
+          // Add fade-out effect (1.5 seconds before audio ends)
+          const removeFadeOut = addFadeOut(audio, 1.5);
 
           setCurrentAudio(audio);
           currentAudioRef.current = audio; // Also track in ref for immediate cleanup
@@ -155,13 +260,25 @@ const GuidedPrayerSession = () => {
           let playCount = 0;
 
           audio.onended = () => {
+            removeFadeOut(); // Clean up fade-out listener
             playCount++;
-            if (playCount < 2) {
-              // Play twice (like speakTwice)
+            if (playCount < 2 && canStartAudio()) {
+              // Play twice (like speakTwice) - but only if not paused
               audio.currentTime = 0;
+              audio.volume = 1; // Reset volume for replay
+              // Re-add fade-out for second playback
+              const removeFadeOut2 = addFadeOut(audio, 1.5);
               audio.play().catch(() => {
                 console.warn('⚠️ Audio replay failed');
+                removeFadeOut2();
               });
+              // Update the cleanup for second playback
+              audio.onended = () => {
+                removeFadeOut2();
+                setIsPlayingAudio(false);
+                setCurrentAudio(null);
+                currentAudioRef.current = null;
+              };
             } else {
               setIsPlayingAudio(false);
               setCurrentAudio(null);
@@ -207,12 +324,19 @@ const GuidedPrayerSession = () => {
 
     // SEQUENCE: Voice prompt → 3 second pause → Prayer audio (GUIDED MODE ONLY)
     if (voiceEnabled && isGuidedMode) {
-      playStepVoicePrompt(step.type);
-
-      // Wait for voice prompt to finish + 3 second pause, then play prayer
-      setTimeout(() => {
-        playPrayerAudio();
-      }, 5000); // Voice prompt takes ~2s, + 3s pause = 5s total
+      const prompt = getPromptForStepType(step.type);
+      if (prompt) {
+        playVoicePrompt(prompt, {
+          onEnd: () => {
+            // Wait 3 seconds after prompt finishes, THEN play prayer audio
+            setTimeout(() => {
+              if (canStartAudio()) {
+                playPrayerAudio();
+              }
+            }, 3000);
+          }
+        });
+      }
     } else if (isGuidedMode) {
       // Guided mode but voice disabled - play prayer audio immediately
       playPrayerAudio();
@@ -262,23 +386,20 @@ const GuidedPrayerSession = () => {
     setLoading(false);
   };
 
-  const playStepVoicePrompt = (type: string) => {
-    let prompt = '';
+  // Helper function to get the appropriate voice prompt for a step type
+  const getPromptForStepType = (type: string): string => {
     switch (type) {
       case 'kingdom':
-        prompt = currentStepIndex === 0 ? VOICE_PROMPTS.KINGDOM_START : VOICE_PROMPTS.KINGDOM_NEXT;
-        break;
+        return currentStepIndex === 0 ? VOICE_PROMPTS.KINGDOM_START : VOICE_PROMPTS.KINGDOM_NEXT;
       case 'personal':
-        prompt = VOICE_PROMPTS.PERSONAL_START;
-        break;
+        return VOICE_PROMPTS.PERSONAL_START;
       case 'listening':
-        prompt = VOICE_PROMPTS.LISTENING_START;
-        break;
+        return VOICE_PROMPTS.LISTENING_START;
       case 'reflection':
-        prompt = VOICE_PROMPTS.JOURNALING_START;
-        break;
+        return VOICE_PROMPTS.JOURNALING_START;
+      default:
+        return '';
     }
-    if (prompt) playVoicePrompt(prompt);
   };
 
   const handlePointComplete = () => {
@@ -292,7 +413,9 @@ const GuidedPrayerSession = () => {
       // Play next point prompt after short delay
       if (voiceEnabled) {
         setTimeout(() => {
-          playVoicePrompt(VOICE_PROMPTS.KINGDOM_NEXT);
+          if (canStartAudio()) { // Only play if not paused
+            playVoicePrompt(VOICE_PROMPTS.KINGDOM_NEXT);
+          }
         }, 500);
       }
     } else {
@@ -409,7 +532,7 @@ const GuidedPrayerSession = () => {
           is_shared: false,
         });
 
-      if (voiceEnabled) {
+      if (voiceEnabled && canStartAudio()) {
         playVoicePrompt(VOICE_PROMPTS.SESSION_COMPLETE);
       }
 
@@ -438,10 +561,23 @@ const GuidedPrayerSession = () => {
 
   const toggleAudioReading = () => {
     if (isPlayingAudio) {
-      // Stop all audio
-      stopAllAudio();
+      // PAUSE instead of STOP (preserves audio position)
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+      }
+      pauseTTS(); // Pause TTS fallback if it's being used
+      setIsPlayingAudio(false);
     } else {
-      // Stop any previous audio first
+      // Check if resuming existing audio
+      if (currentAudioRef.current && currentAudioRef.current.paused) {
+        // Resume from same position
+        currentAudioRef.current.play().catch(err => console.warn('Resume listening audio failed:', err));
+        resumeTTS(); // Resume TTS fallback if it was being used
+        setIsPlayingAudio(true);
+        return;
+      }
+
+      // Create new audio only if none exists
       stopAllAudio();
 
       const currentStep = guideline.steps[currentStepIndex];
@@ -455,12 +591,17 @@ const GuidedPrayerSession = () => {
         // TRY PRE-GENERATED AUDIO FIRST (Speechmatics)
         if (currentStep.audio_url) {
           const audio = new Audio(currentStep.audio_url);
-          audio.playbackRate = 0.7; // Slow down Speechmatics audio for meditative scripture (70% speed)
+          audio.playbackRate = 0.76; // Slow down Speechmatics audio for meditative scripture (70% speed)
+          audio.volume = 1; // Start at full volume
+
+          // Add fade-out effect (2 seconds before audio ends)
+          const removeFadeOut = addFadeOut(audio, 1.75);
 
           setCurrentAudio(audio);
           currentAudioRef.current = audio; // Track in ref for immediate cleanup
 
           audio.onended = () => {
+            removeFadeOut(); // Clean up fade-out listener
             setIsPlayingAudio(false);
             setCurrentAudio(null);
             currentAudioRef.current = null;
@@ -469,10 +610,11 @@ const GuidedPrayerSession = () => {
           audio.onerror = () => {
             // FALLBACK TO BROWSER TTS ONLY ON ERROR
             console.warn('⚠️ Listening audio failed, using browser TTS');
+            removeFadeOut(); // Clean up fade-out listener
             setCurrentAudio(null);
             currentAudioRef.current = null;
             setIsPlayingAudio(true);
-            speak(listeningPrayer.content, {
+            speak(formatScriptureForTTS(listeningPrayer.content), {
               rate: 0.5, // Very slow for meditative scripture
               pitch: 1,
               volume: 1,
@@ -483,10 +625,11 @@ const GuidedPrayerSession = () => {
           audio.play().catch(() => {
             // FALLBACK IF PLAY FAILS
             console.warn('⚠️ Listening playback failed, using browser TTS');
+            removeFadeOut(); // Clean up fade-out listener
             setCurrentAudio(null);
             currentAudioRef.current = null;
             setIsPlayingAudio(true);
-            speak(listeningPrayer.content, {
+            speak(formatScriptureForTTS(listeningPrayer.content), {
               rate: 0.5,
               pitch: 1,
               volume: 1,
@@ -498,7 +641,7 @@ const GuidedPrayerSession = () => {
         } else {
           // NO AUDIO URL, USE BROWSER TTS
           setIsPlayingAudio(true);
-          speak(listeningPrayer.content, {
+          speak(formatScriptureForTTS(listeningPrayer.content), {
             rate: 0.5, // Very slow for meditative scripture reading
             pitch: 1,
             volume: 1,
@@ -595,22 +738,24 @@ const GuidedPrayerSession = () => {
   }, [isPlayingAudio, bgAudio]);
 
   const handleBeginSession = () => {
+    // Reset voice prompt tracking for new session
+    resetVoicePromptTracking();
     setHasStarted(true);
     // Voice prompt will be triggered by useEffect when hasStarted becomes true
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-subtle flex items-center justify-center">
-        <p className="text-muted-foreground">Loading prayer session...</p>
+      <div className="min-h-screen relative overflow-hidden gradient-hero flex items-center justify-center">
+        <p className="text-white/80">Loading prayer session...</p>
       </div>
     );
   }
 
   if (!guideline) {
     return (
-      <div className="min-h-screen gradient-subtle flex items-center justify-center">
-        <p className="text-muted-foreground">Prayer guideline not found</p>
+      <div className="min-h-screen relative overflow-hidden gradient-hero flex items-center justify-center">
+        <p className="text-white/80">Prayer guideline not found</p>
       </div>
     );
   }
@@ -629,17 +774,40 @@ const GuidedPrayerSession = () => {
     : null;
 
   return (
-    <div className="min-h-screen gradient-subtle">
-      <div className="max-w-4xl mx-auto p-3 md:p-6 lg:p-8">
+    <div className="min-h-screen relative overflow-hidden gradient-hero">
+      {/* Animated Background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <motion.div
+          className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
+          animate={{
+            y: [0, -50, 0],
+            x: [0, 30, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-light/20 rounded-full blur-3xl"
+          animate={{
+            y: [0, 40, 0],
+            x: [0, -40, 0],
+            scale: [1, 1.3, 1],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      </div>
+
+      <div className="max-w-4xl relative z-10 mx-auto p-3 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-4 md:mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/guideline/${id}`)}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Back</span>
-          </Button>
+          <AppHeader showBack={true} backTo={`/guideline/${id}`} />
 
           <TooltipProvider>
             <div className="flex gap-2">
@@ -652,7 +820,8 @@ const GuidedPrayerSession = () => {
                     className="gap-2"
                   >
                     <Settings className="h-4 w-4" />
-                    <span className="hidden sm:inline">Audio</span>
+                    <span className="sm:hidden">Audio</span>
+                    <span className="hidden sm:inline">Audio Settings</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -715,26 +884,26 @@ const GuidedPrayerSession = () => {
           </TooltipProvider>
         </div>
 
-        <Card className="shadow-medium mb-4 md:mb-6">
+        <Card className="shadow-large glass border-white/20 mb-4 md:mb-6">
           <CardHeader className="p-4 md:p-6">
               <div className="flex items-center justify-between mb-3 md:mb-4">
-                <Badge variant="secondary" className="text-xs">{guideline.day_of_week}</Badge>
-                <span className="text-xs md:text-sm text-muted-foreground">
+                <Badge variant="secondary" className="text-xs bg-gradient-secondary text-white border-0">{guideline.day_of_week}</Badge>
+                <span className="text-xs md:text-sm text-white/80">
                   Step {currentStepIndex + 1} of {guideline.steps?.length || 0}
                 </span>
               </div>
-            <CardTitle className="text-lg md:text-xl lg:text-2xl">{guideline.title}</CardTitle>
+            <CardTitle className="text-lg md:text-xl lg:text-2xl text-white">{guideline.title}</CardTitle>
             <Progress value={progress} className="h-2 mt-3 md:mt-4" />
           </CardHeader>
         </Card>
 
         {!hasStarted ? (
-          <Card className="shadow-medium">
+          <Card className="shadow-large glass border-white/20">
             <CardHeader>
-              <CardTitle className="text-2xl text-center">Ready to Begin?</CardTitle>
+              <CardTitle className="text-2xl text-center text-white">Ready to Begin?</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <p className="text-center text-muted-foreground">
+              <p className="text-center text-white/90">
                 This guided prayer session will take you through {guideline.steps?.length || 0} steps including kingdom focused prayers, personal supplication, listening prayer, and reflection.
               </p>
               <Button 
@@ -748,10 +917,10 @@ const GuidedPrayerSession = () => {
             </CardContent>
           </Card>
         ) : currentStep && (
-          <Card className="shadow-medium">
+          <Card className="shadow-large glass border-white/20">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl">
+                <CardTitle className="text-xl text-white">
                   {currentStep.type === 'kingdom' && 'Kingdom Focused Prayer'}
                   {currentStep.type === 'personal' && 'Personal Supplication'}
                   {currentStep.type === 'listening' && 'Listening Prayer - Bible Reading'}
@@ -762,7 +931,7 @@ const GuidedPrayerSession = () => {
                 )}
               </div>
               {currentStep.type === 'kingdom' && currentStep.points && (
-                <p className="text-sm text-muted-foreground mt-2">
+                <p className="text-sm text-white/80 mt-2">
                   Point {currentPointIndex + 1} of {currentStep.points.length}
                 </p>
               )}
@@ -770,8 +939,8 @@ const GuidedPrayerSession = () => {
             <CardContent className="space-y-6">
               {currentStep.type === 'kingdom' && currentPoint && (
                 <>
-                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
-                    <h4 className="font-semibold mb-2">{currentPoint.title}</h4>
+                  <div className="p-6 bg-white/50 backdrop-blur-md rounded-lg border border-white/30 shadow-medium">
+                    <h4 className="font-semibold mb-2 text-foreground">{currentPoint.title}</h4>
                     <p className="text-foreground/90 whitespace-pre-wrap">{currentPoint.content}</p>
                   </div>
                   
@@ -791,6 +960,7 @@ const GuidedPrayerSession = () => {
                       onComplete={handlePointComplete}
                       autoStart={true}
                       label="3 minutes"
+                      onPauseToggle={handleTimerPauseToggle}
                     />
                   ) : (
                     <>
@@ -810,7 +980,7 @@ const GuidedPrayerSession = () => {
 
               {currentStep.type === 'personal' && (
                 <>
-                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
+                  <div className="p-6 bg-white/50 backdrop-blur-md rounded-lg border border-white/30 shadow-medium">
                     <p className="text-foreground/90">
                       Now is the time to bring your personal requests to God. Share what's on your heart - your needs, your family, your work, your health. God is listening.
                     </p>
@@ -832,6 +1002,7 @@ const GuidedPrayerSession = () => {
                       onComplete={handleStepComplete}
                       autoStart={true}
                       label="5 minutes"
+                      onPauseToggle={handleTimerPauseToggle}
                     />
                   ) : (
                     <Button onClick={handleStepComplete} className="w-full">
@@ -843,8 +1014,8 @@ const GuidedPrayerSession = () => {
 
               {currentStep.type === 'listening' && listeningPrayer && (
                 <>
-                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
-                    <h4 className="font-semibold mb-3">{listeningPrayer.title || listeningPrayer.reference || 'Scripture Reading'}</h4>
+                  <div className="p-6 bg-white/50 backdrop-blur-md rounded-lg border border-white/30 shadow-medium">
+                    <h4 className="font-semibold mb-3 text-foreground">{listeningPrayer.title || listeningPrayer.reference || 'Scripture Reading'}</h4>
                     <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{listeningPrayer.content}</p>
                     {listeningPrayer.reference && (
                       <p className="text-sm text-muted-foreground mt-3 italic">— {listeningPrayer.reference}</p>
@@ -890,8 +1061,8 @@ const GuidedPrayerSession = () => {
 
               {currentStep.type === 'reflection' && (
                 <>
-                  <div className="p-6 bg-accent/5 rounded-lg border border-border">
-                    <h4 className="font-semibold text-lg mb-3">Reflection & Journaling</h4>
+                  <div className="p-6 bg-white/50 backdrop-blur-md rounded-lg border border-white/30 shadow-medium">
+                    <h4 className="font-semibold text-lg mb-3 text-foreground">Reflection & Journaling</h4>
                     <p className="text-foreground/90 leading-relaxed">
                       Take time to reflect on what you've prayed and what God has spoken to you. Write down your thoughts, insights, and what you sense God is saying.
                     </p>

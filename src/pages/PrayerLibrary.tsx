@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { PrayerPointCategory } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
+import { AppHeader } from "@/components/AppHeader";
 
 const CATEGORIES: PrayerPointCategory[] = ['Kingdom Focus', 'Listening Prayer'];
 
@@ -310,21 +312,48 @@ const PrayerLibrary = () => {
   const filteredPoints = prayerPoints.filter(p => p.category === selectedCategory);
 
   return (
-    <div className="min-h-screen gradient-subtle">
-      <div className="max-w-6xl mx-auto p-4 md:p-8">
-        <Button variant="ghost" className="mb-6" onClick={() => navigate("/admin")}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Admin
-        </Button>
+    <div className="min-h-screen relative overflow-hidden gradient-hero">
+      {/* Animated Background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <motion.div
+          className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
+          animate={{
+            y: [0, -50, 0],
+            x: [0, 30, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-light/20 rounded-full blur-3xl"
+          animate={{
+            y: [0, 40, 0],
+            x: [0, -40, 0],
+            scale: [1, 1.3, 1],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      </div>
+
+      <div className="max-w-6xl mx-auto p-4 md:p-8 relative z-10">
+        <AppHeader title="Prayer Point Library" showBack={true} backTo="/admin" />
 
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <BookOpen className="h-8 w-8 text-accent" />
+            <BookOpen className="h-8 w-8 text-secondary" />
             <div>
-              <h1 className="text-4xl font-heading font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-heading font-bold text-white drop-shadow-lg">
                 Prayer Point Library
               </h1>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-white/80 mt-1">
                 Manage reusable prayer points for building guided prayer sessions
               </p>
             </div>
@@ -347,9 +376,9 @@ const PrayerLibrary = () => {
                   <span className="hidden sm:inline ml-2">Add Prayer Point</span>
                 </Button>
               </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto glass border-white/20">
               <DialogHeader>
-                <DialogTitle>
+                <DialogTitle className="text-white">
                   {editingPoint ? 'Edit Prayer Point' : 'Add New Prayer Point'}
                 </DialogTitle>
               </DialogHeader>
@@ -596,9 +625,9 @@ const PrayerLibrary = () => {
 
           <TabsContent value={selectedCategory}>
             {filteredPoints.length === 0 ? (
-              <Card className="shadow-medium">
+              <Card className="shadow-large glass border-white/20">
                 <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">
+                  <p className="text-white/80">
                     No prayer points in this category yet. Click "Add Prayer Point" to create one.
                   </p>
                 </CardContent>
@@ -606,8 +635,9 @@ const PrayerLibrary = () => {
             ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                   {filteredPoints.map((point) => (
-                    <Card key={point.id} className="shadow-medium hover:shadow-glow transition-shadow">
-                      <CardHeader>
+                    <Card key={point.id} className="shadow-large glass border-white/20 hover:shadow-glow transition-all overflow-hidden relative">
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/5" />
+                      <CardHeader className="relative z-10">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1">
                             <div className="flex flex-wrap gap-2 items-center">
@@ -620,13 +650,14 @@ const PrayerLibrary = () => {
                                 </Badge>
                               )}
                             </div>
-                            <CardTitle className="text-lg mt-2">{point.title}</CardTitle>
+                            <CardTitle className="text-lg mt-2 text-white">{point.title}</CardTitle>
                           </div>
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEdit(point)}
+                              className="text-white/80 hover:text-white hover:bg-white/10"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -634,14 +665,15 @@ const PrayerLibrary = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDelete(point.id)}
+                              className="text-white/80 hover:text-white hover:bg-white/10"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-foreground/80 whitespace-pre-wrap line-clamp-3">
+                      <CardContent className="relative z-10">
+                        <p className="text-sm text-white/80 whitespace-pre-wrap line-clamp-3">
                           {point.content}
                         </p>
                       </CardContent>

@@ -148,6 +148,37 @@ export function cancelSpeech(): void {
 }
 
 /**
+ * Pauses any currently playing TTS audio (without stopping it)
+ * Allows resuming from the same position
+ */
+export function pauseTTS(): void {
+  // Pause Web Speech API
+  if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+    window.speechSynthesis.pause();
+  }
+
+  // Pause Google TTS audio if playing
+  if (currentAudio && !currentAudio.paused) {
+    currentAudio.pause();
+  }
+}
+
+/**
+ * Resumes paused TTS audio from where it was paused
+ */
+export function resumeTTS(): void {
+  // Resume Web Speech API
+  if ('speechSynthesis' in window && window.speechSynthesis.paused) {
+    window.speechSynthesis.resume();
+  }
+
+  // Resume Google TTS audio if paused
+  if (currentAudio && currentAudio.paused) {
+    currentAudio.play().catch(err => console.warn('Resume TTS audio failed:', err));
+  }
+}
+
+/**
  * Speaks text twice consecutively (for intercession prayers)
  */
 export async function speakTwice(text: string, options: TTSOptions = {}): Promise<void> {

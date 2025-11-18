@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { JournalSkeleton } from "@/components/LoadingSkeleton";
+import { haptics } from "@/utils/haptics";
+import { useOfflineJournal } from "@/hooks/useOfflineJournal";
+import { AppHeader } from "@/components/AppHeader";
 
 interface JournalEntry {
   id: string;
@@ -55,6 +60,7 @@ const Journal = () => {
   
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { saveEntry, updateEntry, fetchEntries: fetchEntriesOffline, deleteEntry: deleteEntryOffline, isOnline } = useOfflineJournal(user?.id);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -83,14 +89,8 @@ const Journal = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from("journal_entries")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("date", { ascending: false });
-
-      if (error) throw error;
-
+      setLoading(true);
+      const data = await fetchEntriesOffline();
       setEntries(data || []);
     } catch (error) {
       console.error("Error fetching entries:", error);
@@ -139,8 +139,8 @@ const Journal = () => {
     try {
       let voiceNoteUrl: string | undefined = undefined;
 
-      // Upload audio if present
-      if (audioBlob) {
+      // Upload audio if present and online
+      if (audioBlob && isOnline) {
         const fileName = `${user.id}/${Date.now()}.webm`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('voice-notes')
@@ -161,6 +161,8 @@ const Journal = () => {
           .getPublicUrl(fileName);
 
         voiceNoteUrl = publicUrl;
+      } else if (audioBlob && !isOnline) {
+        toast.info("Audio will be uploaded when back online");
       }
 
       if (editingEntry) {
@@ -176,17 +178,15 @@ const Journal = () => {
           updateData.voice_note_url = voiceNoteUrl;
         }
 
-        const { error } = await supabase
-          .from("journal_entries")
-          .update(updateData)
-          .eq("id", editingEntry.id);
-
-        if (error) throw error;
-        toast.success("Entry updated successfully");
+        const success = await updateEntry(editingEntry.id!, updateData);
+        if (success) {
+          toast.success("Entry updated successfully");
+        } else {
+          throw new Error("Update failed");
+        }
       } else {
         // Create new entry
         const insertData: any = {
-          user_id: user.id,
           title,
           content,
           date: new Date().toISOString().split('T')[0],
@@ -199,22 +199,24 @@ const Journal = () => {
           insertData.voice_note_url = voiceNoteUrl;
         }
 
-        const { error } = await supabase
-          .from("journal_entries")
-          .insert(insertData);
+        const success = await saveEntry(insertData);
+        if (success) {
+          toast.success("📝 Your new journal entry has been saved!");
 
-        if (error) throw error;
-        toast.success("📝 Your new journal entry has been saved!");
+          // Get user's current streak if online
+          if (isOnline) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("streak_count")
+              .eq("id", user.id)
+              .single();
 
-        // Get user's current streak
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("streak_count")
-          .eq("id", user.id)
-          .single();
-
-        if (profile) {
-          await checkAndUpdateMilestone(profile.streak_count || 0);
+            if (profile) {
+              await checkAndUpdateMilestone(profile.streak_count || 0);
+            }
+          }
+        } else {
+          throw new Error("Save failed");
         }
       }
 
@@ -312,15 +314,13 @@ const Journal = () => {
     if (!confirm("Are you sure you want to delete this entry?")) return;
 
     try {
-      const { error } = await supabase
-        .from("journal_entries")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-      
-      toast.success("Entry deleted");
-      fetchEntries();
+      const success = await deleteEntryOffline(id);
+      if (success) {
+        toast.success("Entry deleted");
+        fetchEntries();
+      } else {
+        throw new Error("Delete failed");
+      }
     } catch (error) {
       console.error("Error deleting entry:", error);
       toast.error("Failed to delete entry");
@@ -329,15 +329,13 @@ const Journal = () => {
 
   const toggleAnswered = async (id: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
-        .from("journal_entries")
-        .update({ is_answered: !currentStatus })
-        .eq("id", id);
-
-      if (error) throw error;
-      
-      toast.success(!currentStatus ? "Marked as answered" : "Marked as unanswered");
-      fetchEntries();
+      const success = await updateEntry(id, { is_answered: !currentStatus });
+      if (success) {
+        toast.success(!currentStatus ? "Marked as answered" : "Marked as unanswered");
+        fetchEntries();
+      } else {
+        throw new Error("Update failed");
+      }
     } catch (error) {
       console.error("Error updating entry:", error);
       toast.error("Failed to update entry");
@@ -384,41 +382,74 @@ const Journal = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Show loading skeleton
+  if (loading) {
+    return (
+      <div className="min-h-screen relative overflow-hidden gradient-hero">
+        <div className="absolute inset-0 pointer-events-none">
+          <motion.div
+            className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
+            animate={{
+              y: [0, -50, 0],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+            }}
+          />
+        </div>
+        <div className="relative z-10">
+          <JournalSkeleton />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto p-4 md:p-6 max-w-7xl">
+    <div className="min-h-screen relative overflow-hidden gradient-hero">
+      {/* Animated Background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <motion.div
+          className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
+          animate={{
+            y: [0, -50, 0],
+            x: [0, 30, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-light/20 rounded-full blur-3xl"
+          animate={{
+            y: [0, 40, 0],
+            x: [0, -40, 0],
+            scale: [1, 1.3, 1],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      </div>
+
+      <div className="container relative z-10 mx-auto p-4 md:p-6 max-w-7xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/dashboard")}
-              className="hover:bg-accent"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex items-center gap-3">
-              <BookText className="h-8 w-8 text-primary" />
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                  Prayer Journal
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                  Record your prayers, reflections, and answered prayers
-                </p>
-              </div>
-            </div>
-          </div>
+        <AppHeader title="Prayer Journal" showBack={true} backTo="/dashboard" />
           
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
                 New Entry
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-primary/5 via-background to-secondary/5 backdrop-blur-xl border-primary/20">
               <DialogHeader>
                 <DialogTitle>
                   {editingEntry ? "Edit Journal Entry" : "New Journal Entry"}
@@ -497,7 +528,6 @@ const Journal = () => {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
 
         {/* Search Bar */}
         <div className="mb-6">
@@ -514,27 +544,36 @@ const Journal = () => {
 
         {/* Entries List */}
         {loading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading your journal...</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-12"
+          >
+            <p className="text-white/80">Loading your journal...</p>
+          </motion.div>
         ) : filteredEntries.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                {searchQuery ? "No entries found matching your search" : "No journal entries yet"}
-              </p>
-              {!searchQuery && (
-                <Button onClick={() => setIsDialogOpen(true)} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Your First Entry
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <Card className="text-center py-12 glass border-white/20 shadow-large">
+              <CardContent>
+                <p className="text-white/80 mb-4">
+                  {searchQuery ? "No entries found matching your search" : "No journal entries yet"}
+                </p>
+                {!searchQuery && (
+                  <Button onClick={() => setIsDialogOpen(true)} className="gap-2 bg-gradient-secondary text-white">
+                    <Plus className="h-4 w-4" />
+                    Create Your First Entry
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
         ) : (
           <div className="grid gap-4">
             {filteredEntries.map((entry) => (
-              <Card key={entry.id} className="hover:shadow-lg transition-shadow">
+              <Card key={entry.id} className="hover:shadow-lg transition-shadow bg-white/50 backdrop-blur-md border-white/30">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -577,10 +616,11 @@ const Journal = () => {
                         <TooltipTrigger asChild>
                           <Button
                             variant="outline"
-                            size="icon"
                             onClick={() => toggleAnswered(entry.id, entry.is_answered)}
+                            className="gap-1.5"
                           >
                             <CheckCircle className={`h-4 w-4 ${entry.is_answered ? 'text-green-500' : ''}`} />
+                            <span className="text-xs">{entry.is_answered ? "Answered" : "Mark"}</span>
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -595,11 +635,11 @@ const Journal = () => {
                           <TooltipTrigger asChild>
                             <Button
                               variant="outline"
-                              size="icon"
                               onClick={() => handleShareAsTestimony(entry)}
-                              className="border-green-500 text-green-600 hover:bg-green-50"
+                              className="border-green-500 text-green-600 hover:bg-green-50 gap-1.5"
                             >
                               <Heart className="h-4 w-4" />
+                              <span className="text-xs">Testimony</span>
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -611,8 +651,9 @@ const Journal = () => {
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon">
+                        <Button variant="outline" className="gap-1.5">
                           <Share2 className="h-4 w-4" />
+                          <span className="text-xs">Share</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
@@ -629,18 +670,20 @@ const Journal = () => {
 
                     <Button
                       variant="outline"
-                      size="icon"
                       onClick={() => handleEdit(entry)}
+                      className="gap-1.5"
                     >
                       <Edit className="h-4 w-4" />
+                      <span className="text-xs">Edit</span>
                     </Button>
 
                     <Button
                       variant="outline"
-                      size="icon"
                       onClick={() => handleDelete(entry.id)}
+                      className="gap-1.5"
                     >
                       <Trash2 className="h-4 w-4" />
+                      <span className="text-xs">Delete</span>
                     </Button>
                   </div>
                 </CardContent>

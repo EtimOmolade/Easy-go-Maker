@@ -7,13 +7,23 @@ const corsHeaders = {
 };
 
 // Helper function to improve TTS pronunciation of scripture references
-// Formats "Proverbs 17:1-9 (KJV)" as "Proverbs 17, verses 1 through 9. (KJV content...)"
-// The period after verse numbers creates a pause before reading the scripture
+// Formats "Proverbs 17:1-9 (KJV)" as "Proverbs 17, verses 1 to 9. KJV. (content...)"
+// The periods create pauses for better pronunciation and pacing
 function formatScriptureForTTS(text: string): string {
-  // Replace verse references like "17:1-9" with "17, verses 1 through 9."
-  // This helps Speechmatics pronounce numbers correctly and adds a pause
-  return text.replace(/(\d+):(\d+)-(\d+)/g, '$1, verses $2 through $3.')
-             .replace(/(\d+):(\d+)(?!-)/g, '$1, verse $2.'); // Handle single verses like "17:1"
+  // Replace verse references like "17:1-9" with "17, verses 1 to 9."
+  // Use "to" instead of "through" to avoid sounding like "three"
+  let formatted = text.replace(/(\d+):(\d+)-(\d+)/g, '$1, verses $2 to $3.')
+                      .replace(/(\d+):(\d+)(?!-)/g, '$1, verse $2.'); // Handle single verses like "17:1"
+
+  // Add full stop after Bible version (KJV, NIV, etc.) for pause before scripture content
+  // Pattern: "(KJV)" becomes "(KJV). " or "KJV" becomes "KJV. "
+  formatted = formatted.replace(/\(([A-Z]{2,5})\)/g, '($1). ')
+                       .replace(/([A-Z]{2,5})(?=\s+[A-Z])/g, '$1. '); // Version followed by capital letter (verse start)
+
+  // Add commas for better pacing between phrases
+  formatted = formatted.replace(/\.\s+/g, '. , '); // Add comma after periods for slight pause
+
+  return formatted;
 }
 
 // Helper function to generate audio for a guideline using Speechmatics

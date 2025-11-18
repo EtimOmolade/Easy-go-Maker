@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, Check } from "lucide-react";
 import { toast } from "sonner";
+import { AppHeader } from "@/components/AppHeader";
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -193,16 +195,16 @@ const GuidelineDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-subtle flex items-center justify-center">
-        <p className="text-muted-foreground">Loading guideline...</p>
+      <div className="min-h-screen relative overflow-hidden gradient-hero flex items-center justify-center">
+        <p className="text-white/80">Loading guideline...</p>
       </div>
     );
   }
 
   if (!guideline) {
     return (
-      <div className="min-h-screen gradient-subtle flex items-center justify-center">
-        <p className="text-muted-foreground">Guideline not found</p>
+      <div className="min-h-screen relative overflow-hidden gradient-hero flex items-center justify-center">
+        <p className="text-white/80">Guideline not found</p>
       </div>
     );
   }
@@ -211,32 +213,55 @@ const GuidelineDetails = () => {
   const progress = (completedCount / DAYS.length) * 100;
 
   return (
-    <div className="min-h-screen gradient-subtle">
-      <div className="max-w-4xl mx-auto p-4 md:p-6 lg:p-8">
-        <Button
-          variant="ghost"
-          className="mb-4 md:mb-6"
-          onClick={() => navigate('/guidelines')}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Guidelines
-        </Button>
+    <div className="min-h-screen relative overflow-hidden gradient-hero">
+      {/* Animated Background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <motion.div
+          className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
+          animate={{
+            y: [0, -50, 0],
+            x: [0, 30, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-light/20 rounded-full blur-3xl"
+          animate={{
+            y: [0, 40, 0],
+            x: [0, -40, 0],
+            scale: [1, 1.3, 1],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      </div>
 
-        <Card className="shadow-medium mb-4 md:mb-6">
+      <div className="max-w-4xl relative z-10 mx-auto p-4 md:p-6 lg:p-8">
+        <AppHeader showBack={true} backTo="/guidelines" />
+
+        <Card className="shadow-large glass border-white/20 mb-4 md:mb-6">
           <CardHeader className="p-4 md:p-6">
-            <Badge variant="secondary" className="mb-2 w-fit text-xs">
+            <Badge variant="secondary" className="mb-2 w-fit text-xs bg-gradient-secondary text-white border-0">
               Week {guideline.week_number}
             </Badge>
-            <CardTitle className="text-xl md:text-2xl lg:text-3xl">{guideline.title}</CardTitle>
-            <p className="text-sm md:text-base text-muted-foreground mt-2">
+            <CardTitle className="text-xl md:text-2xl lg:text-3xl text-white">{guideline.title}</CardTitle>
+            <p className="text-sm md:text-base text-white/90 mt-2">
               Track your daily prayer progress throughout the week
             </p>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
             <div className="mb-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-xs md:text-sm font-medium">Weekly Progress</span>
-                <span className="text-xs md:text-sm text-muted-foreground">{completedCount}/{DAYS.length} days</span>
+                <span className="text-xs md:text-sm font-medium text-white">Weekly Progress</span>
+                <span className="text-xs md:text-sm text-white/80">{completedCount}/{DAYS.length} days</span>
               </div>
               <div className="w-full bg-accent/20 rounded-full h-2">
                 <div 
@@ -256,10 +281,10 @@ const GuidelineDetails = () => {
                     You can revisit your reflections in your Journal
                   </p>
                 </div>
-                <Button 
-                  onClick={() => navigate('/journal')} 
+                <Button
+                  onClick={() => navigate('/journal')}
                   variant="outline"
-                  className="w-full"
+                  className="w-full bg-white/10 backdrop-blur-sm border-white/20 text-foreground hover:bg-white/20 hover:border-white/40"
                 >
                   View Journal
                 </Button>
@@ -275,9 +300,9 @@ const GuidelineDetails = () => {
               </div>
             ) : (
               <>
-                <Button 
-                  onClick={handleStartGuidedSession} 
-                  className="w-full"
+                <Button
+                  onClick={handleStartGuidedSession}
+                  className="w-full bg-gradient-to-r from-primary via-primary to-primary-light text-gray-100 font-semibold shadow-lg hover:shadow-glow hover:scale-[1.02] hover:text-white"
                 >
                   <Calendar className="mr-2 h-4 w-4" />
                   Start Guided Prayer Session
@@ -292,10 +317,10 @@ const GuidelineDetails = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-medium">
+        <Card className="shadow-large glass border-white/20">
           <CardHeader className="p-4 md:p-6">
-            <CardTitle className="text-lg md:text-xl">Daily Prayer Tracker</CardTitle>
-            <p className="text-xs md:text-sm text-muted-foreground">
+            <CardTitle className="text-lg md:text-xl text-white">Daily Prayer Tracker</CardTitle>
+            <p className="text-xs md:text-sm text-white/90">
               Complete each day's guided prayer to mark it as done
             </p>
           </CardHeader>
