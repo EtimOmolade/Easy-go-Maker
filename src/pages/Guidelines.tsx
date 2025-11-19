@@ -9,6 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/AppHeader";
+import {
+  cacheGuidelinesList,
+  getCachedGuidelinesList,
+} from "@/utils/offlineStorage";
 
 interface Guideline {
   id: string;
@@ -40,16 +44,35 @@ const Guidelines = () => {
 
   const fetchGuidelines = async () => {
     try {
+      // Try cache first for offline support
+      const cached = await getCachedGuidelinesList();
+      if (cached && cached.length > 0) {
+        console.log(`📦 Using ${cached.length} cached guidelines`);
+        setGuidelines(cached);
+        setLoading(false);
+      }
+
+      // Fetch fresh data from network
       const { data, error } = await supabase
         .from("guidelines")
         .select("*")
         .order("month", { ascending: true })
         .order("day", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        // Only show error if we don't have cached data
+        if (!cached || cached.length === 0) {
+          throw error;
+        }
+      } else {
+        // Cache the fresh data
+        if (data && data.length > 0) {
+          await cacheGuidelinesList(data);
+        }
 
-      setGuidelines((data as any[]) || []);
-      setLoading(false);
+        setGuidelines((data as any[]) || []);
+        setLoading(false);
+      }
     } catch (error) {
       console.error("Error fetching guidelines:", error);
       toast.error("Failed to load guidelines");

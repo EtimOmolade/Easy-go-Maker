@@ -16,6 +16,8 @@ import { speak, speakTwice, cancelSpeech, pauseTTS, resumeTTS } from "@/services
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AppHeader } from "@/components/AppHeader";
+import { useOffline } from "@/contexts/OfflineContext";
+import { cacheGuideline, getCachedGuideline, savePrayerCompletionOffline } from "@/utils/offlineStorage";
 
 interface PrayerStep {
   id: string;
@@ -46,7 +48,8 @@ const GuidedPrayerSession = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+  const { isOnline } = useOffline();
+
   const [guideline, setGuideline] = useState<any>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [currentPointIndex, setCurrentPointIndex] = useState(0);
@@ -353,34 +356,65 @@ const GuidedPrayerSession = () => {
     if (!id) return;
 
     try {
-      const { data: guideline, error } = await supabase
-        .from('guidelines')
-        .select('*')
-        .eq('id', id)
-        .single();
+      if (isOnline) {
+        // Try to fetch from Supabase when online
+        const { data: guideline, error } = await supabase
+          .from('guidelines')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
 
-      if (guideline) {
-        // Deduplicate prayer points in each step (fix for old data with duplicates)
-        const deduplicatedGuideline = {
-          ...guideline,
-          steps: Array.isArray(guideline.steps) ? guideline.steps.map((step: any) => {
-            if (step.points && Array.isArray(step.points)) {
-              // Remove duplicate points based on ID
-              const uniquePoints = step.points.filter((point: any, index: number, self: any[]) =>
-                index === self.findIndex((p: any) => p.id === point.id)
-              );
-              return { ...step, points: uniquePoints };
-            }
-            return step;
-          }) : guideline.steps
-        };
-        setGuideline(deduplicatedGuideline);
+        if (guideline) {
+          // Deduplicate prayer points in each step (fix for old data with duplicates)
+          const deduplicatedGuideline = {
+            ...guideline,
+            steps: Array.isArray(guideline.steps) ? guideline.steps.map((step: any) => {
+              if (step.points && Array.isArray(step.points)) {
+                // Remove duplicate points based on ID
+                const uniquePoints = step.points.filter((point: any, index: number, self: any[]) =>
+                  index === self.findIndex((p: any) => p.id === point.id)
+                );
+                return { ...step, points: uniquePoints };
+              }
+              return step;
+            }) : guideline.steps
+          };
+
+          // Cache the guideline for offline access
+          await cacheGuideline(deduplicatedGuideline);
+
+          setGuideline(deduplicatedGuideline);
+        }
+      } else {
+        // Load from cache when offline
+        console.log('📵 Offline mode - loading from cache');
+        const cachedGuideline = await getCachedGuideline(id);
+
+        if (cachedGuideline) {
+          setGuideline(cachedGuideline);
+          toast.info('Loaded prayer from offline cache');
+        } else {
+          toast.error('This prayer is not available offline. Please go online to access it.');
+        }
       }
     } catch (error) {
       console.error("Error fetching guideline:", error);
-      toast.error("Failed to load guideline");
+
+      // Try to load from cache as fallback
+      try {
+        const cachedGuideline = await getCachedGuideline(id);
+        if (cachedGuideline) {
+          setGuideline(cachedGuideline);
+          toast.warning('Loaded from offline cache due to connection error');
+        } else {
+          toast.error("Failed to load guideline");
+        }
+      } catch (cacheError) {
+        console.error("Error loading from cache:", cacheError);
+        toast.error("Failed to load guideline");
+      }
     }
 
     setLoading(false);
@@ -448,97 +482,109 @@ const GuidedPrayerSession = () => {
       const currentDay = now.getDate();
       const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const currentDayName = DAYS[now.getDay()];
-      
+
       const guidelineMonth = guideline.month;
       const guidelineDay = guideline.day;
       const guidelineMonthIndex = monthsOrder.indexOf(guidelineMonth);
-      
+
       const isCurrentMonth = guidelineMonthIndex === currentMonthIndex;
       const isCurrentDay = guidelineDay === currentDay;
       const isCurrentPrayer = isCurrentMonth && isCurrentDay;
-      
+
       let newStreak = 0;
       let milestone = null;
 
-      // Only update streak for current day prayers
-      if (isCurrentPrayer) {
-        const { markPrayerCompleted } = await import('@/utils/prayerHelpers');
-        const result = markPrayerCompleted(user.id);
-        newStreak = result.newStreak;
-        milestone = result.milestone;
-
-        console.log('Prayer completed! Result:', { newStreak, milestone });
-
-        // Show milestone modal if achieved
-        if (milestone) {
-          console.log('Setting milestone modal:', milestone);
-          setAchievedMilestone(milestone);
-          setShowMilestoneModal(true);
-        }
-      }
-
-      // Log daily prayer completion in Supabase (for ALL prayers - current, past, future)
-      // This updates the weekly tracker - marks the ACTUAL day the user prayed
       // Database expects lowercase day names
       const dayOfWeekLowercase = currentDayName.toLowerCase();
-
-      // Check if already completed TODAY to avoid duplicates
-      const { data: existingPrayer, error: checkError } = await supabase
-        .from('daily_prayers')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('guideline_id', guideline.id)
-        .eq('day_of_week', dayOfWeekLowercase)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error('Error checking daily prayer:', checkError);
-      }
-
-      // Only insert if not already completed TODAY
-      if (!existingPrayer) {
-        const { error: insertError } = await supabase
-          .from('daily_prayers')
-          .insert({
-            user_id: user.id,
-            guideline_id: guideline.id,
-            day_of_week: dayOfWeekLowercase, // Store the actual day user is praying (lowercase)
-            completed_at: new Date().toISOString(),
-          });
-
-        if (insertError) {
-          console.error('❌ Error inserting daily prayer:', insertError);
-          toast.error(`Failed to update prayer tracker: ${insertError.message}`);
-        } else {
-          console.log(`✅ Daily prayer tracker updated - marked ${currentDayName} as completed`);
-        }
-      } else {
-        console.log(`ℹ️ ${currentDayName} already marked as completed in tracker for this guideline`);
-      }
-
-      // Create journal entry with appropriate message
-      const journalContent = isCurrentPrayer 
+      const journalContent = isCurrentPrayer
         ? 'Completed prayer session (edit journal to add reflections)'
         : 'Completed guided prayer session (Past prayer - edit to add reflections)';
-        
-      await supabase
-        .from('journal_entries')
-        .insert({
+
+      if (isOnline) {
+        // ONLINE MODE: Save directly to Supabase
+        // Only update streak for current day prayers
+        if (isCurrentPrayer) {
+          const { markPrayerCompleted } = await import('@/utils/prayerHelpers');
+          const result = markPrayerCompleted(user.id);
+          newStreak = result.newStreak;
+          milestone = result.milestone;
+
+          console.log('Prayer completed! Result:', { newStreak, milestone });
+
+          // Show milestone modal if achieved
+          if (milestone) {
+            console.log('Setting milestone modal:', milestone);
+            setAchievedMilestone(milestone);
+            setShowMilestoneModal(true);
+          }
+        }
+
+        // Check if already completed TODAY to avoid duplicates
+        const { data: existingPrayer, error: checkError } = await supabase
+          .from('daily_prayers')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('guideline_id', guideline.id)
+          .eq('day_of_week', dayOfWeekLowercase)
+          .maybeSingle();
+
+        if (checkError) {
+          console.error('Error checking daily prayer:', checkError);
+        }
+
+        // Only insert if not already completed TODAY
+        if (!existingPrayer) {
+          const { error: insertError } = await supabase
+            .from('daily_prayers')
+            .insert({
+              user_id: user.id,
+              guideline_id: guideline.id,
+              day_of_week: dayOfWeekLowercase,
+              completed_at: new Date().toISOString(),
+            });
+
+          if (insertError) {
+            console.error('❌ Error inserting daily prayer:', insertError);
+          } else {
+            console.log(`✅ Daily prayer tracker updated - marked ${currentDayName} as completed`);
+          }
+        }
+
+        // Create journal entry
+        await supabase
+          .from('journal_entries')
+          .insert({
+            user_id: user.id,
+            title: guideline.title,
+            content: journalContent,
+            date: new Date().toISOString().split('T')[0],
+            is_answered: false,
+            is_shared: false,
+          });
+      } else {
+        // OFFLINE MODE: Queue for sync when back online
+        console.log('📵 Offline mode - saving prayer completion to sync queue');
+        await savePrayerCompletionOffline({
           user_id: user.id,
-          title: guideline.title,
-          content: journalContent,
-          date: new Date().toISOString().split('T')[0],
-          is_answered: false,
-          is_shared: false,
+          guideline_id: guideline.id,
+          day_of_week: dayOfWeekLowercase,
+          journal_entry: {
+            title: guideline.title,
+            content: journalContent,
+            date: new Date().toISOString().split('T')[0],
+          },
         });
+      }
 
       if (voiceEnabled && canStartAudio()) {
         playVoicePrompt(VOICE_PROMPTS.SESSION_COMPLETE);
       }
 
-      const message = isCurrentPrayer
-        ? `🎉 Prayer session complete! ${newStreak}-day streak!`
-        : '🎉 Prayer session complete! Saved to your journal.';
+      const message = isOnline
+        ? (isCurrentPrayer
+            ? `🎉 Prayer session complete! ${newStreak}-day streak!`
+            : '🎉 Prayer session complete! Saved to your journal.')
+        : '🎉 Prayer session complete! Will sync when you\'re back online.';
 
       toast.success(message);
 

@@ -93,12 +93,24 @@ Deno.serve(async (req) => {
     let failureCount = 0;
     const expiredSubscriptions: string[] = [];
 
+    // Import web-push library once
+    const webpush = await import('https://deno.land/x/webpush@v0.0.7/mod.ts');
+
+    console.log('VAPID keys loaded:', {
+      publicKey: vapidPublicKey.substring(0, 20) + '...',
+      privateKey: vapidPrivateKey.substring(0, 10) + '...',
+      subject: vapidSubject,
+    });
+
     // Send push notifications
     for (const subscription of subscriptions as PushSubscription[]) {
       try {
-        // Use the web-push-deno library
-        const webpush = await import('https://deno.land/x/webpush@v0.0.7/mod.ts');
-        
+        console.log(`Sending to subscription ${subscription.id}:`, {
+          endpoint: subscription.endpoint.substring(0, 50) + '...',
+          hasP256dh: !!subscription.p256dh_key,
+          hasAuth: !!subscription.auth_key,
+        });
+
         const pushSubscription = {
           endpoint: subscription.endpoint,
           keys: {
@@ -119,6 +131,7 @@ Deno.serve(async (req) => {
           }
         );
 
+        console.log(`✅ Successfully sent to ${subscription.id}`);
         successCount++;
 
         // Update last_used_at
@@ -128,7 +141,12 @@ Deno.serve(async (req) => {
           .eq('id', subscription.id);
 
       } catch (error: any) {
-        console.error(`Failed to send to ${subscription.id}:`, error.message);
+        console.error(`❌ Failed to send to ${subscription.id}:`, {
+          message: error.message,
+          statusCode: error.statusCode,
+          body: error.body,
+          stack: error.stack?.substring(0, 200),
+        });
         failureCount++;
 
         // Check if subscription is expired (410 Gone or 404 Not Found)

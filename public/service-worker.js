@@ -1,11 +1,16 @@
-const CACHE_NAME = 'spirit-connect-v1';
-const RUNTIME_CACHE = 'spirit-connect-runtime';
+const CACHE_NAME = 'spirit-connect-v2';
+const RUNTIME_CACHE = 'spirit-connect-runtime-v2';
+const IMAGE_CACHE = 'spirit-connect-images';
+const AUDIO_CACHE = 'spirit-connect-audio';
 
 // Assets to cache on install
 const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/site.webmanifest',
+  '/logo-192.png',
+  '/logo-512.png',
+  '/assets/music/Ambient_Music.mp3',
 ];
 
 // Handle messages from clients
@@ -27,11 +32,13 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
+  const currentCaches = [CACHE_NAME, RUNTIME_CACHE, IMAGE_CACHE, AUDIO_CACHE];
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
+          if (!currentCaches.includes(cacheName)) {
+            console.log('🧹 Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -41,7 +48,124 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - network first, then cache
+// Helper: Determine cache strategy based on request
+function getCacheStrategy(request) {
+  const url = new URL(request.url);
+
+  // Static assets (JS, CSS, fonts) - Cache First
+  if (
+    request.destination === 'script' ||
+    request.destination === 'style' ||
+    request.destination === 'font' ||
+    url.pathname.match(/\.(js|css|woff2?|ttf|eot)$/)
+  ) {
+    return 'cache-first';
+  }
+
+  // Images - Cache First with long expiration
+  if (
+    request.destination === 'image' ||
+    url.pathname.match(/\.(png|jpg|jpeg|gif|svg|webp|ico)$/)
+  ) {
+    return 'cache-first-images';
+  }
+
+  // Audio files - Cache First
+  if (
+    request.destination === 'audio' ||
+    url.pathname.match(/\.(mp3|wav|ogg|m4a)$/)
+  ) {
+    return 'cache-first-audio';
+  }
+
+  // API calls to Supabase - Network First
+  if (url.hostname.includes('supabase')) {
+    return 'network-first';
+  }
+
+  // Pages/HTML - Stale While Revalidate
+  if (request.destination === 'document' || request.mode === 'navigate') {
+    return 'stale-while-revalidate';
+  }
+
+  // Default - Network First
+  return 'network-first';
+}
+
+// Cache First Strategy (for static assets)
+async function cacheFirst(request, cacheName = RUNTIME_CACHE) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const response = await fetch(request);
+    if (response.status === 200) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    console.log('Cache first failed:', request.url);
+    throw error;
+  }
+}
+
+// Network First Strategy (for dynamic content)
+async function networkFirst(request, cacheName = RUNTIME_CACHE) {
+  const cache = await caches.open(cacheName);
+
+  try {
+    const response = await fetch(request);
+    if (response.status === 200) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    const cached = await cache.match(request);
+    if (cached) {
+      console.log('📦 Serving from cache (offline):', request.url);
+      return cached;
+    }
+
+    // For navigation requests, return index.html
+    if (request.mode === 'navigate') {
+      const indexCached = await cache.match('/index.html');
+      if (indexCached) return indexCached;
+    }
+
+    throw error;
+  }
+}
+
+// Stale While Revalidate Strategy (for pages)
+async function staleWhileRevalidate(request, cacheName = RUNTIME_CACHE) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+
+  // Start fetch in background
+  const fetchPromise = fetch(request).then(response => {
+    if (response.status === 200) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  }).catch(error => {
+    console.log('Fetch failed during revalidate:', request.url);
+    return null;
+  });
+
+  // Return cached immediately if available
+  if (cached) {
+    return cached;
+  }
+
+  // Wait for fetch if no cache
+  return fetchPromise || cached;
+}
+
+// Fetch event - Use appropriate strategy
 self.addEventListener('fetch', (event) => {
   // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) {
@@ -53,30 +177,30 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.open(RUNTIME_CACHE).then((cache) => {
-      return fetch(event.request)
-        .then((response) => {
-          // Cache successful responses
-          if (response.status === 200) {
-            cache.put(event.request, response.clone());
-          }
-          return response;
-        })
-        .catch(() => {
-          // If network fails, try cache
-          return cache.match(event.request).then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            // If not in cache, return offline page for navigation requests
-            if (event.request.mode === 'navigate') {
-              return cache.match('/index.html');
-            }
-          });
-        });
-    })
-  );
+  const strategy = getCacheStrategy(event.request);
+
+  switch (strategy) {
+    case 'cache-first':
+      event.respondWith(cacheFirst(event.request, RUNTIME_CACHE));
+      break;
+
+    case 'cache-first-images':
+      event.respondWith(cacheFirst(event.request, IMAGE_CACHE));
+      break;
+
+    case 'cache-first-audio':
+      event.respondWith(cacheFirst(event.request, AUDIO_CACHE));
+      break;
+
+    case 'stale-while-revalidate':
+      event.respondWith(staleWhileRevalidate(event.request, RUNTIME_CACHE));
+      break;
+
+    case 'network-first':
+    default:
+      event.respondWith(networkFirst(event.request, RUNTIME_CACHE));
+      break;
+  }
 });
 
 // Background sync for pending requests

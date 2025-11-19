@@ -1,7 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || 'BNq8LjqQpG3JX_Z7FqJ8VdP_nMh9LXM5K4Cm8TyG0xJ5rH3h6V0Zp7dL8KsG4hJ2vN9yW1Xm5Rq3Tp4HgK7sL9c';
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+
+if (!VAPID_PUBLIC_KEY) {
+  console.error('VITE_VAPID_PUBLIC_KEY is not configured. Push notifications will not work.');
+}
 
 // Convert base64 VAPID key to Uint8Array
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -252,7 +256,9 @@ export async function getCurrentPushSubscription(): Promise<PushSubscription | n
 
 export async function sendTestPushNotification(userId: string): Promise<boolean> {
   try {
-    const { error } = await supabase.functions.invoke('send-push-notification', {
+    console.log('📤 Calling Supabase send-push-notification function...');
+
+    const { data, error } = await supabase.functions.invoke('send-push-notification', {
       body: {
         type: 'test',
         title: '🔔 Test Notification',
@@ -262,8 +268,25 @@ export async function sendTestPushNotification(userId: string): Promise<boolean>
       },
     });
 
+    console.log('📥 Supabase function response:', { data, error });
+
     if (error) {
+      console.error('❌ Supabase function error:', error);
       throw error;
+    }
+
+    // Log the detailed response
+    if (data) {
+      console.log('📊 Push notification results:', {
+        success: data.success,
+        successCount: data.successCount,
+        failureCount: data.failureCount,
+        cleanedUpCount: data.cleanedUpCount,
+      });
+
+      if (data.successCount === 0 && data.failureCount > 0) {
+        console.warn('⚠️ All push notifications failed! Check VAPID configuration in Supabase secrets.');
+      }
     }
 
     toast({

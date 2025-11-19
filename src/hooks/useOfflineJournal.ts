@@ -1,11 +1,13 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useOffline } from '@/contexts/OfflineContext';
-import { 
-  saveJournalOffline, 
+import {
+  saveJournalOffline,
   getUnsyncedJournalEntries,
+  getCachedJournalEntries,
+  cacheJournalEntries,
   getAllFromStore,
-  STORES 
+  STORES
 } from '@/utils/offlineStorage';
 import { toast } from 'sonner';
 
@@ -113,20 +115,63 @@ export const useOfflineJournal = (userId: string | undefined) => {
           .order('date', { ascending: false });
 
         if (error) throw error;
-        return data || [];
+
+        // Cache entries for offline access
+        if (data && data.length > 0) {
+          await cacheJournalEntries(data);
+        }
+
+        // Also fetch unsynced offline entries
+        const offlineEntries = await getUnsyncedJournalEntries();
+        const userOfflineEntries = offlineEntries.filter((entry: any) => entry.user_id === userId);
+
+        // Merge online and unsynced offline entries
+        // Create a map of online entries by ID for deduplication
+        const onlineMap = new Map(data?.map(entry => [entry.id, entry]) || []);
+
+        // Add offline entries that don't exist online (unsynced)
+        const mergedEntries = [...(data || [])];
+        for (const offlineEntry of userOfflineEntries) {
+          if (!onlineMap.has(offlineEntry.id)) {
+            mergedEntries.push(offlineEntry);
+          }
+        }
+
+        // Sort by date descending
+        return mergedEntries.sort((a: any, b: any) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
       } else {
-        // Fetch from IndexedDB when offline
-        const offlineEntries = await getAllFromStore(STORES.JOURNAL_ENTRIES);
-        return offlineEntries
-          .filter((entry: any) => entry.user_id === userId)
-          .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        // OFFLINE MODE: Fetch cached entries + unsynced offline entries
+        console.log('📵 Offline mode - loading cached + offline entries');
+
+        // Get cached entries from Supabase (previously fetched)
+        const cachedEntries = await getCachedJournalEntries();
+        const userCachedEntries = cachedEntries.filter((entry: any) => entry.user_id === userId);
+
+        // Get unsynced offline entries (created offline)
+        const offlineEntries = await getUnsyncedJournalEntries();
+        const userOfflineEntries = offlineEntries.filter((entry: any) => entry.user_id === userId);
+
+        // Merge cached + offline entries
+        const allEntries = [...userCachedEntries, ...userOfflineEntries];
+
+        // Sort by date descending
+        return allEntries.sort((a: any, b: any) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
       }
     } catch (error) {
       console.error('Error fetching entries:', error);
       // Try offline storage as fallback
       try {
-        const offlineEntries = await getAllFromStore(STORES.JOURNAL_ENTRIES);
-        return offlineEntries
+        // Get both cached and offline entries
+        const cachedEntries = await getCachedJournalEntries();
+        const offlineEntries = await getUnsyncedJournalEntries();
+
+        const allEntries = [...cachedEntries, ...offlineEntries];
+
+        return allEntries
           .filter((entry: any) => entry.user_id === userId)
           .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
       } catch (offlineError) {

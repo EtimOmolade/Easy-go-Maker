@@ -16,6 +16,7 @@ import {
   subscribeToPushNotifications,
   unsubscribeFromPushNotifications,
   getCurrentPushSubscription,
+  sendTestPushNotification,
 } from "@/utils/pushNotifications";
 
 const ReminderSettings = () => {
@@ -179,21 +180,67 @@ const ReminderSettings = () => {
   };
 
 const toggleNotificationMethod = async (method: string) => {
-  // TEMPORARILY DISABLED: Push notifications
   if (method === 'push') {
-    toast.info('Push notifications are temporarily disabled while we configure them properly.');
-    return;
-  }
-  
-  // Toggle in-app notifications
-  if (notificationMethods.includes(method)) {
-    if (notificationMethods.length > 1) {
-      setNotificationMethods(notificationMethods.filter(m => m !== method));
+    // Check if push is currently enabled
+    const isPushEnabled = notificationMethods.includes('push');
+
+    if (!isPushEnabled) {
+      // User wants to ENABLE push
+      if (!pushSupported) {
+        toast.error('Push notifications not supported in your browser');
+        return;
+      }
+
+      if (pushPermission === 'denied') {
+        toast.error('Push permission denied. Please reset in browser settings.');
+        return;
+      }
+
+      // Automatically subscribe
+      setSubscribing(true);
+      try {
+        const success = await subscribeToPushNotifications(user!.id);
+
+        if (success) {
+          setNotificationMethods([...notificationMethods, 'push']);
+          setIsSubscribed(true);
+          setPushPermission(Notification.permission);
+          toast.success('Push notifications enabled');
+        }
+      } finally {
+        setSubscribing(false);
+      }
     } else {
-      toast.error("You must have at least one notification method");
+      // User wants to DISABLE push
+      if (notificationMethods.length === 1) {
+        toast.error("You must have at least one notification method");
+        return;
+      }
+
+      setSubscribing(true);
+      try {
+        const success = await unsubscribeFromPushNotifications(user!.id);
+
+        if (success) {
+          setNotificationMethods(notificationMethods.filter(m => m !== 'push'));
+          setIsSubscribed(false);
+          toast.success('Push notifications disabled');
+        }
+      } finally {
+        setSubscribing(false);
+      }
     }
   } else {
-    setNotificationMethods([...notificationMethods, method]);
+    // Toggle in-app notifications
+    if (notificationMethods.includes(method)) {
+      if (notificationMethods.length > 1) {
+        setNotificationMethods(notificationMethods.filter(m => m !== method));
+      } else {
+        toast.error("You must have at least one notification method");
+      }
+    } else {
+      setNotificationMethods([...notificationMethods, method]);
+    }
   }
 };
 
@@ -328,7 +375,6 @@ const toggleNotificationMethod = async (method: string) => {
                   </div>
                 </div>
 
-                {/* TEMPORARILY DISABLED - Browser Push Notifications
                 <div className="flex items-start gap-3 p-3 rounded-lg border">
                   <Checkbox
                     id="push"
@@ -339,8 +385,8 @@ const toggleNotificationMethod = async (method: string) => {
                   />
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <label 
-                        htmlFor="push" 
+                      <label
+                        htmlFor="push"
                         className="text-sm font-medium cursor-pointer flex items-center gap-2"
                       >
                         Browser Push Notifications
@@ -351,7 +397,7 @@ const toggleNotificationMethod = async (method: string) => {
                     <p className="text-xs text-muted-foreground">
                       {pushStatus.description}
                     </p>
-                    
+
                     {subscribing && (
                       <p className="text-xs text-blue-600 animate-pulse">
                         Managing subscription...
@@ -359,9 +405,8 @@ const toggleNotificationMethod = async (method: string) => {
                     )}
                   </div>
                 </div>
-                */}
 
-                {/* TEMPORARILY DISABLED - Push Notification Status Alerts
+                {/* Push Notification Status Alerts */}
                 {!pushSupported && (
                   <Alert>
                     <Info className="h-4 w-4" />
@@ -415,19 +460,38 @@ const toggleNotificationMethod = async (method: string) => {
                     </AlertDescription>
                   </Alert>
                 )}
-                */}
               </div>
             </>
           )}
 
-          <Button 
-            onClick={handleSave} 
-            disabled={saving || !hasUnsavedChanges} 
+          <Button
+            onClick={handleSave}
+            disabled={saving || !hasUnsavedChanges}
             className="w-full"
             variant={hasUnsavedChanges ? "default" : "outline"}
           >
             {saving ? "Saving..." : hasUnsavedChanges ? "Save Changes" : "No Changes"}
           </Button>
+
+          {/* Test Server Push */}
+          {isSubscribed && notificationMethods.includes('push') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                if (!user) return;
+                const success = await sendTestPushNotification(user.id);
+                if (success) {
+                  toast.success('Test notification sent! Check your system tray.');
+                } else {
+                  toast.error('Test failed. Check console for details.');
+                }
+              }}
+              className="w-full mt-2"
+            >
+              Send Test Push Notification
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>

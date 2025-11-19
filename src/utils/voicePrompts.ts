@@ -6,6 +6,12 @@
 // This helps users distinguish between guidance and prayer content
 //
 
+import {
+  cacheVoicePrompt,
+  getCachedVoicePrompt,
+  downloadAndCacheVoicePrompts,
+} from './offlineStorage';
+
 // Base URL for pre-generated voice prompts (Speechmatics audio files)
 const VOICE_PROMPT_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/prayer-audio/voice-prompts`;
 
@@ -66,11 +72,35 @@ export const playVoicePrompt = async (
   if (promptKey && PROMPT_AUDIO_URLS[promptKey]) {
     // Use pre-generated Speechmatics audio (male voice)
     try {
-      currentAudio = new Audio(PROMPT_AUDIO_URLS[promptKey]);
+      // Check cache first for offline support
+      const cached = await getCachedVoicePrompt(promptKey);
+      let audioUrl: string;
+
+      if (cached && cached.blob) {
+        // Use cached blob for offline playback
+        audioUrl = URL.createObjectURL(cached.blob);
+        console.log(`📦 Using cached voice prompt: ${promptKey}`);
+      } else {
+        // Use network URL and cache for next time
+        audioUrl = PROMPT_AUDIO_URLS[promptKey];
+        console.log(`🌐 Loading voice prompt from network: ${promptKey}`);
+
+        // Fetch and cache asynchronously (don't block playback)
+        fetch(audioUrl)
+          .then(response => response.blob())
+          .then(blob => cacheVoicePrompt(promptKey, audioUrl, blob))
+          .catch(err => console.warn(`Failed to cache voice prompt ${promptKey}:`, err));
+      }
+
+      currentAudio = new Audio(audioUrl);
       currentAudio.volume = 0.95;
 
       // Add onended handler for callback and cleanup
       currentAudio.onended = () => {
+        // Revoke blob URL if it was created from cache
+        if (cached && cached.blob) {
+          URL.revokeObjectURL(audioUrl);
+        }
         currentAudio = null;
         if (onEnd) onEnd();
       };
@@ -179,4 +209,23 @@ export const resumeVoicePrompt = () => {
 export const resetVoicePromptTracking = () => {
   playedPrompts.clear();
   console.log('🔄 Voice prompt tracking reset for new session');
+};
+
+/**
+ * Pre-cache all voice prompts for offline use
+ * Call this during app initialization or when network is available
+ * Downloads all 6 voice prompt audio files in the background
+ */
+export const initializeVoicePromptCache = async (): Promise<void> => {
+  try {
+    const prompts = Object.keys(PROMPT_AUDIO_URLS).map(key => ({
+      name: key,
+      url: PROMPT_AUDIO_URLS[key],
+    }));
+
+    await downloadAndCacheVoicePrompts(prompts);
+    console.log('🎙️ Voice prompt cache initialized successfully');
+  } catch (error) {
+    console.warn('⚠️ Failed to initialize voice prompt cache:', error);
+  }
 };

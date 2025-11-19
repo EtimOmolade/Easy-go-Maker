@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Plus, Edit, Trash2, BookOpen, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, BookOpen, Upload, CheckSquare, Square } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -17,6 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { AppHeader } from "@/components/AppHeader";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const CATEGORIES: PrayerPointCategory[] = ['Kingdom Focus', 'Listening Prayer'];
 
@@ -56,6 +58,11 @@ const PrayerLibrary = () => {
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [editingPoint, setEditingPoint] = useState<PrayerPoint | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('Kingdom Focus');
+
+  // Bulk selection state
+  const [selectedPrayers, setSelectedPrayers] = useState<Set<string>>(new Set());
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -274,6 +281,56 @@ const PrayerLibrary = () => {
     setEndVerse("");
     setReferenceText("");
   };
+
+  // Bulk selection handlers
+  const handleSelectAll = () => {
+    if (selectedPrayers.size === filteredPoints.length) {
+      // Deselect all
+      setSelectedPrayers(new Set());
+    } else {
+      // Select all filtered prayers
+      setSelectedPrayers(new Set(filteredPoints.map(p => p.id)));
+    }
+  };
+
+  const handleSelectPrayer = (id: string) => {
+    const newSelected = new Set(selectedPrayers);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedPrayers(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedPrayers.size === 0) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('prayer_library')
+        .delete()
+        .in('id', Array.from(selectedPrayers));
+
+      if (error) throw error;
+
+      toast.success(`${selectedPrayers.size} prayer points deleted`);
+      setSelectedPrayers(new Set());
+      setShowDeleteDialog(false);
+      await fetchPrayerPoints();
+    } catch (error: any) {
+      console.error('Error deleting prayer points:', error);
+      toast.error(error.message || 'Failed to delete prayer points');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Clear selection when category changes
+  useEffect(() => {
+    setSelectedPrayers(new Set());
+  }, [selectedCategory]);
 
   const getCategoryColor = (cat: string) => {
     switch (cat) {
@@ -623,6 +680,40 @@ const PrayerLibrary = () => {
             ))}
           </TabsList>
 
+          {/* Bulk Actions Bar */}
+          {filteredPoints.length > 0 && (
+            <div className="flex items-center justify-between mb-4 p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="select-all"
+                  checked={selectedPrayers.size === filteredPoints.length && filteredPoints.length > 0}
+                  onCheckedChange={handleSelectAll}
+                />
+                <label htmlFor="select-all" className="text-sm text-white cursor-pointer">
+                  {selectedPrayers.size === filteredPoints.length && filteredPoints.length > 0
+                    ? `Deselect All (${filteredPoints.length})`
+                    : `Select All (${filteredPoints.length})`}
+                </label>
+                {selectedPrayers.size > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {selectedPrayers.size} selected
+                  </Badge>
+                )}
+              </div>
+              {selectedPrayers.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Selected ({selectedPrayers.size})
+                </Button>
+              )}
+            </div>
+          )}
+
           <TabsContent value={selectedCategory}>
             {filteredPoints.length === 0 ? (
               <Card className="shadow-large glass border-white/20">
@@ -635,22 +726,34 @@ const PrayerLibrary = () => {
             ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                   {filteredPoints.map((point) => (
-                    <Card key={point.id} className="shadow-large glass border-white/20 hover:shadow-glow transition-all overflow-hidden relative">
+                    <Card
+                      key={point.id}
+                      className={`shadow-large glass border-white/20 hover:shadow-glow transition-all overflow-hidden relative ${
+                        selectedPrayers.has(point.id) ? 'ring-2 ring-primary' : ''
+                      }`}
+                    >
                       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/5" />
                       <CardHeader className="relative z-10">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1">
-                            <div className="flex flex-wrap gap-2 items-center">
-                              <Badge className={getCategoryColor(point.category)} variant="outline">
-                                {point.category}
-                              </Badge>
-                              {getScheduleInfo(point) && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {getScheduleInfo(point)}
+                          <div className="flex items-start gap-3 flex-1">
+                            <Checkbox
+                              checked={selectedPrayers.has(point.id)}
+                              onCheckedChange={() => handleSelectPrayer(point.id)}
+                              className="mt-1"
+                            />
+                            <div className="flex-1">
+                              <div className="flex flex-wrap gap-2 items-center">
+                                <Badge className={getCategoryColor(point.category)} variant="outline">
+                                  {point.category}
                                 </Badge>
-                              )}
+                                {getScheduleInfo(point) && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {getScheduleInfo(point)}
+                                  </Badge>
+                                )}
+                              </div>
+                              <CardTitle className="text-lg mt-2 text-white">{point.title}</CardTitle>
                             </div>
-                            <CardTitle className="text-lg mt-2 text-white">{point.title}</CardTitle>
                           </div>
                           <div className="flex gap-1">
                             <Button
@@ -683,6 +786,29 @@ const PrayerLibrary = () => {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Bulk Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent className="glass border-white/20">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-white">Delete Selected Prayer Points</AlertDialogTitle>
+              <AlertDialogDescription className="text-white/80">
+                Are you sure you want to delete {selectedPrayers.size} prayer point{selectedPrayers.size === 1 ? '' : 's'}?
+                This action cannot be undone and may affect scheduled guidelines.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleBulkDelete}
+                disabled={isDeleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? 'Deleting...' : `Delete ${selectedPrayers.size} Prayer Point${selectedPrayers.size === 1 ? '' : 's'}`}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

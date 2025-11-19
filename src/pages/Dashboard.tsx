@@ -4,6 +4,14 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { MILESTONES } from "@/data/mockData";
+import {
+  cacheUserData,
+  getCachedUserData,
+  cacheAnnouncements,
+  getCachedAnnouncements,
+  cachePrayerProgress,
+  getCachedPrayerProgress,
+} from "@/utils/offlineStorage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone, BookHeart } from "lucide-react";
@@ -60,7 +68,6 @@ const Dashboard = () => {
       fetchProfile();
       fetchEncouragementMessage();
       fetchTodaysGuideline();
-      checkReminders();
       checkForNewMilestones();
       if (isAdmin) {
         fetchPendingTestimonies();
@@ -129,10 +136,6 @@ const Dashboard = () => {
     localStorage.setItem('hasSeenTutorial', 'true');
     toast.success("Welcome to SpiritConnect! You're all set to begin your prayer journey.");
   };
-  const checkReminders = () => {
-    if (!user) return;
-    console.log('(Push placeholder) Checking for new updates...');
-  };
   const checkForNewMilestones = () => {
     if (!user) return;
     const milestone = checkMilestoneAchievement(user.id);
@@ -144,14 +147,35 @@ const Dashboard = () => {
   const fetchProfile = async () => {
     if (!user) return;
     try {
+      // Try cache first for offline support
+      const cached = await getCachedUserData(user.id);
+      if (cached) {
+        console.log('📦 Using cached user data');
+        if (profile) {
+          setPreviousStreak(profile.streak_count);
+        }
+        setProfile(cached);
+        if (loading) {
+          setLoading(false);
+        }
+      }
+
+      // Fetch fresh data from network
       const {
         data,
         error
       } = await supabase.from("profiles").select("name, streak_count, reminders_enabled").eq("id", user.id).single();
+
       if (error) {
         console.error("Error fetching profile:", error);
-        toast.error("Failed to load profile data");
+        // Only show error if we don't have cached data
+        if (!cached) {
+          toast.error("Failed to load profile data");
+        }
       } else {
+        // Cache the fresh data
+        await cacheUserData(user.id, data);
+
         if (profile) {
           setPreviousStreak(profile.streak_count);
         }
@@ -172,11 +196,28 @@ const Dashboard = () => {
   const fetchCompletedDays = async () => {
     if (!user || !todaysGuideline) return;
     try {
+      // Try cache first for offline support
+      const cached = await getCachedPrayerProgress(user.id, todaysGuideline.id);
+      if (cached && cached.length > 0) {
+        console.log(`📦 Using ${cached.length} cached prayer progress records`);
+        setCompletedDays(cached.map(d => d.day_of_week));
+      }
+
+      // Fetch fresh data from network
       const {
         data,
         error
       } = await supabase.from("daily_prayers").select("day_of_week").eq("user_id", user.id).eq("guideline_id", todaysGuideline.id);
+
       if (!error && data) {
+        // Cache the fresh data
+        await cachePrayerProgress(data.map(d => ({
+          id: `${user.id}-${todaysGuideline.id}-${d.day_of_week}`,
+          user_id: user.id,
+          guideline_id: todaysGuideline.id,
+          day_of_week: d.day_of_week,
+        })));
+
         setCompletedDays(data.map(d => d.day_of_week));
       }
     } catch (error) {
@@ -184,23 +225,44 @@ const Dashboard = () => {
     }
   };
   const fetchEncouragementMessage = async () => {
-    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
-    const {
-      data,
-      error
-    } = await supabase.from("encouragement_messages").select("*").gte("created_at", twoDaysAgo).order("created_at", {
-      ascending: false
-    }).limit(3);
-    if (error) {
-      console.error("Error fetching encouragement messages:", error);
-      toast.error("Failed to load announcements");
-    } else {
-      console.log("Fetched announcements:", data);
-      console.log("Number of announcements:", data?.length || 0);
-      setEncouragementMessages(data || []);
-      if (!data || data.length === 0) {
-        console.warn("No announcements found in the last 48 hours");
+    try {
+      // Try cache first for offline support
+      const cached = await getCachedAnnouncements();
+      if (cached && cached.length > 0) {
+        console.log(`📦 Using ${cached.length} cached announcements`);
+        setEncouragementMessages(cached);
       }
+
+      // Fetch fresh data from network
+      const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+      const {
+        data,
+        error
+      } = await supabase.from("encouragement_messages").select("*").gte("created_at", twoDaysAgo).order("created_at", {
+        ascending: false
+      }).limit(3);
+
+      if (error) {
+        console.error("Error fetching encouragement messages:", error);
+        // Only show error if we don't have cached data
+        if (!cached || cached.length === 0) {
+          toast.error("Failed to load announcements");
+        }
+      } else {
+        // Cache the fresh data
+        if (data && data.length > 0) {
+          await cacheAnnouncements(data);
+        }
+
+        console.log("Fetched announcements:", data);
+        console.log("Number of announcements:", data?.length || 0);
+        setEncouragementMessages(data || []);
+        if (!data || data.length === 0) {
+          console.warn("No announcements found in the last 48 hours");
+        }
+      }
+    } catch (error) {
+      console.error("Error in fetchEncouragementMessage:", error);
     }
   };
   const fetchPendingTestimonies = async () => {
