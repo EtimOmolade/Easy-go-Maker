@@ -146,19 +146,10 @@ export const OfflineProvider = ({ children }: { children: React.ReactNode }) => 
               }
             }
           } else {
-            // Legacy prayer history format
-            const { error } = await supabase
-              .from('prayer_history')
-              .insert({
-                guideline_id: history.guideline_id,
-                completed_at: history.date,
-              } as any);
-
-            if (!error && history.id) {
+            // Legacy prayer history - skip (prayer_history table no longer exists)
+            console.log('Skipping legacy prayer history entry');
+            if (history.id) {
               await markPrayerHistorySynced(history.id);
-              syncedCount++;
-            } else {
-              failedCount++;
             }
           }
         } catch (error) {

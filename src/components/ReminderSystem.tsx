@@ -53,6 +53,7 @@ const ReminderSystem = () => {
 
             // Set reminderSettings to the defaults we just created
             reminderSettings = {
+              id: crypto.randomUUID(),
               user_id: user.id,
               reminder_type: "daily",
               reminder_times: ["07:00", "20:00"],
@@ -60,6 +61,10 @@ const ReminderSystem = () => {
               enabled: true,
               snooze_until: null,
               last_reminded_at: null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              custom_message: null,
+              days_of_week: [1, 2, 3, 4, 5, 6, 7],
             };
 
             // Continue execution to check reminder times
