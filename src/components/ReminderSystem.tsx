@@ -5,8 +5,8 @@ import PrayerReminderModal from "./PrayerReminderModal";
 
 /**
  * ReminderSystem Component
- * Handles time-based prayer reminders
- * Sends both in-app notifications and push notifications
+ * Handles time-based reminders using real database data
+ * Shows prominent modal popups for prayer reminders
  */
 const ReminderSystem = () => {
   const { user } = useAuth();
