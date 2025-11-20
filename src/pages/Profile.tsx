@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Award, Scale, Smartphone, Trash2, Moon, Sun, HelpCircle, Type, Minus, Plus, RotateCcw, Volume2, Clock } from "lucide-react";
+import { ArrowLeft, Award, Scale, Smartphone, Trash2, Moon, Sun, HelpCircle, Type, Minus, Plus, RotateCcw, Volume2, Clock, X } from "lucide-react";
 import { PushNotificationSettings } from "@/components/PushNotificationSettings";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ import { generateDeviceFingerprint } from "@/utils/deviceFingerprint";
 import NotificationDropdown from "@/components/NotificationDropdown";
 import { TutorialWalkthrough } from "@/components/TutorialWalkthrough";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ProfileData {
   name: string;
@@ -29,6 +30,12 @@ interface ProfileData {
   reminders_enabled: boolean;
   two_factor_enabled: boolean;
   voice_preference?: string;
+}
+
+interface ReminderSettings {
+  reminder_times: string[];
+  days_of_week: number[];
+  enabled: boolean;
 }
 const Profile = () => {
   const {
@@ -56,10 +63,16 @@ const Profile = () => {
   const [tutorialEnabled, setTutorialEnabled] = useState(false);
   const [runTutorial, setRunTutorial] = useState(false);
   const [voicePreference, setVoicePreference] = useState<string>("sarah");
+  const [reminderSettings, setReminderSettings] = useState<ReminderSettings>({
+    reminder_times: [],
+    days_of_week: [1, 2, 3, 4, 5, 6, 7],
+    enabled: true,
+  });
   
   useEffect(() => {
     fetchProfile();
     fetchTrustedDevices();
+    fetchReminderSettings();
     setCurrentFingerprint(generateDeviceFingerprint());
     // Check tutorial status
     const hasSeenTutorial = localStorage.getItem('hasSeenTutorial');
@@ -122,6 +135,28 @@ const Profile = () => {
     }
     setLoading(false);
   };
+  const fetchReminderSettings = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('prayer_reminders')
+        .select('reminder_times, days_of_week, enabled')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      if (data) {
+        setReminderSettings({
+          reminder_times: data.reminder_times || [],
+          days_of_week: data.days_of_week || [1, 2, 3, 4, 5, 6, 7],
+          enabled: data.enabled ?? true,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching reminder settings:', error);
+    }
+  };
+
   const fetchTrustedDevices = async () => {
     if (!user) return;
     try {
@@ -407,30 +442,53 @@ const Profile = () => {
         </Card>
 
         {/* Prayer Reminder Settings */}
-        <Card>
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="w-5 h-5" />
               Prayer Reminders
             </CardTitle>
+            <CardDescription>
+              Customize when and which days you want to receive prayer reminders
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
               <Label htmlFor="reminders-enabled">Enable Prayer Reminders</Label>
               <Switch
                 id="reminders-enabled"
-                checked={reminders}
+                checked={reminderSettings.enabled}
                 onCheckedChange={async (checked) => {
-                  setReminders(checked);
+                  setReminderSettings(prev => ({ ...prev, enabled: checked }));
                   try {
-                    const { error } = await supabase
+                    const { data: current, error: fetchError } = await supabase
                       .from('prayer_reminders')
-                      .upsert({
-                        user_id: user?.id,
-                        enabled: checked,
-                      });
-                    if (error) throw error;
+                      .select('id')
+                      .eq('user_id', user?.id)
+                      .maybeSingle();
+                    
+                    if (fetchError) throw fetchError;
+                    
+                    if (current?.id) {
+                      const { error } = await supabase
+                        .from('prayer_reminders')
+                        .update({ enabled: checked })
+                        .eq('id', current.id);
+                      if (error) throw error;
+                    } else {
+                      const { error } = await supabase
+                        .from('prayer_reminders')
+                        .insert({
+                          user_id: user?.id,
+                          enabled: checked,
+                          reminder_times: ['07:00', '20:00'],
+                          notification_methods: ['in-app', 'push'],
+                        });
+                      if (error) throw error;
+                    }
+                    
                     toast.success(`Reminders ${checked ? 'enabled' : 'disabled'}`);
+                    fetchReminderSettings();
                   } catch (error) {
                     console.error('Error updating reminders:', error);
                     toast.error('Failed to update reminders');
@@ -439,87 +497,271 @@ const Profile = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Add Reminder Times</Label>
-              <p className="text-sm text-muted-foreground">
-                Set times to receive prayer reminders
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  type="time"
-                  placeholder="Add reminder time"
-                  className="flex-1"
-                  id="new-reminder-time"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={async () => {
-                    const input = document.getElementById('new-reminder-time') as HTMLInputElement;
-                    if (!input.value) {
-                      toast.error('Please select a time');
-                      return;
-                    }
-                    
-                    try {
-                      // Fetch current settings
-                      const { data: current, error: fetchError } = await supabase
-                        .from('prayer_reminders')
-                        .select('reminder_times, id')
-                        .eq('user_id', user?.id)
-                        .maybeSingle();
-                      
-                      if (fetchError) throw fetchError;
-                      
-                      const existingTimes = current?.reminder_times || [];
-                      
-                      if (existingTimes.includes(input.value)) {
-                        toast.error('This time is already added');
-                        return;
-                      }
-                      
-                      const newTimes = [...existingTimes, input.value];
-                      
-                      // Update or insert
-                      if (current?.id) {
-                        // Update existing record
-                        const { error: updateError } = await supabase
-                          .from('prayer_reminders')
-                          .update({
-                            reminder_times: newTimes,
-                            enabled: true,
-                            notification_methods: ['in-app', 'push'],
-                          })
-                          .eq('id', current.id);
+            {reminderSettings.enabled && (
+              <>
+                {/* Active Days */}
+                <div className="space-y-3">
+                  <Label>Active Days</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Select which days to receive reminders
+                  </p>
+                  <div className="grid grid-cols-7 gap-2">
+                    {[
+                      { label: 'S', value: 7, name: 'Sunday' },
+                      { label: 'M', value: 1, name: 'Monday' },
+                      { label: 'T', value: 2, name: 'Tuesday' },
+                      { label: 'W', value: 3, name: 'Wednesday' },
+                      { label: 'T', value: 4, name: 'Thursday' },
+                      { label: 'F', value: 5, name: 'Friday' },
+                      { label: 'S', value: 6, name: 'Saturday' },
+                    ].map((day) => {
+                      const isActive = reminderSettings.days_of_week.includes(day.value);
+                      return (
+                        <Button
+                          key={day.value}
+                          type="button"
+                          variant={isActive ? "default" : "outline"}
+                          size="sm"
+                          className="h-10 w-full"
+                          onClick={async () => {
+                            const newDays = isActive
+                              ? reminderSettings.days_of_week.filter(d => d !== day.value)
+                              : [...reminderSettings.days_of_week, day.value];
+                            
+                            if (newDays.length === 0) {
+                              toast.error('At least one day must be selected');
+                              return;
+                            }
+                            
+                            setReminderSettings(prev => ({ ...prev, days_of_week: newDays }));
+                            
+                            try {
+                              const { data: current, error: fetchError } = await supabase
+                                .from('prayer_reminders')
+                                .select('id')
+                                .eq('user_id', user?.id)
+                                .maybeSingle();
+                              
+                              if (fetchError) throw fetchError;
+                              
+                              if (current?.id) {
+                                const { error } = await supabase
+                                  .from('prayer_reminders')
+                                  .update({ days_of_week: newDays })
+                                  .eq('id', current.id);
+                                if (error) throw error;
+                                toast.success('Days updated');
+                              }
+                            } catch (error) {
+                              console.error('Error updating days:', error);
+                              toast.error('Failed to update days');
+                            }
+                          }}
+                          title={day.name}
+                        >
+                          {day.label}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Current Reminder Times */}
+                {reminderSettings.reminder_times.length > 0 && (
+                  <div className="space-y-3">
+                    <Label>Your Reminder Times</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {reminderSettings.reminder_times.map((time, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 rounded-lg border bg-muted/30"
+                        >
+                          <span className="font-medium">{time}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            onClick={async () => {
+                              const newTimes = reminderSettings.reminder_times.filter((_, i) => i !== index);
+                              
+                              setReminderSettings(prev => ({ ...prev, reminder_times: newTimes }));
+                              
+                              try {
+                                const { data: current, error: fetchError } = await supabase
+                                  .from('prayer_reminders')
+                                  .select('id')
+                                  .eq('user_id', user?.id)
+                                  .maybeSingle();
+                                
+                                if (fetchError) throw fetchError;
+                                
+                                if (current?.id) {
+                                  const { error } = await supabase
+                                    .from('prayer_reminders')
+                                    .update({ reminder_times: newTimes })
+                                    .eq('id', current.id);
+                                  if (error) throw error;
+                                  toast.success('Reminder time removed');
+                                }
+                              } catch (error) {
+                                console.error('Error removing reminder:', error);
+                                toast.error('Failed to remove reminder');
+                              }
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Preset Reminder Times */}
+                <div className="space-y-3">
+                  <Label>Quick Add Times</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Add common prayer times quickly
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {['06:00', '09:00', '12:00', '15:00', '18:00', '20:00', '21:00', '22:00'].map((presetTime) => {
+                      const isAdded = reminderSettings.reminder_times.includes(presetTime);
+                      return (
+                        <Button
+                          key={presetTime}
+                          type="button"
+                          variant={isAdded ? "secondary" : "outline"}
+                          size="sm"
+                          disabled={isAdded}
+                          onClick={async () => {
+                            const newTimes = [...reminderSettings.reminder_times, presetTime].sort();
+                            
+                            setReminderSettings(prev => ({ ...prev, reminder_times: newTimes }));
+                            
+                            try {
+                              const { data: current, error: fetchError } = await supabase
+                                .from('prayer_reminders')
+                                .select('id')
+                                .eq('user_id', user?.id)
+                                .maybeSingle();
+                              
+                              if (fetchError) throw fetchError;
+                              
+                              if (current?.id) {
+                                const { error } = await supabase
+                                  .from('prayer_reminders')
+                                  .update({
+                                    reminder_times: newTimes,
+                                    enabled: true,
+                                    notification_methods: ['in-app', 'push'],
+                                  })
+                                  .eq('id', current.id);
+                                if (error) throw error;
+                              } else {
+                                const { error } = await supabase
+                                  .from('prayer_reminders')
+                                  .insert({
+                                    user_id: user?.id,
+                                    reminder_times: newTimes,
+                                    enabled: true,
+                                    notification_methods: ['in-app', 'push'],
+                                  });
+                                if (error) throw error;
+                              }
+                              
+                              toast.success('Reminder time added');
+                            } catch (error) {
+                              console.error('Error adding reminder:', error);
+                              toast.error('Failed to add reminder');
+                            }
+                          }}
+                        >
+                          {presetTime}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom Time Input */}
+                <div className="space-y-3">
+                  <Label>Custom Time</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Add your own reminder time
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      type="time"
+                      placeholder="Add reminder time"
+                      className="flex-1"
+                      id="new-reminder-time"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      onClick={async () => {
+                        const input = document.getElementById('new-reminder-time') as HTMLInputElement;
+                        if (!input.value) {
+                          toast.error('Please select a time');
+                          return;
+                        }
                         
-                        if (updateError) throw updateError;
-                      } else {
-                        // Insert new record
-                        const { error: insertError } = await supabase
-                          .from('prayer_reminders')
-                          .insert({
-                            user_id: user?.id,
-                            reminder_times: newTimes,
-                            enabled: true,
-                            notification_methods: ['in-app', 'push'],
-                          });
+                        if (reminderSettings.reminder_times.includes(input.value)) {
+                          toast.error('This time is already added');
+                          return;
+                        }
                         
-                        if (insertError) throw insertError;
-                      }
-                      
-                      toast.success('Reminder time added');
-                      input.value = '';
-                      fetchProfile();
-                    } catch (error) {
-                      console.error('Error adding reminder:', error);
-                      toast.error('Failed to add reminder');
-                    }
-                  }}
-                >
-                  Add
-                </Button>
-              </div>
-            </div>
+                        const newTimes = [...reminderSettings.reminder_times, input.value].sort();
+                        
+                        setReminderSettings(prev => ({ ...prev, reminder_times: newTimes }));
+                        
+                        try {
+                          const { data: current, error: fetchError } = await supabase
+                            .from('prayer_reminders')
+                            .select('id')
+                            .eq('user_id', user?.id)
+                            .maybeSingle();
+                          
+                          if (fetchError) throw fetchError;
+                          
+                          if (current?.id) {
+                            const { error } = await supabase
+                              .from('prayer_reminders')
+                              .update({
+                                reminder_times: newTimes,
+                                enabled: true,
+                                notification_methods: ['in-app', 'push'],
+                              })
+                              .eq('id', current.id);
+                            if (error) throw error;
+                          } else {
+                            const { error } = await supabase
+                              .from('prayer_reminders')
+                              .insert({
+                                user_id: user?.id,
+                                reminder_times: newTimes,
+                                enabled: true,
+                                notification_methods: ['in-app', 'push'],
+                              });
+                            if (error) throw error;
+                          }
+                          
+                          toast.success('Reminder time added');
+                          input.value = '';
+                        } catch (error) {
+                          console.error('Error adding reminder:', error);
+                          toast.error('Failed to add reminder');
+                        }
+                      }}
+                    >
+                      Add Custom Time
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
