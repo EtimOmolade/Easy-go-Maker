@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import PrayerReminderModal from "./PrayerReminderModal";
 
 /**
@@ -162,6 +163,28 @@ const ReminderSystem = () => {
 
             if (pushError) {
               console.error('❌ Push notification failed:', pushError);
+              
+              // Parse error for user-friendly message
+              let errorMessage = 'Push notifications could not be sent. In-app reminders still work.';
+              
+              if (pushError.message) {
+                try {
+                  const errorData = JSON.parse(pushError.message);
+                  if (errorData.code === 'VAPID_KEYS_MISSING') {
+                    errorMessage = 'Push notifications are not configured on this server.';
+                  } else if (errorData.code === 'MODULE_LOAD_ERROR') {
+                    errorMessage = 'Push notification service is temporarily unavailable.';
+                  }
+                } catch {
+                  // Use default message
+                }
+              }
+              
+              toast({
+                title: "Push Notification Issue",
+                description: errorMessage,
+                variant: "destructive",
+              });
             } else {
               console.log('✅ Push notification sent successfully:', pushData);
             }
