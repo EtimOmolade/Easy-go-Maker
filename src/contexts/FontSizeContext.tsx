@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 interface FontSizeContextType {
   fontSize: number;
@@ -16,7 +16,7 @@ const MAX_FONT_SIZE = 125;
 const DEFAULT_FONT_SIZE = 100;
 const FONT_SIZE_STEP = 5;
 
-export const FontSizeProvider = ({ children }: { children: React.ReactNode }) => {
+export const FontSizeProvider = ({ children }: { children: ReactNode }) => {
   const [fontSize, setFontSizeState] = useState<number>(DEFAULT_FONT_SIZE);
 
   // Load font size from localStorage on mount
