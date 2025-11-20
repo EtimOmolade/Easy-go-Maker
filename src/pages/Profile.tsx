@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import * as React from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -45,19 +45,19 @@ const Profile = () => {
     resetFontSize
   } = useFontSize();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [name, setName] = useState("");
-  const [reminders, setReminders] = useState(true);
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [toggling2FA, setToggling2FA] = useState(false);
-  const [trustedDevices, setTrustedDevices] = useState<any[]>([]);
-  const [currentFingerprint, setCurrentFingerprint] = useState<string>("");
-  const [tutorialEnabled, setTutorialEnabled] = useState(false);
-  const [runTutorial, setRunTutorial] = useState(false);
-  const [voicePreference, setVoicePreference] = useState<string>("sarah");
+  const [profile, setProfile] = React.useState<ProfileData | null>(null);
+  const [name, setName] = React.useState("");
+  const [reminders, setReminders] = React.useState(true);
+  const [twoFactorEnabled, setTwoFactorEnabled] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [toggling2FA, setToggling2FA] = React.useState(false);
+  const [trustedDevices, setTrustedDevices] = React.useState<any[]>([]);
+  const [currentFingerprint, setCurrentFingerprint] = React.useState<string>("");
+  const [tutorialEnabled, setTutorialEnabled] = React.useState(false);
+  const [runTutorial, setRunTutorial] = React.useState(false);
+  const [voicePreference, setVoicePreference] = React.useState<string>("sarah");
   
-  useEffect(() => {
+  React.useEffect(() => {
     fetchProfile();
     fetchTrustedDevices();
     setCurrentFingerprint(generateDeviceFingerprint());
@@ -184,7 +184,7 @@ const Profile = () => {
     unlocked,
     locked,
     currentStreak
-  } = useMemo(() => {
+  } = React.useMemo(() => {
     if (!user || !profile) return {
       unlocked: [],
       locked: MILESTONES,
