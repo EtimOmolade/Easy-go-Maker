@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Award, Scale, Smartphone, Trash2, Moon, Sun, HelpCircle, Type, Minus, Plus, RotateCcw } from "lucide-react";
+import { ArrowLeft, Award, Scale, Smartphone, Trash2, Moon, Sun, HelpCircle, Type, Minus, Plus, RotateCcw, Volume2 } from "lucide-react";
 import ReminderSettings from "@/components/ReminderSettings";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -20,12 +20,15 @@ import { format } from "date-fns";
 import { generateDeviceFingerprint } from "@/utils/deviceFingerprint";
 import NotificationDropdown from "@/components/NotificationDropdown";
 import { TutorialWalkthrough } from "@/components/TutorialWalkthrough";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
 interface ProfileData {
   name: string;
   email: string;
   streak_count: number;
   reminders_enabled: boolean;
   two_factor_enabled: boolean;
+  voice_preference?: string;
 }
 const Profile = () => {
   const {
@@ -52,6 +55,8 @@ const Profile = () => {
   const [currentFingerprint, setCurrentFingerprint] = useState<string>("");
   const [tutorialEnabled, setTutorialEnabled] = useState(false);
   const [runTutorial, setRunTutorial] = useState(false);
+  const [voicePreference, setVoicePreference] = useState<string>("sarah");
+  
   useEffect(() => {
     fetchProfile();
     fetchTrustedDevices();
@@ -70,7 +75,7 @@ const Profile = () => {
       const {
         data,
         error
-      } = await supabase.from("profiles").select("name, email, streak_count, reminders_enabled, two_factor_enabled").eq("id", user.id).single();
+      } = await supabase.from("profiles").select("name, email, streak_count, reminders_enabled, two_factor_enabled, voice_preference").eq("id", user.id).single();
       if (error) {
         console.error("Error fetching profile:", error);
         toast.error("Failed to load profile");
@@ -79,6 +84,7 @@ const Profile = () => {
         setName(data.name);
         setReminders(data.reminders_enabled);
         setTwoFactorEnabled(data.two_factor_enabled || false);
+        setVoicePreference(data.voice_preference || 'sarah');
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -99,7 +105,8 @@ const Profile = () => {
         error
       } = await supabase.from("profiles").update({
         name,
-        reminders_enabled: reminders
+        reminders_enabled: reminders,
+        voice_preference: voicePreference
       }).eq("id", user.id).select();
       if (error) {
         console.error("Error updating profile:", error);

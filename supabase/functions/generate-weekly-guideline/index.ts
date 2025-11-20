@@ -27,10 +27,10 @@ function formatScriptureForTTS(text: string): string {
 }
 
 // Helper function to generate audio for a guideline using Speechmatics
-async function generateAudioForGuideline(guideline: any, supabase: any): Promise<Record<string, string>> {
+async function generateAudioForGuideline(guideline: any, supabase: any, voiceId: string = 'sarah'): Promise<Record<string, string>> {
   const audioUrls: Record<string, string> = {};
   const SPEECHMATICS_API_BASE = 'https://preview.tts.speechmatics.com/generate';
-  const VOICE_ID = 'sarah'; // English Female (UK) - can be 'sarah', 'theo', or 'megan'
+  const VOICE_ID = voiceId; // User's preferred voice: 'sarah', 'theo', or 'megan'
   const API_KEY = Deno.env.get('SPEECHMATICS_API_KEY');
 
   if (!API_KEY) {
@@ -170,11 +170,13 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { month, day, title, userId } = await req.json();
+    const { month, day, title, userId, voiceId = 'sarah' } = await req.json();
 
     if (!month || !day || !title || !userId) {
       throw new Error('Missing required fields: month, day, title, userId');
     }
+
+    console.log(`📢 Generating guideline for ${month} ${day} with voice: ${voiceId}`);
 
     // Fetch Kingdom Focus prayers for this day (all 4 intercessions)
     const { data: kingdomPrayers, error: kingdomError } = await supabase
@@ -328,7 +330,7 @@ serve(async (req) => {
     // Generate audio for the guideline (non-blocking)
     try {
       console.log(`🎙️ Starting audio generation for ${month} ${day}...`);
-      const audioUrls = await generateAudioForGuideline(guideline, supabase);
+      const audioUrls = await generateAudioForGuideline(guideline, supabase, voiceId);
       
       if (Object.keys(audioUrls).length > 0) {
         // Update guideline steps with audio URLs (use snake_case audio_url to match frontend expectations)
