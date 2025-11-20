@@ -98,6 +98,7 @@ const Profile = () => {
       console.log('Updating profile with:', {
         name,
         reminders,
+        voicePreference,
         userId: user.id
       });
       const {
