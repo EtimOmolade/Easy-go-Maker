@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import * as React from "react";
 import { toast } from "sonner";
 import {
   getSyncQueue,
@@ -18,15 +18,15 @@ interface OfflineContextType {
   syncNow: () => Promise<void>;
 }
 
-const OfflineContext = createContext<OfflineContextType | undefined>(undefined);
+const OfflineContext = React.createContext<OfflineContextType | undefined>(undefined);
 
-export const OfflineProvider = ({ children }: { children: ReactNode }) => {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [pendingSync, setPendingSync] = useState(0);
+export const OfflineProvider = ({ children }: { children: React.ReactNode }) => {
+  const [isOnline, setIsOnline] = React.useState(navigator.onLine);
+  const [isSyncing, setIsSyncing] = React.useState(false);
+  const [pendingSync, setPendingSync] = React.useState(0);
 
   // Check pending sync count
-  const checkPendingSync = useCallback(async () => {
+  const checkPendingSync = React.useCallback(async () => {
     try {
       const queue = await getSyncQueue();
       const unsyncedJournal = await getUnsyncedJournalEntries();
@@ -43,7 +43,7 @@ export const OfflineProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // Sync offline data when back online
-  const syncNow = useCallback(async () => {
+  const syncNow = React.useCallback(async () => {
     if (!isOnline || isSyncing) return;
 
     setIsSyncing(true);
@@ -182,7 +182,7 @@ export const OfflineProvider = ({ children }: { children: ReactNode }) => {
   }, [isOnline, isSyncing, checkPendingSync]);
 
   // Handle online/offline events
-  useEffect(() => {
+  React.useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
       toast.success('Back online! Syncing your data...');
@@ -231,7 +231,7 @@ export const OfflineProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const useOffline = () => {
-  const context = useContext(OfflineContext);
+  const context = React.useContext(OfflineContext);
   if (context === undefined) {
     throw new Error("useOffline must be used within an OfflineProvider");
   }
