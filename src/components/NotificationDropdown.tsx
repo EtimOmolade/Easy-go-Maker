@@ -38,7 +38,15 @@ const NotificationDropdown = ({ userId }: NotificationDropdownProps) => {
         },
         (payload) => {
           console.log("🔔 New notification received (real-time):", payload.new);
-          setNotifications((prev) => [payload.new as Notification, ...prev]);
+          // Deduplicate by id to prevent duplicate notifications in UI
+          setNotifications((prev) => {
+            const newNotification = payload.new as Notification;
+            if (prev.some(n => n.id === newNotification.id)) {
+              console.log("⚠️ Duplicate notification detected, skipping:", newNotification.id);
+              return prev;
+            }
+            return [newNotification, ...prev];
+          });
         },
       )
       .on(

@@ -68,7 +68,14 @@ Deno.serve(async (req) => {
     const vapidSubject = Deno.env.get('VAPID_SUBJECT');
 
     if (!vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
-      throw new Error('VAPID keys not configured');
+      console.error('❌ VAPID keys missing');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Push notifications not configured',
+          code: 'VAPID_KEYS_MISSING'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
     }
 
     // Build push notification payload
@@ -93,8 +100,8 @@ Deno.serve(async (req) => {
     let failureCount = 0;
     const expiredSubscriptions: string[] = [];
 
-    // Import web-push library once
-    const webpush = await import('https://deno.land/x/webpush@v0.0.7/mod.ts');
+    // Import web-push library once (using esm.sh for compatibility)
+    const webpush = await import('https://esm.sh/web-push@3.6.7');
 
     console.log('VAPID keys loaded:', {
       publicKey: vapidPublicKey.substring(0, 20) + '...',
@@ -186,8 +193,20 @@ Deno.serve(async (req) => {
 
   } catch (error: any) {
     console.error('Error sending push notification:', error);
+    
+    // Provide specific error codes for better client-side handling
+    let errorCode = 'UNKNOWN_ERROR';
+    if (error.message?.includes('Module not found')) {
+      errorCode = 'MODULE_LOAD_ERROR';
+    } else if (error.message?.includes('VAPID')) {
+      errorCode = 'VAPID_ERROR';
+    }
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        code: errorCode
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
