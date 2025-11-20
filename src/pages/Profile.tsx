@@ -441,6 +441,62 @@ const Profile = () => {
           </CardContent>
         </Card>
 
+        {/* Audio Settings Card */}
+        <Card className="mb-8 shadow-medium backdrop-blur-sm bg-card/95">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-primary">
+              <Volume2 className="w-5 h-5" />
+              Audio Settings
+            </CardTitle>
+            <CardDescription>
+              Choose your preferred voice for prayer audio guidance
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Label>Prayer Voice Preference</Label>
+            <RadioGroup 
+              value={voicePreference} 
+              onValueChange={(value: string) => setVoicePreference(value)}
+              className="space-y-3"
+            >
+              <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-accent/10 cursor-pointer transition-colors">
+                <RadioGroupItem value="sarah" id="sarah" />
+                <Label htmlFor="sarah" className="flex-1 cursor-pointer">
+                  <div className="font-medium">Sarah</div>
+                  <div className="text-sm text-muted-foreground">
+                    Clear, gentle female voice (default)
+                  </div>
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-accent/10 cursor-pointer transition-colors">
+                <RadioGroupItem value="theo" id="theo" />
+                <Label htmlFor="theo" className="flex-1 cursor-pointer">
+                  <div className="font-medium">Theo</div>
+                  <div className="text-sm text-muted-foreground">
+                    Calm, deep male voice
+                  </div>
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-accent/10 cursor-pointer transition-colors">
+                <RadioGroupItem value="megan" id="megan" />
+                <Label htmlFor="megan" className="flex-1 cursor-pointer">
+                  <div className="font-medium">Megan</div>
+                  <div className="text-sm text-muted-foreground">
+                    Warm, expressive female voice
+                  </div>
+                </Label>
+              </div>
+            </RadioGroup>
+            
+            <p className="text-xs text-muted-foreground">
+              Your voice preference will be used for all future prayer sessions. 
+              You can change voices during a prayer session anytime.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Prayer Reminder Settings */}
         <Card className="mb-8">
           <CardHeader>

@@ -26,12 +26,22 @@ interface PrayerStep {
   content: string;
   duration: number; // in seconds
   audioUrl?: string;
-  audio_url?: string; // NEW - Speechmatics generated audio
+  audio_url?: string; // Single voice audio (backward compatibility)
+  audio_urls?: {
+    sarah?: string;
+    theo?: string;
+    megan?: string;
+  };
   points?: {
     id: string;
     content: string;
     title: string;
-    audio_url?: string; // NEW - Speechmatics generated audio
+    audio_url?: string; // Single voice audio (backward compatibility)
+    audio_urls?: {
+      sarah?: string;
+      theo?: string;
+      megan?: string;
+    };
   }[];
 }
 
@@ -66,6 +76,7 @@ const GuidedPrayerSession = () => {
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const [isPlayingVoicePrompt, setIsPlayingVoicePrompt] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState<'sarah' | 'theo' | 'megan'>('sarah');
 
   // Use ref for synchronous audio tracking (prevents race conditions when switching steps)
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -193,6 +204,7 @@ const GuidedPrayerSession = () => {
   useEffect(() => {
     if (id && user) {
       fetchGuideline();
+      fetchUserVoicePreference();
     }
 
     // Cleanup: Stop ALL audio when component unmounts (user leaves page)
@@ -206,6 +218,20 @@ const GuidedPrayerSession = () => {
       }
     };
   }, [id, user]);
+
+  const fetchUserVoicePreference = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('profiles')
+      .select('voice_preference')
+      .eq('id', user.id)
+      .single();
+    
+    if (data?.voice_preference) {
+      setSelectedVoice(data.voice_preference as 'sarah' | 'theo' | 'megan');
+    }
+  };
 
   // Auto-disable voice when switching to free mode
   useEffect(() => {
@@ -248,9 +274,10 @@ const GuidedPrayerSession = () => {
       if (step?.type === 'kingdom' && step.points?.[currentPointIndex]) {
         const point = step.points[currentPointIndex];
 
-        // TRY PRE-GENERATED AUDIO FIRST (Speechmatics)
-        if (point.audio_url) {
-          const audio = new Audio(point.audio_url);
+        // TRY PRE-GENERATED AUDIO FIRST (Speechmatics) - Use selected voice
+        const audioUrl = point.audio_urls?.[selectedVoice] || point.audio_url;
+        if (audioUrl) {
+          const audio = new Audio(audioUrl);
           audio.playbackRate = 0.85; // Slow down Speechmatics audio (85% speed)
           audio.volume = 1; // Start at full volume
 
@@ -605,6 +632,56 @@ const GuidedPrayerSession = () => {
     setVoiceEnabled(!voiceEnabled);
   };
 
+  const handleVoiceChange = async (voice: 'sarah' | 'theo' | 'megan') => {
+    setSelectedVoice(voice);
+    
+    // Update user's preference in database
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({ voice_preference: voice })
+        .eq('id', user.id);
+      
+      toast.success(`Voice changed to ${voice.charAt(0).toUpperCase() + voice.slice(1)}`);
+    }
+    
+    // If audio is currently playing, restart with new voice
+    if (isPlayingAudio && currentStepIndex !== undefined && currentPointIndex !== undefined) {
+      const step = guideline?.steps[currentStepIndex];
+      if (step?.type === 'kingdom' && step.points?.[currentPointIndex]) {
+        stopAllAudio();
+        // Replay with new voice after short delay
+        setTimeout(() => {
+          const point = step.points[currentPointIndex];
+          const audioUrl = point.audio_urls?.[voice] || point.audio_url;
+          if (audioUrl && canStartAudio()) {
+            const audio = new Audio(audioUrl);
+            audio.playbackRate = 0.85;
+            audio.volume = 1;
+            const removeFadeOut = addFadeOut(audio, 1.5);
+            setCurrentAudio(audio);
+            currentAudioRef.current = audio;
+            
+            audio.onended = () => {
+              removeFadeOut();
+              setIsPlayingAudio(false);
+              setCurrentAudio(null);
+              currentAudioRef.current = null;
+            };
+            
+            audio.play().catch(() => {
+              console.warn('⚠️ Audio playback failed');
+              setCurrentAudio(null);
+              currentAudioRef.current = null;
+            });
+            
+            setIsPlayingAudio(true);
+          }
+        }, 300);
+      }
+    }
+  };
+
   const toggleAudioReading = () => {
     if (isPlayingAudio) {
       // PAUSE instead of STOP (preserves audio position)
@@ -911,7 +988,36 @@ const GuidedPrayerSession = () => {
                     </Badge>
                   </DropdownMenuItem>
 
-                  {!isGuidedMode && (
+                   <DropdownMenuSeparator />
+
+                   <DropdownMenuLabel>Prayer Voice</DropdownMenuLabel>
+                   
+                   <DropdownMenuItem 
+                     onClick={() => handleVoiceChange('sarah')}
+                     className={selectedVoice === 'sarah' ? 'bg-accent' : ''}
+                   >
+                     <span className="mr-2">👩</span>
+                     Sarah {selectedVoice === 'sarah' && '✓'}
+                   </DropdownMenuItem>
+                   
+                   <DropdownMenuItem 
+                     onClick={() => handleVoiceChange('theo')}
+                     className={selectedVoice === 'theo' ? 'bg-accent' : ''}
+                   >
+                     <span className="mr-2">👨</span>
+                     Theo {selectedVoice === 'theo' && '✓'}
+                   </DropdownMenuItem>
+                   
+                   <DropdownMenuItem 
+                     onClick={() => handleVoiceChange('megan')}
+                     className={selectedVoice === 'megan' ? 'bg-accent' : ''}
+                   >
+                     <span className="mr-2">👩</span>
+                     Megan {selectedVoice === 'megan' && '✓'}
+                   </DropdownMenuItem>
+                   <DropdownMenuSeparator />
+
+                   {!isGuidedMode && (
                     <div className="px-2 py-1.5 text-xs text-muted-foreground">
                       Voice guidance only works in Guided mode
                     </div>
