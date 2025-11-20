@@ -66,12 +66,45 @@ const GuidedPrayerSession = () => {
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const [isPlayingVoicePrompt, setIsPlayingVoicePrompt] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState<'sarah' | 'theo' | 'megan'>('sarah');
 
   // Use ref for synchronous audio tracking (prevents race conditions when switching steps)
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const isPausedRef = useRef<boolean>(false); // Ref for synchronous pause state checks
 
   const currentDay = DAYS[new Date().getDay()];
+
+  // Load user's voice preference on mount
+  useEffect(() => {
+    const loadVoicePreference = async () => {
+      // First check sessionStorage for session-specific override
+      const sessionVoice = sessionStorage.getItem('selectedVoice');
+      if (sessionVoice && ['sarah', 'theo', 'megan'].includes(sessionVoice)) {
+        setSelectedVoice(sessionVoice as 'sarah' | 'theo' | 'megan');
+        return;
+      }
+
+      // Otherwise load from user profile
+      if (user?.id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('voice_preference')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile?.voice_preference && ['sarah', 'theo', 'megan'].includes(profile.voice_preference)) {
+          setSelectedVoice(profile.voice_preference as 'sarah' | 'theo' | 'megan');
+        }
+      }
+    };
+
+    loadVoicePreference();
+  }, [user]);
+
+  // Save voice preference to sessionStorage when it changes
+  useEffect(() => {
+    sessionStorage.setItem('selectedVoice', selectedVoice);
+  }, [selectedVoice]);
 
   // Helper function to add fade-out effect to audio
   const addFadeOut = (audio: HTMLAudioElement, fadeStartSeconds = 1.5) => {
@@ -248,9 +281,14 @@ const GuidedPrayerSession = () => {
       if (step?.type === 'kingdom' && step.points?.[currentPointIndex]) {
         const point = step.points[currentPointIndex];
 
+        // Get audio URL for selected voice
+        const audioUrl = typeof point.audio_url === 'object' && point.audio_url !== null
+          ? point.audio_url[selectedVoice] // Use selected voice from multi-voice object
+          : point.audio_url; // Fallback for old single-voice format
+
         // TRY PRE-GENERATED AUDIO FIRST (Speechmatics)
-        if (point.audio_url) {
-          const audio = new Audio(point.audio_url);
+        if (audioUrl) {
+          const audio = new Audio(audioUrl);
           audio.playbackRate = 0.85; // Slow down Speechmatics audio (85% speed)
           audio.volume = 1; // Start at full volume
 
@@ -350,7 +388,7 @@ const GuidedPrayerSession = () => {
     return () => {
       stopAllAudio();
     };
-  }, [currentPointIndex, currentStepIndex, hasStarted, guideline, completedSteps, voiceEnabled, isGuidedMode]);
+  }, [currentPointIndex, currentStepIndex, hasStarted, guideline, completedSteps, voiceEnabled, isGuidedMode, selectedVoice]);
 
   const fetchGuideline = async () => {
     if (!id) return;
@@ -634,9 +672,14 @@ const GuidedPrayerSession = () => {
         : null;
 
       if (currentStep && currentStep.type === 'listening' && listeningPrayer?.content) {
+        // Get audio URL for selected voice
+        const audioUrl = typeof currentStep.audio_url === 'object' && currentStep.audio_url !== null
+          ? currentStep.audio_url[selectedVoice] // Use selected voice from multi-voice object
+          : currentStep.audio_url; // Fallback for old single-voice format
+
         // TRY PRE-GENERATED AUDIO FIRST (Speechmatics)
-        if (currentStep.audio_url) {
-          const audio = new Audio(currentStep.audio_url);
+        if (audioUrl) {
+          const audio = new Audio(audioUrl);
           audio.playbackRate = 0.76; // Slow down Speechmatics audio for meditative scripture (70% speed)
           audio.volume = 1; // Start at full volume
 
@@ -909,6 +952,42 @@ const GuidedPrayerSession = () => {
                     <Badge variant={backgroundMusicEnabled ? "default" : "secondary"} className="ml-2">
                       {backgroundMusicEnabled ? 'ON' : 'OFF'}
                     </Badge>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Voice Selection</DropdownMenuLabel>
+                  
+                  <DropdownMenuItem
+                    onClick={() => setSelectedVoice('sarah')}
+                    className="flex items-center justify-between cursor-pointer"
+                  >
+                    <div>
+                      <p className="font-medium">Sarah</p>
+                      <p className="text-xs text-muted-foreground">Warm female voice</p>
+                    </div>
+                    {selectedVoice === 'sarah' && <Check className="h-4 w-4 text-primary" />}
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    onClick={() => setSelectedVoice('theo')}
+                    className="flex items-center justify-between cursor-pointer"
+                  >
+                    <div>
+                      <p className="font-medium">Theo</p>
+                      <p className="text-xs text-muted-foreground">Calm male voice</p>
+                    </div>
+                    {selectedVoice === 'theo' && <Check className="h-4 w-4 text-primary" />}
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    onClick={() => setSelectedVoice('megan')}
+                    className="flex items-center justify-between cursor-pointer"
+                  >
+                    <div>
+                      <p className="font-medium">Megan</p>
+                      <p className="text-xs text-muted-foreground">Clear female voice</p>
+                    </div>
+                    {selectedVoice === 'megan' && <Check className="h-4 w-4 text-primary" />}
                   </DropdownMenuItem>
 
                   {!isGuidedMode && (

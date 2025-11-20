@@ -31,11 +31,11 @@ function formatScriptureForTTS(text: string): string {
   return formatted;
 }
 
-// Helper function to generate audio for a guideline using Speechmatics
-async function generateAudioForGuideline(guideline: any, supabase: any, voiceId: string = 'sarah'): Promise<Record<string, string>> {
-  const audioUrls: Record<string, string> = {};
+// Helper function to generate audio for all 3 voices using Speechmatics
+async function generateAudioForGuideline(guideline: any, supabase: any): Promise<Record<string, any>> {
+  const audioUrls: Record<string, any> = {};
   const SPEECHMATICS_API_BASE = 'https://preview.tts.speechmatics.com/generate';
-  const VOICE_ID = voiceId; // User's preferred voice: 'sarah', 'theo', or 'megan'
+  const VOICES = ['sarah', 'theo', 'megan']; // Generate all 3 voices
   const API_KEY = Deno.env.get('SPEECHMATICS_API_KEY');
 
   if (!API_KEY) {
@@ -43,120 +43,126 @@ async function generateAudioForGuideline(guideline: any, supabase: any, voiceId:
     return audioUrls;
   }
 
-  console.log(`🎙️ Generating audio for guideline ${guideline.id}...`);
+  console.log(`🎙️ Generating audio for guideline ${guideline.id} with all 3 voices...`);
 
   for (let stepIndex = 0; stepIndex < guideline.steps.length; stepIndex++) {
     const step = guideline.steps[stepIndex];
 
     if (step.type === 'kingdom' && step.points?.length > 0) {
-      // Generate audio for each kingdom intercession point
+      // Generate audio for each kingdom intercession point with all 3 voices
       for (let pointIndex = 0; pointIndex < step.points.length; pointIndex++) {
         const point = step.points[pointIndex];
         const audioKey = `step${stepIndex}-p${pointIndex}`;
+        audioUrls[audioKey] = {}; // Initialize object for this audio key
         
+        // Generate for all 3 voices
+        for (const voiceId of VOICES) {
+          try {
+            console.log(`  Generating ${audioKey} [${voiceId}]: "${point.content.substring(0, 50)}..."`);
+            
+            const response = await fetch(`${SPEECHMATICS_API_BASE}/${voiceId}`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${API_KEY}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                text: point.content
+              })
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error(`  ❌ Speechmatics API error for ${audioKey} [${voiceId}]: ${response.status} - ${errorText}`);
+              continue;
+            }
+
+            // Response is WAV audio data directly (not JSON)
+            const audioBuffer = new Uint8Array(await response.arrayBuffer());
+            const fileName = `${guideline.id}/${audioKey}-${voiceId}.wav`;
+            
+            // Upload to Supabase Storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('prayer-audio')
+              .upload(fileName, audioBuffer, {
+                contentType: 'audio/wav',
+                upsert: true
+              });
+
+            if (uploadError) {
+              console.error(`  ❌ Storage upload error for ${audioKey} [${voiceId}]:`, uploadError);
+              continue;
+            }
+
+            const { data: urlData } = supabase.storage
+              .from('prayer-audio')
+              .getPublicUrl(fileName);
+
+            audioUrls[audioKey][voiceId] = urlData.publicUrl;
+            console.log(`  ✅ ${audioKey} [${voiceId}] uploaded successfully`);
+            
+            // Small delay to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 300));
+          } catch (error) {
+            console.error(`  ❌ Error generating audio for ${audioKey} [${voiceId}]:`, error);
+          }
+        }
+      }
+    } else if (step.type === 'listening' && step.content) {
+      // Generate audio for listening prayer (Proverbs) with all 3 voices
+      const audioKey = `step${stepIndex}-listening`;
+      audioUrls[audioKey] = {}; // Initialize object for this audio key
+
+      // Generate for all 3 voices
+      for (const voiceId of VOICES) {
         try {
-          console.log(`  Generating ${audioKey}: "${point.content.substring(0, 50)}..."`);
-          
-          const response = await fetch(`${SPEECHMATICS_API_BASE}/${VOICE_ID}`, {
+          // Format scripture reference for better TTS pronunciation
+          const formattedContent = formatScriptureForTTS(step.content);
+
+          console.log(`  Generating ${audioKey} [${voiceId}]: "${formattedContent.substring(0, 50)}..."`);
+
+          const response = await fetch(`${SPEECHMATICS_API_BASE}/${voiceId}`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${API_KEY}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              text: point.content
+              text: formattedContent
             })
           });
 
           if (!response.ok) {
             const errorText = await response.text();
-            console.error(`  ❌ Speechmatics API error for ${audioKey}: ${response.status} - ${errorText}`);
+            console.error(`  ❌ Speechmatics API error for ${audioKey} [${voiceId}]: ${response.status} - ${errorText}`);
             continue;
           }
 
           // Response is WAV audio data directly (not JSON)
           const audioBuffer = new Uint8Array(await response.arrayBuffer());
-          const fileName = `${guideline.id}/${audioKey}.wav`;
+          const fileName = `${guideline.id}/${audioKey}-${voiceId}.wav`;
           
-          // Upload to Supabase Storage
-          const { data: uploadData, error: uploadError } = await supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from('prayer-audio')
             .upload(fileName, audioBuffer, {
               contentType: 'audio/wav',
               upsert: true
             });
 
-          if (uploadError) {
-            console.error(`  ❌ Storage upload error for ${audioKey}:`, uploadError);
-            continue;
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage
+              .from('prayer-audio')
+              .getPublicUrl(fileName);
+            audioUrls[audioKey][voiceId] = urlData.publicUrl;
+            console.log(`  ✅ ${audioKey} [${voiceId}] uploaded successfully`);
+          } else {
+            console.error(`  ❌ Storage upload error for ${audioKey} [${voiceId}]:`, uploadError);
           }
-
-          // Get public URL
-          const { data: urlData } = supabase.storage
-            .from('prayer-audio')
-            .getPublicUrl(fileName);
-
-          audioUrls[audioKey] = urlData.publicUrl;
-          console.log(`  ✅ ${audioKey} uploaded successfully`);
           
-          // Small delay to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 300));
         } catch (error) {
-          console.error(`  ❌ Error generating audio for ${audioKey}:`, error);
+          console.error(`  ❌ Error generating audio for ${audioKey} [${voiceId}]:`, error);
         }
-      }
-    } else if (step.type === 'listening' && step.content) {
-      // Generate audio for listening prayer (Proverbs)
-      const audioKey = `step${stepIndex}-listening`;
-
-      try {
-        // Format scripture reference for better TTS pronunciation
-        // e.g., "Proverbs 17:1-9" becomes "Proverbs 17, verses 1 through 9."
-        const formattedContent = formatScriptureForTTS(step.content);
-
-        console.log(`  Generating ${audioKey}: "${formattedContent.substring(0, 50)}..."`);
-
-        const response = await fetch(`${SPEECHMATICS_API_BASE}/${VOICE_ID}`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            text: formattedContent
-          })
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`  ❌ Speechmatics API error for ${audioKey}: ${response.status} - ${errorText}`);
-          continue;
-        }
-
-        // Response is WAV audio data directly (not JSON)
-        const audioBuffer = new Uint8Array(await response.arrayBuffer());
-        const fileName = `${guideline.id}/${audioKey}.wav`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('prayer-audio')
-          .upload(fileName, audioBuffer, {
-            contentType: 'audio/wav',
-            upsert: true
-          });
-
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage
-            .from('prayer-audio')
-            .getPublicUrl(fileName);
-          audioUrls[audioKey] = urlData.publicUrl;
-          console.log(`  ✅ ${audioKey} uploaded successfully`);
-        } else {
-          console.error(`  ❌ Storage upload error for ${audioKey}:`, uploadError);
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, 300));
-      } catch (error) {
-        console.error(`  ❌ Error generating audio for ${audioKey}:`, error);
       }
     }
   }
@@ -181,15 +187,7 @@ serve(async (req) => {
       throw new Error('Missing required fields: month, day, title, userId');
     }
 
-    // Fetch user's voice preference from their profile
-    const { data: userProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('voice_preference')
-      .eq('id', userId)
-      .single();
-
-    const voiceId = userProfile?.voice_preference || 'sarah';
-    console.log(`📢 Generating guideline for ${month} ${day} with user's preferred voice: ${voiceId}`);
+    console.log(`📢 Generating guideline for ${month} ${day} with all 3 voices`);
 
     // Fetch Kingdom Focus prayers for this day (all 4 intercessions)
     const { data: kingdomPrayers, error: kingdomError } = await supabase
@@ -343,23 +341,23 @@ serve(async (req) => {
     // Generate audio for the guideline (non-blocking)
     try {
       console.log(`🎙️ Starting audio generation for ${month} ${day}...`);
-      const audioUrls = await generateAudioForGuideline(guideline, supabase, voiceId);
+      const audioUrls = await generateAudioForGuideline(guideline, supabase);
       
       if (Object.keys(audioUrls).length > 0) {
-        // Update guideline steps with audio URLs (use snake_case audio_url to match frontend expectations)
+        // Update guideline steps with audio URLs for all 3 voices
         const updatedSteps = guideline.steps.map((step: any, stepIndex: number) => {
           if (step.type === 'kingdom' && step.points) {
             return {
               ...step,
               points: step.points.map((point: any, pointIndex: number) => ({
                 ...point,
-                audio_url: audioUrls[`step${stepIndex}-p${pointIndex}`] || null
+                audio_url: audioUrls[`step${stepIndex}-p${pointIndex}`] || null // Store { sarah: url, theo: url, megan: url }
               }))
             };
           } else if (step.type === 'listening') {
             return {
               ...step,
-              audio_url: audioUrls[`step${stepIndex}-listening`] || null
+              audio_url: audioUrls[`step${stepIndex}-listening`] || null // Store { sarah: url, theo: url, megan: url }
             };
           }
           return step;
@@ -373,7 +371,7 @@ serve(async (req) => {
         if (updateError) {
           console.error(`⚠️ Failed to update guideline with audio URLs:`, updateError);
         } else {
-          console.log(`✅ Guideline ${guideline.id} updated with ${Object.keys(audioUrls).length} audio files`);
+          console.log(`✅ Guideline ${guideline.id} updated with audio files for all 3 voices`);
         }
       } else {
         console.warn(`⚠️ No audio generated for ${month} ${day} - will use browser TTS fallback`);
