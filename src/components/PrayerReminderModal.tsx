@@ -25,13 +25,13 @@ const PrayerReminderModal = ({ isOpen, onClose, streakCount = 0, scriptureVerse 
     navigate("/guidelines");
   };
 
-  const handleSnooze = async () => {
+  const handleSnooze = async (minutes: number = 30) => {
     if (!user) return;
 
     setIsSnoozing(true);
     try {
       const snoozeUntil = new Date();
-      snoozeUntil.setMinutes(snoozeUntil.getMinutes() + 30);
+      snoozeUntil.setMinutes(snoozeUntil.getMinutes() + minutes);
 
       const { error } = await supabase
         .from("prayer_reminders")
@@ -40,7 +40,7 @@ const PrayerReminderModal = ({ isOpen, onClose, streakCount = 0, scriptureVerse 
 
       if (error) throw error;
 
-      toast.success("Reminder snoozed for 30 minutes");
+      toast.success(`Reminder snoozed for ${minutes} minutes`);
       onClose();
     } catch (error) {
       console.error("Error snoozing reminder:", error);
@@ -126,9 +126,14 @@ const PrayerReminderModal = ({ isOpen, onClose, streakCount = 0, scriptureVerse 
           </Button>
 
           <div className="flex gap-2">
-            <Button onClick={handleSnooze} variant="outline" size="sm" className="flex-1" disabled={isSnoozing}>
+            <Button onClick={() => handleSnooze(15)} variant="outline" size="sm" className="flex-1" disabled={isSnoozing}>
               <Clock className="w-4 h-4 mr-2" />
-              {isSnoozing ? "Snoozing..." : "Remind in 30min"}
+              {isSnoozing ? "Snoozing..." : "15 min"}
+            </Button>
+
+            <Button onClick={() => handleSnooze(30)} variant="outline" size="sm" className="flex-1" disabled={isSnoozing}>
+              <Clock className="w-4 h-4 mr-2" />
+              {isSnoozing ? "Snoozing..." : "30 min"}
             </Button>
 
             <Button onClick={handleMarkComplete} variant="outline" size="sm" className="flex-1" disabled={isMarking}>
