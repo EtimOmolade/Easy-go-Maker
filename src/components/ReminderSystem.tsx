@@ -5,7 +5,7 @@ import PrayerReminderModal from "./PrayerReminderModal";
 
 /**
  * ReminderSystem Component
- * Handles time-based prayer reminders and listens for community announcements
+ * Handles time-based prayer reminders
  * Sends both in-app notifications and push notifications
  */
 const ReminderSystem = () => {
@@ -205,69 +205,9 @@ const ReminderSystem = () => {
       interval = setInterval(checkReminders, 60000);
     }, msUntilNextMinute);
 
-    // Listen for community announcements (guidelines, encouragement messages)
-    const channel = supabase
-      .channel('community-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'encouragement_messages'
-        },
-        async (payload) => {
-          console.log('📢 New encouragement message:', payload.new);
-          
-          // Send push notification for community announcement
-          const { error: pushError } = await supabase.functions.invoke('send-push-notification', {
-            body: {
-              type: 'announcement',
-              title: '📢 Community Update',
-              message: (payload.new as any).content?.substring(0, 100) || 'New message from the community',
-              url: '/dashboard',
-            },
-          });
-
-          if (pushError) {
-            console.error('❌ Failed to send announcement push:', pushError);
-          } else {
-            console.log('✅ Announcement push notification sent');
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'guidelines'
-        },
-        async (payload) => {
-          console.log('🕊️ New guideline published:', payload.new);
-          
-          // Send push notification for new guideline
-          const { error: pushError } = await supabase.functions.invoke('send-push-notification', {
-            body: {
-              type: 'announcement',
-              title: '🕊️ New Prayer Guideline',
-              message: (payload.new as any).title || 'A new prayer guideline is available',
-              url: '/guidelines',
-            },
-          });
-
-          if (pushError) {
-            console.error('❌ Failed to send guideline push:', pushError);
-          } else {
-            console.log('✅ Guideline push notification sent');
-          }
-        }
-      )
-      .subscribe();
-
     return () => {
       clearTimeout(alignmentTimeout);
       if (interval) clearInterval(interval);
-      supabase.removeChannel(channel);
     };
   }, [user]);
 
