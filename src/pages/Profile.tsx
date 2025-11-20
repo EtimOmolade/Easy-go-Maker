@@ -456,14 +456,20 @@ const Profile = () => {
                   variant="outline"
                   onClick={async () => {
                     const input = document.getElementById('new-reminder-time') as HTMLInputElement;
-                    if (!input.value) return;
+                    if (!input.value) {
+                      toast.error('Please select a time');
+                      return;
+                    }
                     
                     try {
-                      const { data: current } = await supabase
+                      // Fetch current settings
+                      const { data: current, error: fetchError } = await supabase
                         .from('prayer_reminders')
-                        .select('reminder_times')
+                        .select('reminder_times, id')
                         .eq('user_id', user?.id)
                         .maybeSingle();
+                      
+                      if (fetchError) throw fetchError;
                       
                       const existingTimes = current?.reminder_times || [];
                       
@@ -472,16 +478,34 @@ const Profile = () => {
                         return;
                       }
                       
-                      const { error } = await supabase
-                        .from('prayer_reminders')
-                        .upsert({
-                          user_id: user?.id,
-                          reminder_times: [...existingTimes, input.value],
-                          enabled: true,
-                          notification_methods: ['in-app', 'push'],
-                        });
+                      const newTimes = [...existingTimes, input.value];
                       
-                      if (error) throw error;
+                      // Update or insert
+                      if (current?.id) {
+                        // Update existing record
+                        const { error: updateError } = await supabase
+                          .from('prayer_reminders')
+                          .update({
+                            reminder_times: newTimes,
+                            enabled: true,
+                            notification_methods: ['in-app', 'push'],
+                          })
+                          .eq('id', current.id);
+                        
+                        if (updateError) throw updateError;
+                      } else {
+                        // Insert new record
+                        const { error: insertError } = await supabase
+                          .from('prayer_reminders')
+                          .insert({
+                            user_id: user?.id,
+                            reminder_times: newTimes,
+                            enabled: true,
+                            notification_methods: ['in-app', 'push'],
+                          });
+                        
+                        if (insertError) throw insertError;
+                      }
                       
                       toast.success('Reminder time added');
                       input.value = '';
