@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import PrayerReminderModal from "./PrayerReminderModal";
@@ -15,7 +15,6 @@ const ReminderSystem = () => {
   const [scriptureVerse] = useState(
     "Be joyful in hope, patient in affliction, faithful in prayer. - Romans 12:12"
   );
-  const lastTriggeredMinuteRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -128,62 +127,27 @@ const ReminderSystem = () => {
         );
 
         if (shouldShowReminder) {
-          // Prevent duplicate triggers within the same minute
-          if (lastTriggeredMinuteRef.current === currentTime) {
-            console.log('⏭️ Already triggered reminder for this minute, skipping...');
-            return;
-          }
-
           console.log('✅ TRIGGERING REMINDER! Time:', currentTime);
-          lastTriggeredMinuteRef.current = currentTime;
 
-          // Update last_reminded_at IMMEDIATELY to prevent duplicate database inserts
-          await supabase
-            .from("prayer_reminders")
-            .update({ 
-              last_reminded_at: now.toISOString(),
-              snooze_until: null // Clear snooze when showing new reminder
+          // Create notification in database
+          const { data: notification } = await supabase
+            .from('notifications')
+            .insert({
+              user_id: user.id,
+              type: 'prayer_reminder',
+              title: '🕊️ Time for Prayer',
+              message: `Keep your ${streakCount} day streak going!`,
+              related_type: 'guideline',
+              related_id: null,
             })
-            .eq("user_id", user.id);
+            .select()
+            .single();
 
-          console.log('⏱️ Updated last_reminded_at to:', now.toISOString());
+          console.log('📝 Created notification in database:', notification?.id);
 
+          // Send push notification if enabled
           const notificationMethods = reminderSettings.notification_methods || [];
-          const showInApp = notificationMethods.includes('in-app');
-          const showPush = notificationMethods.includes('push');
-
-          console.log('📋 Notification methods:', { showInApp, showPush });
-
-          // Create ONE notification in database for in-app notifications
-          if (showInApp) {
-            const { data: notification, error: notifError } = await supabase
-              .from('notifications')
-              .insert({
-                user_id: user.id,
-                type: 'prayer_reminder',
-                title: '🕊️ Time for Prayer',
-                message: `Keep your ${streakCount} day streak going!`,
-                related_type: 'guideline',
-                related_id: null,
-              })
-              .select()
-              .single();
-
-            if (notifError) {
-              console.error('❌ Failed to create notification:', notifError);
-            } else {
-              console.log('📝 Created ONE notification in database:', notification?.id);
-            }
-
-            // Show in-app modal
-            console.log('🔔 Showing in-app reminder modal');
-            setShowReminderModal(true);
-          }
-
-          // Push notifications are currently disabled (stub implementation)
-          // Uncomment when Deno-compatible push is implemented
-          /*
-          if (showPush) {
+          if (notificationMethods.includes('push')) {
             console.log('📲 Sending push notification...');
             const { data: pushData, error: pushError } = await supabase.functions.invoke('send-push-notification', {
               body: {
@@ -192,16 +156,29 @@ const ReminderSystem = () => {
                 message: `Keep your ${streakCount} day streak going!`,
                 url: '/guidelines',
                 userId: user.id,
+                notificationId: notification?.id,
               },
             });
 
             if (pushError) {
-              console.warn('⚠️ Push notification failed:', pushError);
+              console.error('❌ Push notification failed:', pushError);
             } else {
               console.log('✅ Push notification sent successfully:', pushData);
             }
           }
-          */
+
+          // Show in-app modal
+          console.log('🔔 Showing in-app reminder modal');
+          setShowReminderModal(true);
+          
+          // Update last_reminded_at
+          await supabase
+            .from("prayer_reminders")
+            .update({ 
+              last_reminded_at: now.toISOString(),
+              snooze_until: null // Clear snooze when showing new reminder
+            })
+            .eq("user_id", user.id);
         }
       } catch (error) {
         console.error("Error checking reminders:", error);

@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -45,19 +45,19 @@ const Profile = () => {
     resetFontSize
   } = useFontSize();
   const navigate = useNavigate();
-  const [profile, setProfile] = React.useState<ProfileData | null>(null);
-  const [name, setName] = React.useState("");
-  const [reminders, setReminders] = React.useState(true);
-  const [twoFactorEnabled, setTwoFactorEnabled] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
-  const [toggling2FA, setToggling2FA] = React.useState(false);
-  const [trustedDevices, setTrustedDevices] = React.useState<any[]>([]);
-  const [currentFingerprint, setCurrentFingerprint] = React.useState<string>("");
-  const [tutorialEnabled, setTutorialEnabled] = React.useState(false);
-  const [runTutorial, setRunTutorial] = React.useState(false);
-  const [voicePreference, setVoicePreference] = React.useState<string>("sarah");
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [name, setName] = useState("");
+  const [reminders, setReminders] = useState(true);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [toggling2FA, setToggling2FA] = useState(false);
+  const [trustedDevices, setTrustedDevices] = useState<any[]>([]);
+  const [currentFingerprint, setCurrentFingerprint] = useState<string>("");
+  const [tutorialEnabled, setTutorialEnabled] = useState(false);
+  const [runTutorial, setRunTutorial] = useState(false);
+  const [voicePreference, setVoicePreference] = useState<string>("sarah");
   
-  React.useEffect(() => {
+  useEffect(() => {
     fetchProfile();
     fetchTrustedDevices();
     setCurrentFingerprint(generateDeviceFingerprint());
@@ -98,7 +98,6 @@ const Profile = () => {
       console.log('Updating profile with:', {
         name,
         reminders,
-        voicePreference,
         userId: user.id
       });
       const {
@@ -185,7 +184,7 @@ const Profile = () => {
     unlocked,
     locked,
     currentStreak
-  } = React.useMemo(() => {
+  } = useMemo(() => {
     if (!user || !profile) return {
       unlocked: [],
       locked: MILESTONES,
@@ -335,38 +334,6 @@ const Profile = () => {
                   </p>
                 </div>
                 <Switch id="darkMode" checked={theme === 'dark'} onCheckedChange={toggleTheme} />
-              </div>
-
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Volume2 className="h-4 w-4" />
-                    Prayer Audio Voice
-                  </Label>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Choose your preferred voice for prayer audio
-                  </p>
-                  <RadioGroup value={voicePreference} onValueChange={setVoicePreference}>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="sarah" id="sarah" />
-                      <Label htmlFor="sarah" className="cursor-pointer">
-                        Sarah - English Female (UK) - Warm and clear
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="theo" id="theo" />
-                      <Label htmlFor="theo" className="cursor-pointer">
-                        Theo - English Male (UK) - Deep and calming
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="megan" id="megan" />
-                      <Label htmlFor="megan" className="cursor-pointer">
-                        Megan - English Female (US) - Friendly and conversational
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
               </div>
 
               <div className="space-y-3">
