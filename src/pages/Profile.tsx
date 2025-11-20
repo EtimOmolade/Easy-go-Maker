@@ -337,6 +337,38 @@ const Profile = () => {
               </div>
 
               <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Volume2 className="h-4 w-4" />
+                    Prayer Audio Voice
+                  </Label>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Choose your preferred voice for prayer audio
+                  </p>
+                  <RadioGroup value={voicePreference} onValueChange={setVoicePreference}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="sarah" id="sarah" />
+                      <Label htmlFor="sarah" className="cursor-pointer">
+                        Sarah - English Female (UK) - Warm and clear
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="theo" id="theo" />
+                      <Label htmlFor="theo" className="cursor-pointer">
+                        Theo - English Male (UK) - Deep and calming
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="megan" id="megan" />
+                      <Label htmlFor="megan" className="cursor-pointer">
+                        Megan - English Female (US) - Friendly and conversational
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="flex items-center gap-2">
                     <Type className="h-4 w-4" />

@@ -400,6 +400,7 @@ export type Database = {
           reminders_enabled: boolean
           streak_count: number
           two_factor_enabled: boolean | null
+          voice_preference: string | null
         }
         Insert: {
           created_at?: string
@@ -410,6 +411,7 @@ export type Database = {
           reminders_enabled?: boolean
           streak_count?: number
           two_factor_enabled?: boolean | null
+          voice_preference?: string | null
         }
         Update: {
           created_at?: string
@@ -420,6 +422,7 @@ export type Database = {
           reminders_enabled?: boolean
           streak_count?: number
           two_factor_enabled?: boolean | null
+          voice_preference?: string | null
         }
         Relationships: []
       }
