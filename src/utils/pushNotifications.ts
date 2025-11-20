@@ -38,21 +38,17 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
       throw new Error('Notification permission denied');
     }
 
-    // Wait for service worker to be ready
     const registration = await navigator.serviceWorker.ready;
-
-    // Check for existing subscription
     let subscription = await registration.pushManager.getSubscription();
     
     if (!subscription) {
-      // Create new subscription
+      const key = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        applicationServerKey: new Uint8Array(key),
       });
     }
 
-    // Save subscription to database
     const subscriptionJson = subscription.toJSON();
     
     const { error } = await supabase
@@ -86,7 +82,6 @@ export async function unsubscribeFromPush(userId: string): Promise<boolean> {
     if (subscription) {
       await subscription.unsubscribe();
       
-      // Remove from database
       await supabase
         .from('push_subscriptions')
         .delete()
