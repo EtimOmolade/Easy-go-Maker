@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import * as React from "react";
 // Backend integration - Supabase ACTIVATED
 import { User, Session, supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
@@ -20,16 +20,16 @@ interface AuthContextType {
   completeTrustedDeviceAuth: (user: User) => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [requiresOTP, setRequiresOTP] = useState(false);
-  const [pendingUser, setPendingUser] = useState<User | null>(null);
-  const [verifiedDeviceToken, setVerifiedDeviceToken] = useState<string | null>(null);
+  const [user, setUser] = React.useState<User | null>(null);
+  const [session, setSession] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [isAdmin, setIsAdmin] = React.useState(false);
+  const [requiresOTP, setRequiresOTP] = React.useState(false);
+  const [pendingUser, setPendingUser] = React.useState<User | null>(null);
+  const [verifiedDeviceToken, setVerifiedDeviceToken] = React.useState<string | null>(null);
   const navigate = useNavigate();
 
   // Backend integration - Supabase ACTIVATED
@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
 
-  useEffect(() => {
+  React.useEffect(() => {
     // Initialize mock data for prototype (needed for localStorage-based features like milestones, etc.)
     initializeMockData();
 
@@ -207,7 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
+  const context = React.useContext(AuthContext);
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
