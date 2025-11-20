@@ -14,14 +14,6 @@ interface PushPayload {
   notificationId?: string;
 }
 
-interface PushSubscription {
-  id: string;
-  user_id: string;
-  endpoint: string;
-  p256dh_key: string;
-  auth_key: string;
-}
-
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -37,12 +29,18 @@ Deno.serve(async (req) => {
     const payload: PushPayload = await req.json();
     const { type, title, message, url, userId, notificationId } = payload;
 
-    console.log('Sending push notification:', { type, title, userId });
+    console.log('📥 Push notification request received (STUB MODE)');
+    console.log('   Type:', type);
+    console.log('   Title:', title);
+    console.log('   Message:', message);
+    console.log('   URL:', url);
+    console.log('   User ID:', userId);
+    console.log('   Notification ID:', notificationId);
 
-    // Fetch push subscriptions
+    // Fetch push subscriptions for logging
     let query = supabase
       .from('push_subscriptions')
-      .select('*');
+      .select('id, user_id, endpoint');
 
     if (userId) {
       query = query.eq('user_id', userId);
@@ -51,161 +49,34 @@ Deno.serve(async (req) => {
     const { data: subscriptions, error: fetchError } = await query;
 
     if (fetchError) {
-      throw new Error(`Failed to fetch subscriptions: ${fetchError.message}`);
-    }
-
-    if (!subscriptions || subscriptions.length === 0) {
-      console.log('No push subscriptions found');
-      return new Response(
-        JSON.stringify({ success: true, message: 'No subscriptions to send to' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      console.error('❌ Failed to fetch subscriptions:', fetchError.message);
+    } else if (!subscriptions || subscriptions.length === 0) {
+      console.log('ℹ️ No push subscriptions found for user:', userId || 'all users');
+    } else {
+      console.log(`📊 Found ${subscriptions.length} push subscription(s):`, 
+        subscriptions.map(s => ({ id: s.id, user_id: s.user_id, endpoint: s.endpoint.substring(0, 50) + '...' }))
       );
     }
 
-    // Get VAPID keys from secrets
-    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
-    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
-    const vapidSubject = Deno.env.get('VAPID_SUBJECT');
-
-    if (!vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
-      console.error('❌ VAPID keys missing');
-      return new Response(
-        JSON.stringify({ 
-          error: 'Push notifications not configured',
-          code: 'VAPID_KEYS_MISSING'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
-    }
-
-    // Build push notification payload
-    const notificationPayload = {
-      title,
-      body: message,
-      icon: '/logo-192.png',
-      badge: '/logo-192.png',
-      tag: type,
-      data: {
-        url,
-        type,
-        notificationId,
-      },
-      actions: [
-        { action: 'open', title: 'Open App' },
-        { action: 'dismiss', title: 'Dismiss' },
-      ],
-    };
-
-    let successCount = 0;
-    let failureCount = 0;
-    const expiredSubscriptions: string[] = [];
-
-    // Import web-push library once (using esm.sh for compatibility)
-    const webpush = await import('https://esm.sh/web-push@3.6.7');
-
-    console.log('VAPID keys loaded:', {
-      publicKey: vapidPublicKey.substring(0, 20) + '...',
-      privateKey: vapidPrivateKey.substring(0, 10) + '...',
-      subject: vapidSubject,
-    });
-
-    // Send push notifications
-    for (const subscription of subscriptions as PushSubscription[]) {
-      try {
-        console.log(`Sending to subscription ${subscription.id}:`, {
-          endpoint: subscription.endpoint.substring(0, 50) + '...',
-          hasP256dh: !!subscription.p256dh_key,
-          hasAuth: !!subscription.auth_key,
-        });
-
-        const pushSubscription = {
-          endpoint: subscription.endpoint,
-          keys: {
-            p256dh: subscription.p256dh_key,
-            auth: subscription.auth_key,
-          },
-        };
-
-        await webpush.sendNotification(
-          pushSubscription,
-          JSON.stringify(notificationPayload),
-          {
-            vapidDetails: {
-              subject: vapidSubject,
-              publicKey: vapidPublicKey,
-              privateKey: vapidPrivateKey,
-            },
-          }
-        );
-
-        console.log(`✅ Successfully sent to ${subscription.id}`);
-        successCount++;
-
-        // Update last_used_at
-        await supabase
-          .from('push_subscriptions')
-          .update({ last_used_at: new Date().toISOString() })
-          .eq('id', subscription.id);
-
-      } catch (error: any) {
-        console.error(`❌ Failed to send to ${subscription.id}:`, {
-          message: error.message,
-          statusCode: error.statusCode,
-          body: error.body,
-          headers: error.headers,
-          stack: error.stack?.substring(0, 500),
-          endpoint: subscription.endpoint.substring(0, 80) + '...',
-        });
-        failureCount++;
-
-        // Check if subscription is expired (410 Gone or 404 Not Found)
-        if (error.statusCode === 410 || error.statusCode === 404) {
-          expiredSubscriptions.push(subscription.id);
-        }
-      }
-    }
-
-    // Clean up expired subscriptions
-    if (expiredSubscriptions.length > 0) {
-      const { error: deleteError } = await supabase
-        .from('push_subscriptions')
-        .delete()
-        .in('id', expiredSubscriptions);
-
-      if (deleteError) {
-        console.error('Failed to delete expired subscriptions:', deleteError);
-      } else {
-        console.log(`Cleaned up ${expiredSubscriptions.length} expired subscriptions`);
-      }
-    }
-
-    console.log(`Push notification sent: ${successCount} success, ${failureCount} failures`);
+    console.log('✅ STUB: Push notification processing complete (not actually sent)');
+    console.log('ℹ️ Push notifications are currently disabled. A Deno-compatible implementation is needed.');
 
     return new Response(
       JSON.stringify({
         success: true,
-        successCount,
-        failureCount,
-        cleanedUpCount: expiredSubscriptions.length,
+        message: 'Push notifications are currently disabled (stub implementation)',
+        subscriptionCount: subscriptions?.length || 0,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
 
   } catch (error: any) {
-    console.error('Error sending push notification:', error);
-    
-    // Provide specific error codes for better client-side handling
-    let errorCode = 'UNKNOWN_ERROR';
-    if (error.message?.includes('Module not found')) {
-      errorCode = 'MODULE_LOAD_ERROR';
-    } else if (error.message?.includes('VAPID')) {
-      errorCode = 'VAPID_ERROR';
-    }
+    console.error('❌ Error in push notification stub:', error);
     
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        code: errorCode
+        code: 'STUB_ERROR'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
