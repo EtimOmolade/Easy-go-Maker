@@ -145,7 +145,9 @@ Deno.serve(async (req) => {
           message: error.message,
           statusCode: error.statusCode,
           body: error.body,
-          stack: error.stack?.substring(0, 200),
+          headers: error.headers,
+          stack: error.stack?.substring(0, 500),
+          endpoint: subscription.endpoint.substring(0, 80) + '...',
         });
         failureCount++;
 
