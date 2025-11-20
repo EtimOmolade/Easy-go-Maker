@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import webpush from 'npm:web-push@3.6.7';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,110 +12,8 @@ interface PushPayload {
   title: string;
   message: string;
   url: string;
-  userId?: string; // For reminders, send to specific user. For announcements, send to all
+  userId?: string;
   notificationId?: string;
-}
-
-interface WebPushSubscription {
-  endpoint: string;
-  keys: {
-    p256dh: string;
-    auth: string;
-  };
-}
-
-// Web Push utilities for Deno
-async function generateVAPIDHeaders(
-  endpoint: string,
-  vapidPublicKey: string,
-  vapidPrivateKey: string,
-  subject: string
-): Promise<Record<string, string>> {
-  const url = new URL(endpoint);
-  const audience = `${url.protocol}//${url.host}`;
-  
-  const jwtHeader = { typ: 'JWT', alg: 'ES256' };
-  const jwtPayload = {
-    aud: audience,
-    exp: Math.floor(Date.now() / 1000) + 12 * 60 * 60, // 12 hours
-    sub: subject,
-  };
-
-  // Import private key
-  const privateKeyBuffer = urlBase64ToUint8Array(vapidPrivateKey);
-  const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    privateKeyBuffer,
-    { name: 'ECDSA', namedCurve: 'P-256' },
-    false,
-    ['sign']
-  );
-
-  // Create JWT
-  const encoder = new TextEncoder();
-  const headerB64 = btoa(JSON.stringify(jwtHeader)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  const payloadB64 = btoa(JSON.stringify(jwtPayload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  const unsignedToken = `${headerB64}.${payloadB64}`;
-  
-  const signature = await crypto.subtle.sign(
-    { name: 'ECDSA', hash: 'SHA-256' },
-    cryptoKey,
-    encoder.encode(unsignedToken)
-  );
-
-  const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/=/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
-
-  const jwt = `${unsignedToken}.${signatureB64}`;
-
-  return {
-    Authorization: `vapid t=${jwt}, k=${vapidPublicKey}`,
-  };
-}
-
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
-
-async function sendWebPush(
-  subscription: WebPushSubscription,
-  payload: string,
-  vapidPublicKey: string,
-  vapidPrivateKey: string,
-  subject: string
-): Promise<Response> {
-  const headers = await generateVAPIDHeaders(
-    subscription.endpoint,
-    vapidPublicKey,
-    vapidPrivateKey,
-    subject
-  );
-
-  headers['Content-Type'] = 'application/octet-stream';
-  headers['Content-Encoding'] = 'aes128gcm';
-  headers['TTL'] = '86400'; // 24 hours
-
-  // Encrypt payload
-  const encoder = new TextEncoder();
-  const payloadBuffer = encoder.encode(payload);
-
-  // For simplicity, using unencrypted payload in this implementation
-  // In production, implement proper ECDH encryption
-  
-  return fetch(subscription.endpoint, {
-    method: 'POST',
-    headers,
-    body: payloadBuffer,
-  });
 }
 
 Deno.serve(async (req) => {
@@ -132,7 +32,6 @@ Deno.serve(async (req) => {
 
     console.log('📤 Sending push notification:', { type, title, userId });
 
-    // Get VAPID credentials
     const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
     const vapidSubject = Deno.env.get('VAPID_SUBJECT');
@@ -141,7 +40,8 @@ Deno.serve(async (req) => {
       throw new Error('VAPID keys not configured');
     }
 
-    // Fetch subscriptions
+    webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+
     let query = supabase.from('push_subscriptions').select('*');
     
     if (type === 'reminder' && userId) {
@@ -162,7 +62,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Notification payload
     const notificationPayload = JSON.stringify({
       title,
       body: message,
@@ -181,10 +80,9 @@ Deno.serve(async (req) => {
     let failureCount = 0;
     const expiredSubscriptions: string[] = [];
 
-    // Send to all subscriptions
     for (const sub of subscriptions) {
       try {
-        const webPushSub: WebPushSubscription = {
+        const pushSubscription = {
           endpoint: sub.endpoint,
           keys: {
             p256dh: sub.p256dh_key,
@@ -192,41 +90,26 @@ Deno.serve(async (req) => {
           },
         };
 
-        const response = await sendWebPush(
-          webPushSub,
-          notificationPayload,
-          vapidPublicKey,
-          vapidPrivateKey,
-          vapidSubject
-        );
+        await webpush.sendNotification(pushSubscription, notificationPayload);
 
-        if (response.status === 201 || response.status === 200) {
-          console.log(`✅ Sent to subscription ${sub.id}`);
-          successCount++;
+        console.log(`✅ Sent to subscription ${sub.id}`);
+        successCount++;
 
-          await supabase
-            .from('push_subscriptions')
-            .update({ last_used_at: new Date().toISOString() })
-            .eq('id', sub.id);
-        } else if (response.status === 410 || response.status === 404) {
-          console.log(`🗑️ Subscription expired: ${sub.id}`);
-          expiredSubscriptions.push(sub.id);
-          failureCount++;
-        } else {
-          console.error(`❌ Failed to send to ${sub.id}: ${response.status}`);
-          failureCount++;
-        }
+        await supabase
+          .from('push_subscriptions')
+          .update({ last_used_at: new Date().toISOString() })
+          .eq('id', sub.id);
+
       } catch (error: any) {
         console.error(`❌ Error sending to ${sub.id}:`, error.message);
         failureCount++;
         
-        if (error.message?.includes('410') || error.message?.includes('404')) {
+        if (error.statusCode === 410 || error.statusCode === 404) {
           expiredSubscriptions.push(sub.id);
         }
       }
     }
 
-    // Clean up expired subscriptions
     if (expiredSubscriptions.length > 0) {
       await supabase
         .from('push_subscriptions')
