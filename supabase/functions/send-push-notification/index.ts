@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import webpush from 'npm:web-push@3.6.7';
+import webpush from 'https://esm.sh/web-push@3.6.7';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
