@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import * as React from "react";
 
 interface FontSizeContextType {
   fontSize: number;
@@ -8,7 +8,7 @@ interface FontSizeContextType {
   resetFontSize: () => void;
 }
 
-const FontSizeContext = createContext<FontSizeContextType | undefined>(undefined);
+const FontSizeContext = React.createContext<FontSizeContextType | undefined>(undefined);
 
 // Font size limits (as percentages)
 const MIN_FONT_SIZE = 85;
@@ -16,11 +16,11 @@ const MAX_FONT_SIZE = 125;
 const DEFAULT_FONT_SIZE = 100;
 const FONT_SIZE_STEP = 5;
 
-export const FontSizeProvider = ({ children }: { children: ReactNode }) => {
-  const [fontSize, setFontSizeState] = useState<number>(DEFAULT_FONT_SIZE);
+export const FontSizeProvider = ({ children }: { children: React.ReactNode }) => {
+  const [fontSize, setFontSizeState] = React.useState<number>(DEFAULT_FONT_SIZE);
 
   // Load font size from localStorage on mount
-  useEffect(() => {
+  React.useEffect(() => {
     const savedFontSize = localStorage.getItem("fontSize");
     if (savedFontSize) {
       const size = parseInt(savedFontSize, 10);
@@ -72,7 +72,7 @@ export const FontSizeProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const useFontSize = () => {
-  const context = useContext(FontSizeContext);
+  const context = React.useContext(FontSizeContext);
   if (context === undefined) {
     throw new Error("useFontSize must be used within a FontSizeProvider");
   }
