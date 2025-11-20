@@ -10,10 +10,15 @@ const corsHeaders = {
 // Formats "Proverbs 17:1-9 (KJV)" as "Proverbs 17, verses 1 to 9. KJV. (content...)"
 // The periods create pauses for better pronunciation and pacing
 function formatScriptureForTTS(text: string): string {
-  // Replace verse references like "17:1-9" with "17, verses 1 to 9."
+  // Replace book names to improve pronunciation
+  // e.g., "Psa" -> "Psalm", "Ps" -> "Psalm"
+  let formatted = text.replace(/\b(Psa|Ps)\b/gi, 'Psalm');
+  
+  // Replace verse references like "17:1-9" with "chapter 17, verses 1 to 9."
   // Use "to" instead of "through" to avoid sounding like "three"
-  let formatted = text.replace(/(\d+):(\d+)-(\d+)/g, '$1, verses $2 to $3.')
-                      .replace(/(\d+):(\d+)(?!-)/g, '$1, verse $2.'); // Handle single verses like "17:1"
+  // Add "chapter" before the chapter number to make it clearer
+  formatted = formatted.replace(/(\d+):(\d+)-(\d+)/g, 'chapter $1, verses $2 to $3.')
+                      .replace(/(\d+):(\d+)(?!-)/g, 'chapter $1, verse $2.'); // Handle single verses like "17:1"
 
   // Add full stop after Bible version (KJV, NIV, etc.) for pause before scripture content
   // Pattern: "(KJV)" becomes "(KJV). " or "KJV" becomes "KJV. "
@@ -170,13 +175,21 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { month, day, title, userId, voiceId = 'sarah' } = await req.json();
+    const { month, day, title, userId } = await req.json();
 
     if (!month || !day || !title || !userId) {
       throw new Error('Missing required fields: month, day, title, userId');
     }
 
-    console.log(`📢 Generating guideline for ${month} ${day} with voice: ${voiceId}`);
+    // Fetch user's voice preference from their profile
+    const { data: userProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('voice_preference')
+      .eq('id', userId)
+      .single();
+
+    const voiceId = userProfile?.voice_preference || 'sarah';
+    console.log(`📢 Generating guideline for ${month} ${day} with user's preferred voice: ${voiceId}`);
 
     // Fetch Kingdom Focus prayers for this day (all 4 intercessions)
     const { data: kingdomPrayers, error: kingdomError } = await supabase
