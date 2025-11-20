@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Award, Scale, Smartphone, Trash2, Moon, Sun, HelpCircle, Type, Minus, Plus, RotateCcw, Volume2 } from "lucide-react";
+import { ArrowLeft, Award, Scale, Smartphone, Trash2, Moon, Sun, HelpCircle, Type, Minus, Plus, RotateCcw, Volume2, Clock } from "lucide-react";
 import { PushNotificationSettings } from "@/components/PushNotificationSettings";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -406,7 +406,100 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Prayer Reminders Settings */}
+        {/* Prayer Reminder Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Prayer Reminders
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="reminders-enabled">Enable Prayer Reminders</Label>
+              <Switch
+                id="reminders-enabled"
+                checked={reminders}
+                onCheckedChange={async (checked) => {
+                  setReminders(checked);
+                  try {
+                    const { error } = await supabase
+                      .from('prayer_reminders')
+                      .upsert({
+                        user_id: user?.id,
+                        enabled: checked,
+                      });
+                    if (error) throw error;
+                    toast.success(`Reminders ${checked ? 'enabled' : 'disabled'}`);
+                  } catch (error) {
+                    console.error('Error updating reminders:', error);
+                    toast.error('Failed to update reminders');
+                  }
+                }}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Add Reminder Times</Label>
+              <p className="text-sm text-muted-foreground">
+                Set times to receive prayer reminders
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="time"
+                  placeholder="Add reminder time"
+                  className="flex-1"
+                  id="new-reminder-time"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={async () => {
+                    const input = document.getElementById('new-reminder-time') as HTMLInputElement;
+                    if (!input.value) return;
+                    
+                    try {
+                      const { data: current } = await supabase
+                        .from('prayer_reminders')
+                        .select('reminder_times')
+                        .eq('user_id', user?.id)
+                        .maybeSingle();
+                      
+                      const existingTimes = current?.reminder_times || [];
+                      
+                      if (existingTimes.includes(input.value)) {
+                        toast.error('This time is already added');
+                        return;
+                      }
+                      
+                      const { error } = await supabase
+                        .from('prayer_reminders')
+                        .upsert({
+                          user_id: user?.id,
+                          reminder_times: [...existingTimes, input.value],
+                          enabled: true,
+                          notification_methods: ['in-app', 'push'],
+                        });
+                      
+                      if (error) throw error;
+                      
+                      toast.success('Reminder time added');
+                      input.value = '';
+                      fetchProfile();
+                    } catch (error) {
+                      console.error('Error adding reminder:', error);
+                      toast.error('Failed to add reminder');
+                    }
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Push Notification Settings */}
         <PushNotificationSettings />
 
         {/* Trusted Devices Card - Only show if 2FA is enabled */}

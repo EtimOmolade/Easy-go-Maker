@@ -1,11 +1,4 @@
-// @ts-nocheck
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import webpush from 'npm:web-push@3.6.7';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 interface PushPayload {
   type: 'reminder' | 'announcement';
@@ -16,12 +9,20 @@ interface PushPayload {
   notificationId?: string;
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Dynamic import to avoid type issues
+    const webpush = await import('npm:web-push@3.6.7');
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -40,7 +41,7 @@ Deno.serve(async (req) => {
       throw new Error('VAPID keys not configured');
     }
 
-    webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+    webpush.default.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
 
     let query = supabase.from('push_subscriptions').select('*');
     
@@ -90,7 +91,7 @@ Deno.serve(async (req) => {
           },
         };
 
-        await webpush.sendNotification(pushSubscription, notificationPayload);
+        await webpush.default.sendNotification(pushSubscription, notificationPayload);
 
         console.log(`✅ Sent to subscription ${sub.id}`);
         successCount++;
