@@ -728,7 +728,7 @@ const PrayerLibrary = () => {
                   {filteredPoints.map((point) => (
                     <Card
                       key={point.id}
-                      className={`shadow-large glass border-white/20 hover:shadow-glow transition-all overflow-hidden relative ${
+                      className={`shadow-large glass border-white/20 transition-all overflow-hidden relative ${
                         selectedPrayers.has(point.id) ? 'ring-2 ring-primary' : ''
                       }`}
                     >
