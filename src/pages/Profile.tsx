@@ -22,6 +22,7 @@ import NotificationDropdown from "@/components/NotificationDropdown";
 import { TutorialWalkthrough } from "@/components/TutorialWalkthrough";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import * as LucideIcons from "lucide-react";
 
 interface ProfileData {
   name: string;
@@ -294,42 +295,56 @@ const Profile = () => {
             {/* Unlocked Achievements */}
             {unlocked.length > 0 && <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Unlocked</h3>
-                {unlocked.map(milestone => <div key={milestone.level} className="p-4 rounded-lg bg-primary/10 border-2 border-primary/20">
-                    <div className="flex items-start gap-3">
-                      <span className="text-4xl">{milestone.emoji}</span>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-foreground">{milestone.name}</h4>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {milestone.message}
-                        </p>
-                        <p className="text-xs italic text-foreground/70">
-                          "{milestone.scripture}" - {milestone.scripture_ref}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Unlocked: {new Date(milestone.unlockedDate).toLocaleDateString()}
-                        </p>
+                {unlocked.map(milestone => {
+                  const IconComponent = (LucideIcons as any)[milestone.icon];
+                  return (
+                    <div key={milestone.level} className="p-4 rounded-lg bg-primary/10 border-2 border-primary/20">
+                      <div className="flex items-start gap-3">
+                        <div className={`${milestone.bgColor} p-3 rounded-full flex-shrink-0`}>
+                          {IconComponent && <IconComponent className={`${milestone.iconColor} w-10 h-10`} strokeWidth={1.5} />}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-foreground">{milestone.name}</h4>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {milestone.message}
+                          </p>
+                          <p className="text-xs italic text-foreground/70">
+                            "{milestone.scripture}" - {milestone.scripture_ref}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Unlocked: {new Date(milestone.unlockedDate).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>)}
+                  );
+                })}
               </div>}
 
             {/* Locked Achievements */}
             {locked.length > 0 && <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Locked</h3>
-                {locked.map(milestone => <div key={milestone.level} className="p-4 rounded-lg bg-muted/50 border-2 border-muted opacity-60">
-                    <div className="flex items-start gap-3">
-                      <span className="text-4xl grayscale">{milestone.emoji}</span>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-muted-foreground">{milestone.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {milestone.daysNeeded} more day{milestone.daysNeeded !== 1 ? 's' : ''} to unlock
-                        </p>
-                        <p className="text-xs italic text-muted-foreground mt-1">
-                          Requires {milestone.streak_needed}-day prayer streak
-                        </p>
+                {locked.map(milestone => {
+                  const IconComponent = (LucideIcons as any)[milestone.icon];
+                  return (
+                    <div key={milestone.level} className="p-4 rounded-lg bg-muted/50 border-2 border-muted opacity-60">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-muted/50 p-3 rounded-full flex-shrink-0">
+                          {IconComponent && <IconComponent className="text-muted-foreground w-10 h-10" strokeWidth={1.5} />}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-muted-foreground">{milestone.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {milestone.daysNeeded} more day{milestone.daysNeeded !== 1 ? 's' : ''} to unlock
+                          </p>
+                          <p className="text-xs italic text-muted-foreground mt-1">
+                            Requires {milestone.streak_needed}-day prayer streak
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>)}
+                  );
+                })}
               </div>}
 
             {unlocked.length === 0 && <p className="text-center text-muted-foreground py-4">
