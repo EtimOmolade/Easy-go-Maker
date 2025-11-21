@@ -872,7 +872,7 @@ const Dashboard = () => {
                     <Button onClick={() => {
                   haptics.medium();
                   navigate("/admin");
-                }} className="w-full min-h-[48px] h-12 bg-gradient-to-r from-secondary via-secondary to-accent text-primary-foreground font-semibold shadow-lg hover:shadow-glow hover:scale-[1.02] transition-all duration-300" variant="default">
+                }} className="w-full min-h-[48px] h-12 bg-primary dark:bg-gradient-to-r dark:from-secondary dark:via-secondary dark:to-accent text-primary-foreground font-semibold shadow-lg hover:shadow-glow hover:scale-[1.02] transition-all duration-300" variant="default">
                       Go to Admin Dashboard
                       {pendingTestimonyCount > 0 && <Badge variant="secondary" className="ml-2 bg-card text-primary">
                           {pendingTestimonyCount}
