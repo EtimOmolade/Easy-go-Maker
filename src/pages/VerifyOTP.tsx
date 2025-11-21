@@ -226,10 +226,10 @@ const VerifyOTP = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <CardTitle className="text-3xl font-heading text-primary">Two-Factor Authentication</CardTitle>
-              <CardDescription className="text-base text-foreground/70 mt-2">
+              <CardTitle className="text-3xl font-heading text-foreground dark:text-foreground">Two-Factor Authentication</CardTitle>
+              <CardDescription className="text-base text-foreground/70 dark:text-foreground/80 mt-2">
                 Enter the 6-digit code sent to<br />
-                <span className="font-medium text-primary">{email}</span>
+                <span className="font-medium text-foreground dark:text-foreground">{email}</span>
               </CardDescription>
             </motion.div>
           </CardHeader>
