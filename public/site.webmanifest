@@ -4,8 +4,8 @@
   "description": "Faith-based journaling and prayer tracking platform",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1e3a5f",
-  "theme_color": "#1e3a5f",
+  "background_color": "#FFFEE9",
+  "theme_color": "#700608",
   "orientation": "portrait-primary",
   "icons": [
     {
