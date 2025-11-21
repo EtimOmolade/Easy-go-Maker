@@ -360,15 +360,15 @@ const Profile = () => {
 
               <div className="flex items-center justify-between space-x-2">
                 <div className="flex-1 space-y-1">
-                  <Label htmlFor="darkMode" className="flex items-center gap-2">
+                  <Label htmlFor="classicMode" className="flex items-center gap-2">
                     {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                    Dark Mode
+                    Classic Mode
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Toggle between light and dark theme
+                    Toggle between light and classic theme
                   </p>
                 </div>
-                <Switch id="darkMode" checked={theme === 'dark'} onCheckedChange={toggleTheme} />
+                <Switch id="classicMode" checked={theme === 'dark'} onCheckedChange={toggleTheme} />
               </div>
 
               <div className="space-y-3">
