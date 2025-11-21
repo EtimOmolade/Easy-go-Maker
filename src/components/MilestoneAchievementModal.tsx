@@ -4,6 +4,7 @@ import confetti from "canvas-confetti";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { MILESTONES } from "@/data/mockData";
+import * as LucideIcons from "lucide-react";
 
 interface MilestoneAchievementModalProps {
   milestoneLevel: number;
@@ -65,6 +66,9 @@ export const MilestoneAchievementModal = ({
 
   if (!milestone) return null;
 
+  // Get the icon component dynamically
+  const IconComponent = (LucideIcons as any)[milestone.icon];
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md p-8 text-center border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-secondary/5 backdrop-blur-xl">
@@ -75,7 +79,7 @@ export const MilestoneAchievementModal = ({
             transition={{ duration: 0.5, type: "spring" }}
             className="space-y-6"
           >
-            {/* Badge Emoji */}
+            {/* Badge Icon */}
             <motion.div
               animate={{ 
                 scale: [1, 1.2, 1],
@@ -86,9 +90,11 @@ export const MilestoneAchievementModal = ({
                 repeat: 2,
                 repeatDelay: 0.5
               }}
-              className="text-8xl"
+              className="flex justify-center"
             >
-              {milestone.emoji}
+              <div className={`${milestone.bgColor} p-6 rounded-full`}>
+                {IconComponent && <IconComponent className={`${milestone.iconColor} w-20 h-20`} strokeWidth={1.5} />}
+              </div>
             </motion.div>
 
             {/* Congratulations */}
