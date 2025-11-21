@@ -280,15 +280,15 @@ const Profile = () => {
         {/* Achievements Card */}
         <Card className="mb-6 shadow-medium">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="h-6 w-6 text-accent" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Award className="h-6 w-6 text-primary" />
               Prayer Achievements
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="text-center p-4 bg-accent/10 rounded-lg">
               <p className="text-sm text-muted-foreground mb-1">Current Prayer Streak</p>
-              <p className="text-3xl font-bold text-accent">{currentStreak} Day{currentStreak !== 1 ? 's' : ''}</p>
+              <p className="text-3xl font-bold text-foreground">{currentStreak} Day{currentStreak !== 1 ? 's' : ''}</p>
             </div>
 
             {/* Unlocked Achievements */}
@@ -444,8 +444,8 @@ const Profile = () => {
         {/* Audio Settings Card */}
         <Card className="mb-8 shadow-medium backdrop-blur-sm bg-card/95">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-primary">
-              <Volume2 className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Volume2 className="w-5 h-5 text-primary" />
               Audio Settings
             </CardTitle>
             <CardDescription>
@@ -500,8 +500,8 @@ const Profile = () => {
         {/* Prayer Reminder Settings */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Clock className="w-5 h-5 text-primary" />
               Prayer Reminders
             </CardTitle>
             <CardDescription>
@@ -827,8 +827,8 @@ const Profile = () => {
         {/* Trusted Devices Card - Only show if 2FA is enabled */}
         {twoFactorEnabled && <Card className="shadow-medium mb-6">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Smartphone className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                <Smartphone className="h-5 w-5 text-primary" />
                 Trusted Devices
               </CardTitle>
               <CardDescription>
@@ -864,8 +864,8 @@ const Profile = () => {
         {/* Legal & Policies Section */}
         <Card className="shadow-medium my-[20px]">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Scale className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Scale className="h-5 w-5 text-primary" />
               Legal & Policies
             </CardTitle>
             <CardDescription className="text-xs">

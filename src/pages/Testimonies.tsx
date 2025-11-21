@@ -576,7 +576,7 @@ const Testimonies = () => {
           {/* My Testimonies List */}
           {activeTab === 'my-testimonies' && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-heading font-bold">My Submissions</h2>
+              <h2 className="text-2xl font-heading font-bold text-foreground">My Submissions</h2>
               {myTestimonies.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
@@ -589,7 +589,7 @@ const Testimonies = () => {
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <CardTitle className="text-lg">{testimony.alias}</CardTitle>
+                          <CardTitle className="text-lg text-foreground">{testimony.alias}</CardTitle>
                           {testimony.location && (
                             <CardDescription>{testimony.location}</CardDescription>
                           )}
@@ -666,7 +666,7 @@ const Testimonies = () => {
           {/* Public Feed */}
           {activeTab === 'feed' && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-heading font-bold">Community Testimonies</h2>
+              <h2 className="text-2xl font-heading font-bold text-foreground">Community Testimonies</h2>
               {testimonies.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
@@ -679,13 +679,13 @@ const Testimonies = () => {
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <CardTitle className="text-lg">{testimony.alias}</CardTitle>
+                          <CardTitle className="text-lg text-foreground">{testimony.alias}</CardTitle>
                           <CardDescription>
                             {testimony.location && `${testimony.location} • `}
                             {testimony.related_series || 'General Testimony'}
                           </CardDescription>
                         </div>
-                        <Badge className="bg-green-500 text-white hidden md:flex">Approved</Badge>
+                        <Badge className="bg-secondary text-secondary-foreground hidden md:flex">Approved</Badge>
                       </div>
                     </CardHeader>
                     <CardContent>
