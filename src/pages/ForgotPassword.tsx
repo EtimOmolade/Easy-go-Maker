@@ -104,9 +104,9 @@ const ForgotPassword = () => {
               </Button>
             )}
             <div>
-              <CardTitle className="text-2xl font-heading text-primary">Forgot Password</CardTitle>
+              <CardTitle className="text-2xl font-heading text-foreground dark:text-foreground">Forgot Password</CardTitle>
             </div>
-            <CardDescription className="text-base text-foreground/70">
+            <CardDescription className="text-base text-foreground/70 dark:text-foreground/80">
               {sent
                 ? "We've sent you a password reset link"
                 : "Enter your email to receive a password reset link"}

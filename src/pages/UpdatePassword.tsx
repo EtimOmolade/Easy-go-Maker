@@ -146,8 +146,8 @@ const UpdatePassword = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <CardTitle className="text-3xl font-heading text-primary">Set New Password</CardTitle>
-              <CardDescription className="text-base text-foreground/70 mt-2">
+              <CardTitle className="text-3xl font-heading text-foreground dark:text-foreground">Set New Password</CardTitle>
+              <CardDescription className="text-base text-foreground/70 dark:text-foreground/80 mt-2">
                 Choose a strong password for your account
               </CardDescription>
             </motion.div>
@@ -236,10 +236,10 @@ const UpdatePassword = () => {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg"
+                  className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg"
                 >
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  <span className="text-sm text-green-700 font-medium">Passwords match</span>
+                  <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                  <span className="text-sm text-green-700 dark:text-green-300 font-medium">Passwords match</span>
                 </motion.div>
               )}
 
