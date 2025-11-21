@@ -107,15 +107,15 @@ serve(async (req) => {
         subject: "Your SpiritConnect Verification Code",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #7E69AB;">SpiritConnect Verification</h2>
+            <h2 style="color: #700608;">SpiritConnect Verification</h2>
             <p>Your verification code is:</p>
-            <div style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
+            <div style="background-color: #FFFEE9; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0; border: 2px solid #F4E180; border-radius: 8px;">
               ${otp}
             </div>
             <p>This code will expire in 5 minutes.</p>
             <p>If you didn't request this code, please ignore this email.</p>
-            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-            <p style="color: #666; font-size: 12px;">SpiritConnect - Your Daily Prayer Companion</p>
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #F4E180;">
+            <p style="color: #700608; font-size: 12px;">SpiritConnect - Your Daily Prayer Companion</p>
           </div>
         `,
       }),

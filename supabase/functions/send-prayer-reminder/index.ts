@@ -57,20 +57,20 @@ serve(async (req) => {
               subject: "🙏 Don't forget your prayer time today!",
               html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                  <h2 style="color: #1e40af;">Hello ${profile.name}! 👋</h2>
+                  <h2 style="color: #700608;">Hello ${profile.name}! 👋</h2>
                   <p>We noticed you haven't completed your prayer session today.</p>
                   <p>Take a moment to connect with God and continue your prayer journey.</p>
                   <p style="margin: 30px 0;">
                     <a href="https://dev.spiritconnects.org/dashboard"
-                       style="background-color: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                       style="background-color: #700608; color: #FFFEE9; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                       Start Praying Now
                     </a>
                   </p>
                   <p style="color: #666; font-size: 14px;">
                     "Pray without ceasing." - 1 Thessalonians 5:17
                   </p>
-                  <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-                  <p style="color: #999; font-size: 12px;">
+                  <hr style="margin: 20px 0; border: none; border-top: 1px solid #F4E180;">
+                  <p style="color: #700608; font-size: 12px;">
                     You're receiving this because you have reminders enabled.
                     You can turn this off in your profile settings.
                   </p>
