@@ -7,10 +7,10 @@ interface StreakBadgeProps {
 }
 
 export const getBadgeForStreak = (streak: number) => {
-  if (streak >= 50) return { icon: Crown, label: "Prayer Champion", color: "text-yellow-500", bgColor: "bg-yellow-500/10" };
-  if (streak >= 20) return { icon: Trophy, label: "Prayer Warrior", color: "text-purple-500", bgColor: "bg-purple-500/10" };
-  if (streak >= 10) return { icon: Star, label: "Faithful Servant", color: "text-blue-500", bgColor: "bg-blue-500/10" };
-  if (streak >= 1) return { icon: Award, label: "Prayer Starter", color: "text-green-500", bgColor: "bg-green-500/10" };
+  if (streak >= 50) return { icon: Crown, label: "Prayer Champion", color: "text-secondary", bgColor: "bg-secondary/10" };
+  if (streak >= 20) return { icon: Trophy, label: "Prayer Warrior", color: "text-primary", bgColor: "bg-primary/10" };
+  if (streak >= 10) return { icon: Star, label: "Faithful Servant", color: "text-primary/80", bgColor: "bg-primary/10" };
+  if (streak >= 1) return { icon: Award, label: "Prayer Starter", color: "text-secondary/80", bgColor: "bg-secondary/10" };
   return { icon: Flame, label: "Start Your Journey", color: "text-muted-foreground", bgColor: "bg-muted" };
 };
 

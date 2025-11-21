@@ -256,15 +256,15 @@ const Guidelines = () => {
                                   animate={{ opacity: 1, x: 0 }}
                                   transition={{ delay: guidelineIndex * 0.05 }}
                                 >
-                                  <Card className="shadow-medium bg-white/90 border-white/30">
+                                  <Card className="shadow-medium bg-card/90 border-border/30">
                                     <CardContent className="p-3 md:p-4">
                                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                         <div className="flex-1 min-w-0">
                                           <div className="flex flex-wrap items-center gap-2 mb-1">
-                                            <Badge variant="outline" className="text-xs whitespace-nowrap text-gray-900 border-gray-300">
+                                            <Badge variant="outline" className="text-xs whitespace-nowrap">
                                               {monthName} {guideline.day}
                                             </Badge>
-                                            <Badge variant="outline" className="text-xs hidden sm:inline-flex text-gray-900 border-gray-300">
+                                            <Badge variant="outline" className="text-xs hidden sm:inline-flex">
                                               {guideline.day_of_week}
                                             </Badge>
                                             {isLocked && (
@@ -274,10 +274,10 @@ const Guidelines = () => {
                                               </Badge>
                                             )}
                                           </div>
-                                          <h4 className="font-medium text-sm md:text-base truncate text-gray-900">
+                                          <h4 className="font-medium text-sm md:text-base truncate text-foreground">
                                             {guideline.title}
                                           </h4>
-                                          <p className="text-xs text-gray-600">
+                                          <p className="text-xs text-muted-foreground">
                                             {guideline.steps?.length || 0} step{guideline.steps?.length !== 1 ? 's' : ''}
                                           </p>
                                         </div>
@@ -289,7 +289,7 @@ const Guidelines = () => {
                                                 e.stopPropagation();
                                                 navigate(`/guided-session/${guideline.id}`);
                                               }}
-                                              className="bg-gradient-primary text-gray-900"
+                                              className="bg-gradient-primary text-primary-foreground"
                                             >
                                               <span className="text-xs md:text-sm">Start</span>
                                             </Button>
