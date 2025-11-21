@@ -303,7 +303,7 @@ const Auth = () => {
                   <button
                     type="button"
                     onClick={() => navigate("/forgot-password")}
-                    className="text-sm text-primary hover:text-primary-light hover:underline transition-colors"
+                    className="text-sm text-primary dark:text-secondary hover:text-primary-light dark:hover:text-secondary/80 hover:underline transition-colors"
                   >
                     Forgot password?
                   </button>
@@ -339,7 +339,7 @@ const Auth = () => {
                 <span className="w-full border-t border-primary/20" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-white dark:bg-background px-2 text-muted-foreground dark:text-foreground/60">Or continue with</span>
               </div>
             </div>
 
@@ -374,7 +374,7 @@ const Auth = () => {
               <button
                 type="button"
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-sm text-primary hover:text-primary-light hover:underline transition-colors inline-flex items-center gap-1"
+                className="text-sm text-primary dark:text-secondary hover:text-primary-light dark:hover:text-secondary/80 hover:underline transition-colors inline-flex items-center gap-1"
               >
                 {isLogin ? (
                   <>
