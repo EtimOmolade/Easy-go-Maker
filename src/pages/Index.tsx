@@ -50,72 +50,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Animated Background */}
-      <div className="absolute inset-0 gradient-hero">
-        {/* Large Floating Orbs */}
-        <motion.div
-          className="absolute top-0 left-0 w-[600px] h-[600px] bg-secondary/20 rounded-full blur-3xl"
-          animate={{
-            y: [0, -50, 0],
-            x: [0, 30, 0],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 15,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-primary-light/20 rounded-full blur-3xl"
-          animate={{
-            y: [0, 40, 0],
-            x: [0, -40, 0],
-            scale: [1, 1.3, 1],
-          }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute bottom-0 left-1/3 w-[700px] h-[700px] bg-secondary/15 rounded-full blur-3xl"
-          animate={{
-            y: [0, -60, 0],
-            x: [0, 50, 0],
-            scale: [1, 1.4, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 18,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-
-        {/* Small Floating Particles */}
-        {[...Array(8)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-2 h-2 bg-white/40 rounded-full"
-            style={{
-              left: `${15 + i * 12}%`,
-              top: `${20 + (i % 3) * 25}%`,
-            }}
-            animate={{
-              y: [0, -30, 0],
-              opacity: [0.2, 0.8, 0.2],
-            }}
-            transition={{
-              duration: 3 + i * 0.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: i * 0.2,
-            }}
-          />
-        ))}
-      </div>
+      {/* Static Background Gradient */}
+      <div className="absolute inset-0 gradient-hero" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-16 md:py-24">
         {/* Hero Section */}
@@ -245,18 +181,13 @@ const Index = () => {
               className="group"
             >
               <div className="relative h-full p-8 glass rounded-2xl shadow-large border border-white/20 overflow-hidden">
-                {/* Hover Glow Effect */}
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-br from-secondary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                />
-
                 <div className="relative z-10">
                   <motion.div
                     className="flex justify-center mb-6"
                     whileHover={{ rotate: 360, scale: 1.1 }}
                     transition={{ duration: 0.6 }}
                   >
-                    <div className="p-4 bg-gradient-primary rounded-full shadow-glow-primary">
+                    <div className="p-4 bg-gradient-primary rounded-full">
                       <feature.icon className="h-8 w-8 text-white" />
                     </div>
                   </motion.div>
@@ -301,7 +232,7 @@ const Index = () => {
               >
                 <div className="glass rounded-xl p-6 shadow-medium border border-white/20 h-full">
                   <motion.div
-                    className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-secondary rounded-full flex items-center justify-center text-white font-bold text-xl shadow-glow"
+                    className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-secondary rounded-full flex items-center justify-center text-white font-bold text-xl"
                     initial={{ scale: 0 }}
                     whileInView={{ scale: 1 }}
                     viewport={{ once: true }}
@@ -332,19 +263,6 @@ const Index = () => {
           className="mb-32"
         >
           <div className="relative glass rounded-3xl shadow-large p-12 border border-white/20 overflow-hidden max-w-4xl mx-auto">
-            {/* Animated Background Glow */}
-            <motion.div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-secondary/20 rounded-full blur-3xl"
-              animate={{
-                scale: [1, 1.5, 1],
-                opacity: [0.3, 0.6, 0.3],
-              }}
-              transition={{
-                duration: 4,
-                repeat: Infinity,
-              }}
-            />
-
             <div className="relative z-10 text-center">
               <motion.div
                 animate={{
@@ -385,7 +303,7 @@ const Index = () => {
           <Button
             size="lg"
             onClick={() => navigate("/auth", { state: { mode: 'signup' } })}
-            className="bg-gradient-secondary hover:shadow-glow text-white shadow-large text-lg px-12 h-14 font-medium relative overflow-hidden group"
+            className="bg-gradient-secondary text-white shadow-large text-lg px-12 h-14 font-medium relative overflow-hidden group"
           >
             <span className="relative z-10 flex items-center gap-2">
               Start Your Journey Today
