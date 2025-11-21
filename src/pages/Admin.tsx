@@ -612,35 +612,8 @@ const Admin = () => {
   return (
     <TooltipProvider>
       <div className="min-h-screen relative overflow-hidden gradient-hero">
-        {/* Animated Background */}
-        <div className="absolute inset-0 pointer-events-none">
-          <motion.div
-            className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
-            animate={{
-              y: [0, -50, 0],
-              x: [0, 30, 0],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 15,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-          <motion.div
-            className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-light/20 rounded-full blur-3xl"
-            animate={{
-              y: [0, 40, 0],
-              x: [0, -40, 0],
-              scale: [1, 1.3, 1],
-            }}
-            transition={{
-              duration: 12,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        </div>
+        {/* Static Background Gradient */}
+        <div className="absolute inset-0 pointer-events-none" />
 
         <div className="max-w-6xl relative z-10 mx-auto p-4 md:p-8">
           <div className="flex items-center justify-between mb-6">

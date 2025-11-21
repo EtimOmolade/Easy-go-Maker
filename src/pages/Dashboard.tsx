@@ -407,15 +407,7 @@ const Dashboard = () => {
   // Show loading skeleton while data is being fetched
   if (loading) {
     return <div className="min-h-screen relative overflow-hidden gradient-hero">
-        <div className="absolute inset-0 pointer-events-none">
-          <motion.div className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl" animate={{
-          y: [0, -50, 0],
-          scale: [1, 1.2, 1]
-        }} transition={{
-          duration: 15,
-          repeat: Infinity
-        }} />
-        </div>
+        <div className="absolute inset-0 pointer-events-none" />
         <div className="relative z-10">
           <DashboardSkeleton />
         </div>
@@ -423,35 +415,8 @@ const Dashboard = () => {
   }
   return <TooltipProvider>
       <div className="min-h-screen relative overflow-hidden gradient-hero">
-        {/* Animated Background - More vibrant like landing page */}
-        <div className="absolute inset-0 pointer-events-none">
-          <motion.div className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl" animate={{
-          y: [0, -50, 0],
-          x: [0, 30, 0],
-          scale: [1, 1.2, 1]
-        }} transition={{
-          duration: 15,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }} />
-          <motion.div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-light/20 rounded-full blur-3xl" animate={{
-          y: [0, 40, 0],
-          x: [0, -40, 0],
-          scale: [1, 1.3, 1]
-        }} transition={{
-          duration: 12,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }} />
-          <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-secondary/10 rounded-full blur-3xl" animate={{
-          scale: [1, 1.4, 1],
-          opacity: [0.2, 0.4, 0.2]
-        }} transition={{
-          duration: 18,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }} />
-        </div>
+        {/* Static Background Gradient */}
+        <div className="absolute inset-0 pointer-events-none" />
 
         <div className="relative z-10 max-w-7xl mx-auto p-4 md:p-8">
           <EncouragementPopup streakCount={profile?.streak_count || 0} previousStreak={previousStreak} />
@@ -667,7 +632,7 @@ const Dashboard = () => {
                         <Button onClick={() => {
                     haptics.medium();
                     navigate(`/guideline/${todaysGuideline.id}`);
-                  }} size="lg" className="w-full text-lg text-primary-foreground min-h-[48px] h-14 bg-gradient-primary hover:shadow-glow-primary transition-all duration-300 relative overflow-hidden group">
+                  }} size="lg" className="w-full text-lg text-primary-foreground min-h-[48px] h-14 bg-gradient-primary transition-all duration-300 relative overflow-hidden group">
                           <span className="relative z-10 flex items-center gap-2">
                             <BookMarked className="h-5 w-5" />
                             Begin Today's Prayer
@@ -689,7 +654,7 @@ const Dashboard = () => {
                         <Button onClick={() => {
                     haptics.medium();
                     navigate('/guidelines');
-                  }} size="lg" className="w-full text-lg min-h-[48px] h-14 bg-gradient-primary hover:shadow-glow-primary transition-all duration-300 relative overflow-hidden group">
+                  }} size="lg" className="w-full text-lg min-h-[48px] h-14 bg-gradient-primary transition-all duration-300 relative overflow-hidden group">
                           <span className="relative z-10 flex items-center gap-2">
                             <BookOpen className="h-5 w-5" />
                             Browse All Prayers
@@ -786,7 +751,7 @@ const Dashboard = () => {
                 type: "spring",
                 stiffness: 300
               }}>
-                    <Card className="cursor-pointer shadow-large hover:shadow-glow-primary transition-all border-white/20 overflow-hidden group relative glass backdrop-blur-xl h-full min-h-[120px]" onClick={() => {
+                    <Card className="cursor-pointer shadow-large transition-all border-white/20 overflow-hidden group relative glass backdrop-blur-xl h-full min-h-[120px]" onClick={() => {
                   haptics.light();
                   navigate(action.path);
                 }}>
@@ -794,7 +759,7 @@ const Dashboard = () => {
                       <div className="absolute inset-0 bg-gradient-to-br from-secondary/0 via-transparent to-secondary/0 group-hover:from-secondary/20 group-hover:to-secondary/10 transition-all duration-500" />
 
                       <CardHeader className="relative z-10 p-4 md:p-6 text-center">
-                        <motion.div className={`w-12 h-12 md:w-14 md:h-14 ${action.iconBg} rounded-xl flex items-center justify-center mx-auto mb-3 md:mb-4 shadow-glow-primary group-hover:shadow-glow transition-all`} whileHover={{
+                        <motion.div className={`w-12 h-12 md:w-14 md:h-14 ${action.iconBg} rounded-xl flex items-center justify-center mx-auto mb-3 md:mb-4 transition-all`} whileHover={{
                       rotate: 360
                     }} transition={{
                       duration: 0.6
@@ -872,7 +837,7 @@ const Dashboard = () => {
                     <Button onClick={() => {
                   haptics.medium();
                   navigate("/admin");
-                }} className="w-full min-h-[48px] h-12 bg-primary dark:bg-gradient-to-r dark:from-secondary dark:via-secondary dark:to-accent text-primary-foreground font-semibold shadow-lg hover:shadow-glow hover:scale-[1.02] transition-all duration-300" variant="default">
+                }} className="w-full min-h-[48px] h-12 bg-primary dark:bg-gradient-to-r dark:from-secondary dark:via-secondary dark:to-accent text-primary-foreground font-semibold shadow-lg hover:scale-[1.02] transition-all duration-300" variant="default">
                       Go to Admin Dashboard
                       {pendingTestimonyCount > 0 && <Badge variant="secondary" className="ml-2 bg-card text-primary">
                           {pendingTestimonyCount}

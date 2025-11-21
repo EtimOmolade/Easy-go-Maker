@@ -302,7 +302,7 @@ const GuidelineDetails = () => {
               <>
                 <Button
                   onClick={handleStartGuidedSession}
-                  className="w-full bg-gradient-to-r from-primary via-primary to-primary-light text-gray-100 font-semibold shadow-lg hover:shadow-glow hover:scale-[1.02] hover:text-white"
+                  className="w-full bg-gradient-to-r from-primary via-primary to-primary-light text-gray-100 font-semibold shadow-lg hover:scale-[1.02] hover:text-white"
                 >
                   <Calendar className="mr-2 h-4 w-4" />
                   Start Guided Prayer Session

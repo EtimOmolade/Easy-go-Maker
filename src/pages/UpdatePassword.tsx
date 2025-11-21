@@ -81,36 +81,8 @@ const UpdatePassword = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
-      {/* Animated Background */}
-      <div className="absolute inset-0 gradient-hero">
-        {/* Floating Orbs */}
-        <motion.div
-          className="absolute top-20 left-10 w-64 h-64 bg-secondary/20 rounded-full blur-3xl"
-          animate={{
-            y: [0, -30, 0],
-            x: [0, 20, 0],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-primary-light/20 rounded-full blur-3xl"
-          animate={{
-            y: [0, 30, 0],
-            x: [0, -20, 0],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      </div>
+      {/* Static Background Gradient */}
+      <div className="absolute inset-0 gradient-hero" />
 
       {/* Main Card */}
       <motion.div
@@ -129,12 +101,7 @@ const UpdatePassword = () => {
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             >
               <div className="relative">
-                <motion.div
-                  className="absolute inset-0 bg-secondary/20 rounded-full blur-xl"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                />
-                <div className="relative p-4 bg-gradient-primary rounded-full shadow-glow">
+                <div className="relative p-4 bg-gradient-primary rounded-full">
                   <Shield className="h-10 w-10 text-white" />
                 </div>
               </div>
@@ -250,7 +217,7 @@ const UpdatePassword = () => {
               >
                 <Button
                   type="submit"
-                  className="w-full h-11 bg-gradient-primary hover:shadow-glow-primary transition-all duration-300 relative overflow-hidden group"
+                  className="w-full h-11 bg-gradient-primary transition-all duration-300 relative overflow-hidden group"
                   disabled={loading || !password || !confirmPassword}
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
