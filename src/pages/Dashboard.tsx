@@ -15,6 +15,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone, BookHeart } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import EncouragementPopup from "@/components/EncouragementPopup";
 import { MilestoneAchievementModal } from "@/components/MilestoneAchievementModal";
@@ -711,14 +712,38 @@ const Dashboard = () => {
 
                       {/* Badge Display */}
                       <div className="flex flex-col items-center gap-2" data-tour="streak-badge">
-                        <motion.div className="text-7xl" animate={{
-                      scale: [1, 1.15, 1],
-                      rotate: [0, 5, -5, 0]
-                    }} transition={{
-                      duration: 3,
-                      repeat: Infinity
-                    }}>
-                          {(milestoneData.lastAchieved || milestoneData.nextMilestone).emoji}
+                        <motion.div 
+                          className="relative"
+                          animate={{
+                            scale: [1, 1.15, 1],
+                            rotate: [0, 5, -5, 0]
+                          }} 
+                          transition={{
+                            duration: 3,
+                            repeat: Infinity
+                          }}
+                        >
+                          {(() => {
+                            const currentMilestone = milestoneData.lastAchieved || milestoneData.nextMilestone;
+                            const IconComponent = (LucideIcons as any)[currentMilestone.icon];
+                            return IconComponent ? (
+                              <div 
+                                className="p-6 rounded-3xl"
+                                style={{
+                                  backgroundColor: currentMilestone.bgColor
+                                }}
+                              >
+                                <IconComponent 
+                                  className="h-16 w-16" 
+                                  style={{ 
+                                    color: currentMilestone.iconColor,
+                                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                                  }} 
+                                  strokeWidth={2.5}
+                                />
+                              </div>
+                            ) : null;
+                          })()}
                         </motion.div>
                         <div className="text-center">
                           <p className="font-bold text-lg dark:text-white text-foreground">
