@@ -26,15 +26,15 @@ const wizardSteps = [
     description: "Each day features a guided prayer session to help you maintain a consistent prayer routine and deepen your faith.",
     icon: null,
     usePrayingHands: true,
-    color: "text-rose-500",
-    bgGradient: "from-rose-500/20 to-pink-500/30",
+    color: "text-primary/80",
+    bgGradient: "from-primary/20 to-primary-light/20",
   },
   {
     title: "Track Your Journey",
     description: "Build prayer streaks, unlock milestones, and see your spiritual growth visualized through your prayer calendar.",
     icon: TrendingUp,
-    color: "text-emerald-500",
-    bgGradient: "from-emerald-500/20 to-green-500/20",
+    color: "text-secondary",
+    bgGradient: "from-secondary/20 to-secondary-glow/20",
   },
   {
     title: "Journal & Share",
@@ -220,7 +220,7 @@ export const WelcomeWizard = ({ isOpen, onComplete }: WelcomeWizardProps) => {
               </Button>
               <Button
                 onClick={handleNext}
-                className="flex-1 bg-gradient-primary text-gray-900 dark:text-white"
+                className="flex-1 bg-gradient-primary text-primary-foreground"
               >
                 {isLastStep ? (
                   <>

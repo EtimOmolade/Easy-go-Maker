@@ -994,7 +994,7 @@ const Admin = () => {
                               )}
 
                               {!canDemote(admin) && admin.id !== user?.id && (
-                                <div className="flex items-center gap-2 mt-2 text-sm text-amber-600">
+                                <div className="flex items-center gap-2 mt-2 text-sm text-secondary">
                                   <AlertTriangle className="h-4 w-4" />
                                   <span>Has precedence over you - cannot demote</span>
                                 </div>

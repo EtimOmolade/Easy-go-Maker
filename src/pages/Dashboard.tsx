@@ -523,7 +523,7 @@ const Dashboard = () => {
                   delay: 0.2
                 }}>
                     Welcome back,
-                    <span className="block mt-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)] dark:drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] font-bold text-indigo-950 dark:text-primary">
+                    <span className="block mt-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)] dark:drop-shadow-[0_0_15px_rgba(244,225,128,0.5)] font-bold text-primary">
                       {profile?.name || "Friend"}!
                     </span>
                   </motion.h1>
@@ -872,9 +872,9 @@ const Dashboard = () => {
                     <Button onClick={() => {
                   haptics.medium();
                   navigate("/admin");
-                }} className="w-full min-h-[48px] h-12 bg-gradient-to-r from-secondary via-secondary to-accent text-gray-900 font-semibold shadow-lg hover:shadow-glow hover:scale-[1.02] hover:text-white transition-all duration-300" variant="default">
+                }} className="w-full min-h-[48px] h-12 bg-gradient-to-r from-secondary via-secondary to-accent text-primary-foreground font-semibold shadow-lg hover:shadow-glow hover:scale-[1.02] transition-all duration-300" variant="default">
                       Go to Admin Dashboard
-                      {pendingTestimonyCount > 0 && <Badge variant="secondary" className="ml-2 bg-white text-primary">
+                      {pendingTestimonyCount > 0 && <Badge variant="secondary" className="ml-2 bg-card text-primary">
                           {pendingTestimonyCount}
                         </Badge>}
                     </Button>

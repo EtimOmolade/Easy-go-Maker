@@ -127,7 +127,7 @@ export const OfflineIndicator = () => {
                         size="sm"
                         variant="secondary"
                         onClick={syncNow}
-                        className="bg-white text-orange-600 hover:bg-white/90"
+                        className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
                       >
                         <Cloud className="h-4 w-4 mr-2" />
                         Sync Now

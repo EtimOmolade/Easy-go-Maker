@@ -171,11 +171,11 @@ export default function PrayerLibraryAdmin() {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'Kingdom Focus':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-primary/10 text-primary';
       case 'Listening Prayer':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-secondary/20 text-secondary-foreground';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
