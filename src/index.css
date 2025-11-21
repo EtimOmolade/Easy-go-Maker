@@ -4,93 +4,101 @@
 
 @layer base {
   :root {
-    /* Client Color Palette - Royal Blue & Gold */
-    --background: 0 0% 100%;
-    --foreground: 230 60% 15%;
+    /* Spirit Connect - Deep Red & Pale Gold Palette */
+    --background: 56 100% 95%;        /* #FFFEE9 - Cream background */
+    --foreground: 359 95% 15%;        /* Dark red for text */
 
-    --card: 230 15% 96%;
-    --card-foreground: 230 60% 15%;
+    --card: 56 100% 98%;              /* Lighter cream for cards */
+    --card-foreground: 359 95% 15%;   /* Dark red text */
 
-    --popover: 230 15% 96%;
-    --popover-foreground: 230 60% 15%;
+    --popover: 56 100% 98%;           
+    --popover-foreground: 359 95% 15%;
 
-    /* Primary: Deep Royal Blue (#2E3A87) */
-    --primary: 230 50% 35%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 230 50% 45%;
-    --primary-light: 230 50% 50%;
+    /* Primary: Deep Red (#700608) */
+    --primary: 359 95% 23%;           /* Main deep red */
+    --primary-foreground: 56 100% 95%; /* Cream text on red */
+    --primary-glow: 359 85% 35%;      /* Lighter red for glows */
+    --primary-light: 359 75% 40%;     /* Accent red */
 
-    /* Secondary: Gold (#D4AF37) */
-    --secondary: 45 68% 53%;
-    --secondary-foreground: 230 50% 20%;
-    --secondary-glow: 45 68% 65%;
+    /* Secondary: Pale Gold (#F4E180) */
+    --secondary: 49 80% 72%;          /* Pale gold */
+    --secondary-foreground: 359 95% 23%; /* Deep red text on gold */
+    --secondary-glow: 49 90% 80%;     /* Lighter gold glow */
 
-    /* Accent: Soft Grey */
-    --accent: 230 10% 96%;
-    --accent-foreground: 230 50% 20%;
+    /* Accent: Soft Cream/Beige */
+    --accent: 56 80% 90%;             
+    --accent-foreground: 359 75% 25%;
 
-    --muted: 230 5% 94%;
-    --muted-foreground: 230 30% 30%;
+    --muted: 56 60% 88%;              /* Muted cream */
+    --muted-foreground: 359 60% 35%;  /* Muted red */
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84.2% 60.2%;     /* Keep standard red for errors */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 230 25% 80%;
-    --input: 230 20% 92%;
-    --ring: 230 50% 35%;
+    --border: 49 50% 85%;             /* Soft gold border */
+    --input: 56 80% 92%;              /* Light cream input */
+    --ring: 359 95% 23%;              /* Deep red focus ring */
 
     --radius: 1rem;
 
     /* Premium Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(230 50% 35%), hsl(230 50% 50%));
-    --gradient-secondary: linear-gradient(135deg, hsl(45 68% 53%), hsl(45 68% 65%));
-    --gradient-hero: linear-gradient(135deg, hsl(230 50% 35%) 0%, hsl(230 50% 45%) 40%, hsl(45 68% 53%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(230 10% 96%));
-    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    --gradient-primary: linear-gradient(135deg, hsl(359 95% 23%), hsl(359 75% 35%));
+    --gradient-secondary: linear-gradient(135deg, hsl(49 80% 72%), hsl(49 90% 80%));
+    --gradient-hero: linear-gradient(135deg, hsl(359 95% 23%) 0%, hsl(359 75% 35%) 40%, hsl(49 80% 72%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(56 100% 95%), hsl(56 80% 90%));
+    --gradient-glass: linear-gradient(135deg, rgba(255, 254, 233, 0.8), rgba(244, 225, 128, 0.3));
 
     /* Premium Shadows */
-    --shadow-soft: 0 4px 12px hsl(230 50% 35% / 0.20);
-    --shadow-medium: 0 8px 24px hsl(230 50% 35% / 0.25);
-    --shadow-large: 0 12px 40px hsl(230 50% 35% / 0.30);
-    --shadow-glow: 0 0 40px hsl(45 68% 53% / 0.40);
-    --shadow-glow-primary: 0 0 40px hsl(230 50% 45% / 0.35);
+    --shadow-soft: 0 4px 12px hsl(359 95% 23% / 0.15);
+    --shadow-medium: 0 8px 24px hsl(359 95% 23% / 0.20);
+    --shadow-large: 0 12px 40px hsl(359 95% 23% / 0.25);
+    --shadow-glow: 0 0 40px hsl(49 80% 72% / 0.50);
+    --shadow-glow-primary: 0 0 40px hsl(359 75% 35% / 0.40);
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 230 50% 20%;
-    --sidebar-primary: 230 50% 35%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 230 10% 95%;
-    --sidebar-accent-foreground: 230 50% 20%;
-    --sidebar-border: 230 13% 91%;
-    --sidebar-ring: 230 50% 35%;
+    --sidebar-background: 56 100% 97%;
+    --sidebar-foreground: 359 95% 15%;
+    --sidebar-primary: 359 95% 23%;
+    --sidebar-primary-foreground: 56 100% 95%;
+    --sidebar-accent: 56 80% 90%;
+    --sidebar-accent-foreground: 359 75% 25%;
+    --sidebar-border: 49 50% 85%;
+    --sidebar-ring: 359 95% 23%;
   }
 
   .dark {
-    --background: 230 50% 10%;
-    --foreground: 0 0% 98%;
-    --card: 230 50% 15%;
-    --card-foreground: 0 0% 98%;
-    --popover: 230 50% 15%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 230 50% 55%;
-    --primary-foreground: 0 0% 100%;
-    --primary-light: 230 50% 65%;
-    --secondary: 45 68% 60%;
-    --secondary-foreground: 230 50% 10%;
-    --accent: 230 10% 20%;
-    --accent-foreground: 0 0% 98%;
-    --muted: 230 20% 25%;
-    --muted-foreground: 230 20% 70%;
+    --background: 359 90% 8%;         /* Very dark red-tinted bg */
+    --foreground: 56 100% 95%;        /* Cream text */
+    
+    --card: 359 85% 12%;              
+    --card-foreground: 56 100% 95%;
+    
+    --popover: 359 85% 12%;
+    --popover-foreground: 56 100% 95%;
+    
+    --primary: 359 75% 40%;           /* Lighter red for dark mode */
+    --primary-foreground: 56 100% 95%;
+    --primary-light: 359 70% 50%;
+    
+    --secondary: 49 80% 65%;          /* Slightly dimmed gold */
+    --secondary-foreground: 359 90% 10%;
+    
+    --accent: 359 70% 18%;
+    --accent-foreground: 56 100% 95%;
+    
+    --muted: 359 50% 20%;
+    --muted-foreground: 56 60% 75%;
+    
     --destructive: 0 62.8% 50%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 230 20% 25%;
-    --input: 230 20% 25%;
-    --ring: 230 50% 55%;
+    --destructive-foreground: 56 100% 95%;
+    
+    --border: 359 50% 20%;
+    --input: 359 50% 20%;
+    --ring: 359 75% 40%;
 
     /* Dark mode gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(230 50% 15%) 0%, hsl(230 50% 20%) 40%, hsl(230 40% 25%) 100%);
-    --gradient-primary: linear-gradient(135deg, hsl(230 50% 45%), hsl(230 50% 55%));
-    --gradient-secondary: linear-gradient(135deg, hsl(45 68% 53%), hsl(45 68% 65%));
+    --gradient-hero: linear-gradient(135deg, hsl(359 90% 10%) 0%, hsl(359 80% 15%) 40%, hsl(359 70% 20%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(359 75% 35%), hsl(359 75% 45%));
+    --gradient-secondary: linear-gradient(135deg, hsl(49 80% 60%), hsl(49 85% 70%));
   }
 
   * {
@@ -123,22 +131,22 @@
 
   /* Glassmorphism */
   .glass {
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 254, 233, 0.7);  /* Cream with transparency */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(244, 225, 128, 0.3); /* Gold tint */
   }
 
   .dark .glass {
-    background: rgba(30, 41, 59, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(112, 6, 8, 0.7);     /* Dark red tint */
+    border: 1px solid rgba(244, 225, 128, 0.2);
   }
 
   .glass-dark {
-    background: rgba(46, 58, 135, 0.1);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(112, 6, 8, 0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(244, 225, 128, 0.2);
   }
 }
 
@@ -199,10 +207,10 @@
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 20px hsl(45 68% 53% / 0.3);
+    box-shadow: 0 0 20px hsl(49 80% 72% / 0.4);  /* Gold glow */
   }
   50% {
-    box-shadow: 0 0 40px hsl(45 68% 53% / 0.5);
+    box-shadow: 0 0 40px hsl(49 80% 72% / 0.6);
   }
 }
 
