@@ -161,13 +161,13 @@ const Index = () => {
               <motion.img 
                 src={logoText} 
                 alt="SpiritConnect" 
-                className="h-40 md:h-56 w-auto relative z-10 filter brightness-[1.2]"
+                className="h-40 md:h-56 w-auto relative z-10"
                 animate={{
                   y: [0, -15, 0],
                   filter: [
-                    "brightness(1.2) drop-shadow(0 0 30px rgba(255,255,255,0.9))",
-                    "brightness(1.3) drop-shadow(0 0 40px rgba(255,255,255,1))",
-                    "brightness(1.2) drop-shadow(0 0 30px rgba(255,255,255,0.9))",
+                    "drop-shadow(0 0 15px rgba(244, 225, 128, 0.3))",
+                    "drop-shadow(0 0 20px rgba(244, 225, 128, 0.4))",
+                    "drop-shadow(0 0 15px rgba(244, 225, 128, 0.3))",
                   ],
                 }}
                 transition={{
