@@ -766,8 +766,8 @@ const Admin = () => {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Megaphone className="h-6 w-6 text-accent" />
+                    <CardTitle className="flex items-center gap-2 text-foreground">
+                      <Megaphone className="h-6 w-6 text-primary" />
                       Community Announcements
                     </CardTitle>
                     <p className="text-sm text-muted-foreground mt-2">
@@ -842,7 +842,7 @@ const Admin = () => {
                         <CardHeader>
                           <div className="flex justify-between items-start">
                             <div className="flex-1 overflow-hidden">
-                              <CardTitle className="text-lg">{testimony.title}</CardTitle>
+                              <CardTitle className="text-lg text-foreground">{testimony.title}</CardTitle>
                               <p className="text-sm text-muted-foreground mt-1">By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}</p>
                               {testimony.resubmitted_at && (
                                 <Badge variant="outline" className="mt-2">Resubmitted</Badge>
@@ -917,7 +917,7 @@ const Admin = () => {
                         <CardHeader>
                           <div className="flex justify-between items-start">
                             <div className="flex-1 overflow-hidden">
-                              <CardTitle className="text-lg">{testimony.title}</CardTitle>
+                              <CardTitle className="text-lg text-foreground">{testimony.title}</CardTitle>
                               <p className="text-sm text-muted-foreground mt-1">By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}</p>
                             </div>
                             <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}><Trash2 className="h-4 w-4" /></Button>
@@ -942,8 +942,8 @@ const Admin = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Shield className="h-6 w-6 text-accent" />
+                    <CardTitle className="flex items-center gap-2 text-foreground">
+                      <Shield className="h-6 w-6 text-primary" />
                       Admin User Management
                     </CardTitle>
                     <p className="text-sm text-muted-foreground mt-2">

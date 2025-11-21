@@ -577,7 +577,7 @@ const Journal = () => {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-xl mb-2">{entry.title}</CardTitle>
+                      <CardTitle className="text-xl mb-2 text-foreground">{entry.title}</CardTitle>
                       <p className="text-sm text-muted-foreground">
                         {new Date(entry.date).toLocaleDateString('en-US', {
                           weekday: 'long',

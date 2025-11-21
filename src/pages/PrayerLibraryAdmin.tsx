@@ -186,7 +186,7 @@ export default function PrayerLibraryAdmin() {
 
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold">Prayer Library Management</h1>
+            <h1 className="text-4xl font-bold text-foreground">Prayer Library Management</h1>
             <p className="text-muted-foreground mt-2">
               Manage Kingdom Focus prayers and Listening Prayer content
             </p>
@@ -370,7 +370,7 @@ export default function PrayerLibraryAdmin() {
                                 </Badge>
                               )}
                             </div>
-                            <CardTitle className="text-xl">{prayer.title}</CardTitle>
+                            <CardTitle className="text-xl text-foreground">{prayer.title}</CardTitle>
                           </div>
                         <div className="flex gap-2">
                           <Button size="sm" variant="outline" onClick={() => handleEdit(prayer)}>
