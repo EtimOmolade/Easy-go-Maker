@@ -74,18 +74,18 @@ serve(async (req) => {
             subject: "📢 New Community Announcement",
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #1e40af;">Hello ${profile.name}! 👋</h2>
-                <div style="background-color: #f3f4f6; padding: 20px; border-left: 4px solid #d97706; border-radius: 4px; margin: 20px 0;">
+                <h2 style="color: #700608;">Hello ${profile.name}! 👋</h2>
+                <div style="background-color: #FFFEE9; padding: 20px; border-left: 4px solid #F4E180; border-radius: 4px; margin: 20px 0;">
                   <p style="margin: 0; white-space: pre-wrap;">${message.content}</p>
                 </div>
                 <p style="margin: 30px 0;">
                   <a href="https://dev.spiritconnects.org/dashboard"
-                     style="background-color: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                     style="background-color: #700608; color: #FFFEE9; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                     View on Dashboard
                   </a>
                 </p>
-                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-                <p style="color: #999; font-size: 12px;">
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #F4E180;">
+                <p style="color: #700608; font-size: 12px;">
                   This is a community announcement from SpiritConnect.
                   You're receiving this because you have notifications enabled.
                 </p>

@@ -59,29 +59,29 @@ serve(async (req) => {
             subject: "📊 Your Weekly Prayer Summary",
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #1e40af;">Hey ${profile.name}! 👋</h2>
+                <h2 style="color: #700608;">Hey ${profile.name}! 👋</h2>
                 <p>Here's your prayer journey summary for this week:</p>
 
-                <div style="background-color: #f3f4f6; padding: 24px; border-radius: 8px; margin: 20px 0;">
+                <div style="background-color: #FFFEE9; padding: 24px; border-radius: 8px; margin: 20px 0;">
                   <div style="display: flex; justify-content: space-around; text-align: center;">
                     <div>
-                      <h3 style="margin: 0; color: #1e40af; font-size: 32px;">${prayerCount}</h3>
+                      <h3 style="margin: 0; color: #700608; font-size: 32px;">${prayerCount}</h3>
                       <p style="margin: 8px 0 0 0; color: #666;">Prayer Sessions</p>
                     </div>
                     <div>
-                      <h3 style="margin: 0; color: #d97706; font-size: 32px;">${streakEmoji} ${profile.streak_count}</h3>
+                      <h3 style="margin: 0; color: #700608; font-size: 32px;">${streakEmoji} ${profile.streak_count}</h3>
                       <p style="margin: 8px 0 0 0; color: #666;">Day Streak</p>
                     </div>
                   </div>
                 </div>
 
-                <p style="background-color: #fef3c7; padding: 16px; border-left: 4px solid #d97706; border-radius: 4px;">
+                <p style="background-color: #FFFEE9; padding: 16px; border-left: 4px solid #F4E180; border-radius: 4px;">
                   <strong>${encouragement}</strong> ${prayerCount < 7 ? "Try to pray every day this week!" : "You're building a strong prayer habit!"}
                 </p>
 
                 <p style="margin: 30px 0;">
                   <a href="https://dev.spiritconnects.org/dashboard"
-                     style="background-color: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                     style="background-color: #700608; color: #FFFEE9; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                     Continue Your Journey
                   </a>
                 </p>
@@ -90,8 +90,8 @@ serve(async (req) => {
                   "Devote yourselves to prayer, being watchful and thankful." - Colossians 4:2
                 </p>
 
-                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-                <p style="color: #999; font-size: 12px;">
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #F4E180;">
+                <p style="color: #700608; font-size: 12px;">
                   Weekly summaries are sent every Sunday.
                   You can turn this off in your profile settings.
                 </p>
