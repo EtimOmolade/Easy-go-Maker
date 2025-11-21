@@ -471,17 +471,25 @@ const Dashboard = () => {
         }} transition={{
           duration: 0.5
         }} className="flex justify-center mb-6">
-            <motion.img src={logoText} alt="SpiritConnect" className="h-20 lg:h-24 w-auto hidden lg:block filter brightness-[1.3] contrast-[1.1] drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]" animate={{
+            <motion.img src={logoText} alt="SpiritConnect" className="h-20 lg:h-24 w-auto hidden lg:block" animate={{
             y: [0, -8, 0],
-            filter: ["brightness(1.3) contrast(1.1) drop-shadow(0 0 25px rgba(255,255,255,0.6))", "brightness(1.4) contrast(1.15) drop-shadow(0 0 30px rgba(255,255,255,0.8))", "brightness(1.3) contrast(1.1) drop-shadow(0 0 25px rgba(255,255,255,0.6))"]
+            filter: [
+              "drop-shadow(0 0 15px rgba(244, 225, 128, 0.3))",
+              "drop-shadow(0 0 20px rgba(244, 225, 128, 0.4))",
+              "drop-shadow(0 0 15px rgba(244, 225, 128, 0.3))"
+            ]
           }} transition={{
             duration: 3,
             repeat: Infinity,
             ease: "easeInOut"
           }} />
-            <motion.img src={logoOnly} alt="SpiritConnect" className="h-14 w-auto lg:hidden filter brightness-[1.3] contrast-[1.1] drop-shadow-[0_0_20px_rgba(255,255,255,0.6)]" animate={{
+            <motion.img src={logoOnly} alt="SpiritConnect" className="h-14 w-auto lg:hidden" animate={{
             y: [0, -6, 0],
-            filter: ["brightness(1.3) contrast(1.1) drop-shadow(0 0 20px rgba(255,255,255,0.6))", "brightness(1.4) contrast(1.15) drop-shadow(0 0 25px rgba(255,255,255,0.8))", "brightness(1.3) contrast(1.1) drop-shadow(0 0 20px rgba(255,255,255,0.6))"]
+            filter: [
+              "drop-shadow(0 0 12px rgba(244, 225, 128, 0.3))",
+              "drop-shadow(0 0 16px rgba(244, 225, 128, 0.4))",
+              "drop-shadow(0 0 12px rgba(244, 225, 128, 0.3))"
+            ]
           }} transition={{
             duration: 3,
             repeat: Infinity,
