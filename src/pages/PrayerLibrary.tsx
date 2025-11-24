@@ -401,7 +401,7 @@ const PrayerLibrary = () => {
       </div>
 
       <div className="max-w-6xl mx-auto p-4 md:p-8 relative z-10">
-        <AppHeader title="Prayer Point Library" showBack={true} backTo="/admin" />
+        <AppHeader title="Prayer Point Library" showBack={true} backTo="/admin" hideTitle={true} />
 
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
