@@ -371,45 +371,37 @@ const PrayerLibrary = () => {
   const handleExportJSON = (category: string) => {
     const filtered = prayerPoints.filter(p => p.category === category);
     
-    const exportData = {
-      exported_at: new Date().toISOString(),
-      category: category,
-      total_entries: filtered.length,
-      format_version: "1.0",
-      prayers: filtered.map(p => {
-        if (category === 'Kingdom Focus') {
-          return {
-            id: p.id,
-            title: p.title,
-            content: p.content,
-            category: p.category,
-            month: p.month,
-            day: p.day,
-            year: p.year,
-            day_of_week: p.day_of_week,
-            intercession_number: p.intercession_number,
-          };
-        } else {
-          return {
-            id: p.id,
-            title: p.title,
-            content: p.content,
-            category: p.category,
-            day_number: p.day_number,
-            chapter: p.chapter,
-            start_verse: p.start_verse,
-            end_verse: p.end_verse,
-            reference_text: p.reference_text,
-          };
-        }
-      })
-    };
+    const exportData = filtered.map(p => {
+      if (category === 'Kingdom Focus') {
+        return {
+          category: p.category,
+          title: p.title,
+          content: p.content,
+          month: p.month,
+          day: p.day,
+          year: p.year,
+          day_of_week: p.day_of_week,
+          intercession_number: p.intercession_number,
+        };
+      } else {
+        return {
+          category: p.category,
+          title: p.title,
+          content: p.content,
+          day_number: p.day_number,
+          chapter: p.chapter,
+          start_verse: p.start_verse,
+          end_verse: p.end_verse,
+          reference_text: p.reference_text,
+        };
+      }
+    });
 
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `prayer-library-${category.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `${category.toLowerCase().replace(/\s+/g, '_')}_export_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -424,42 +416,37 @@ const PrayerLibrary = () => {
     let headers: string;
     let rows: string[];
     
+    const escapeCSV = (text: string) => {
+      if (!text) return '';
+      return `"${String(text).replace(/"/g, '""')}"`;
+    };
+    
     if (category === 'Kingdom Focus') {
-      headers = 'ID,Title,Category,Month,Day,Year,Day of Week,Intercession Number,Content';
+      headers = 'category,title,content,month,day,year,day_of_week,intercession_number';
       rows = filtered.map(p => {
-        const escapeCSV = (text: string) => {
-          if (!text) return '';
-          return `"${String(text).replace(/"/g, '""')}"`;
-        };
         return [
-          escapeCSV(p.id),
-          escapeCSV(p.title),
           escapeCSV(p.category),
+          escapeCSV(p.title),
+          escapeCSV(p.content),
           escapeCSV(p.month || ''),
           p.day || '',
           p.year || '',
           escapeCSV(p.day_of_week || ''),
-          p.intercession_number || '',
-          escapeCSV(p.content)
+          p.intercession_number || ''
         ].join(',');
       });
     } else {
-      headers = 'ID,Title,Category,Day Number,Chapter,Start Verse,End Verse,Reference Text,Content';
+      headers = 'category,title,content,day_number,chapter,start_verse,end_verse,reference_text';
       rows = filtered.map(p => {
-        const escapeCSV = (text: string) => {
-          if (!text) return '';
-          return `"${String(text).replace(/"/g, '""')}"`;
-        };
         return [
-          escapeCSV(p.id),
-          escapeCSV(p.title),
           escapeCSV(p.category),
+          escapeCSV(p.title),
+          escapeCSV(p.content),
           p.day_number || '',
           p.chapter || '',
           p.start_verse || '',
           p.end_verse || '',
-          escapeCSV(p.reference_text || ''),
-          escapeCSV(p.content)
+          escapeCSV(p.reference_text || '')
         ].join(',');
       });
     }
@@ -469,7 +456,7 @@ const PrayerLibrary = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `prayer-library-${category.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `${category.toLowerCase().replace(/\s+/g, '_')}_export_${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
