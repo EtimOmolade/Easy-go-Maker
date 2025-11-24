@@ -14,8 +14,8 @@ interface BulkImportDialogProps {
   onImportComplete: () => void;
   userId: string;
   prayers?: any[];
-  onExportJSON?: () => void;
-  onExportCSV?: () => void;
+  onExportJSON?: (category: string) => void;
+  onExportCSV?: (category: string) => void;
 }
 
 interface ParsedPrayer {
@@ -513,53 +513,84 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
           <TabsContent value="export" className="space-y-4">
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Export all current prayer library entries to JSON or CSV format. 
-                You can edit the exported data and re-import it using the Import tab.
+                Export prayers by category. Each category has a different structure optimized for its content.
               </p>
 
-              <div className="grid gap-4">
-                <div className="border rounded-lg p-6 space-y-4">
-                  <div className="flex items-start gap-4">
-                    <FileText className="h-8 w-8 text-primary mt-1" />
-                    <div className="flex-1 space-y-2">
-                      <h3 className="font-semibold">Export as JSON</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Download all {prayers.length} prayers in JSON format. 
-                        Recommended for re-importing after editing.
-                      </p>
-                      <Button onClick={onExportJSON} className="w-full sm:w-auto">
-                        <Download className="h-4 w-4 mr-2" />
-                        Export JSON
-                      </Button>
-                    </div>
+              {/* Kingdom Focus Export */}
+              <div className="border rounded-lg p-6 space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-base sm:text-lg">Kingdom Focus Prayers</h3>
+                    <span className="text-sm text-muted-foreground">
+                      {prayers.filter((p: any) => p.category === 'Kingdom Focus').length} prayers
+                    </span>
                   </div>
+                  <p className="text-sm text-muted-foreground">
+                    Includes: month, day, year, day_of_week, intercession_number
+                  </p>
                 </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button 
+                    onClick={() => onExportJSON?.('Kingdom Focus')} 
+                    className="flex-1"
+                    disabled={prayers.filter((p: any) => p.category === 'Kingdom Focus').length === 0}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export as JSON
+                  </Button>
+                  <Button 
+                    onClick={() => onExportCSV?.('Kingdom Focus')} 
+                    variant="outline"
+                    className="flex-1"
+                    disabled={prayers.filter((p: any) => p.category === 'Kingdom Focus').length === 0}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export as CSV
+                  </Button>
+                </div>
+              </div>
 
-                <div className="border rounded-lg p-6 space-y-4">
-                  <div className="flex items-start gap-4">
-                    <FileText className="h-8 w-8 text-primary mt-1" />
-                    <div className="flex-1 space-y-2">
-                      <h3 className="font-semibold">Export as CSV</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Download all {prayers.length} prayers in CSV format. 
-                        Good for viewing and editing in spreadsheet software.
-                      </p>
-                      <Button onClick={onExportCSV} variant="outline" className="w-full sm:w-auto">
-                        <Download className="h-4 w-4 mr-2" />
-                        Export CSV
-                      </Button>
-                    </div>
+              {/* Listening Prayer Export */}
+              <div className="border rounded-lg p-6 space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-base sm:text-lg">Listening Prayer</h3>
+                    <span className="text-sm text-muted-foreground">
+                      {prayers.filter((p: any) => p.category === 'Listening Prayer').length} prayers
+                    </span>
                   </div>
+                  <p className="text-sm text-muted-foreground">
+                    Includes: day_number, chapter, start_verse, end_verse, reference_text
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button 
+                    onClick={() => onExportJSON?.('Listening Prayer')} 
+                    className="flex-1"
+                    disabled={prayers.filter((p: any) => p.category === 'Listening Prayer').length === 0}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export as JSON
+                  </Button>
+                  <Button 
+                    onClick={() => onExportCSV?.('Listening Prayer')} 
+                    variant="outline"
+                    className="flex-1"
+                    disabled={prayers.filter((p: any) => p.category === 'Listening Prayer').length === 0}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export as CSV
+                  </Button>
                 </div>
               </div>
 
               <div className="p-4 bg-muted rounded-lg">
-                <h4 className="font-medium mb-2 text-sm">Export Details:</h4>
+                <h4 className="font-medium mb-2 text-sm">Export Notes:</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Total prayers: {prayers.length}</li>
-                  <li>• Includes all fields and metadata</li>
+                  <li>• Export each category separately for better organization</li>
+                  <li>• JSON format recommended for re-importing</li>
+                  <li>• CSV format good for spreadsheet editing</li>
                   <li>• Edit externally and re-import via Import tab</li>
-                  <li>• Timestamp included for version tracking</li>
                 </ul>
               </div>
             </div>
