@@ -21,6 +21,7 @@ export default function PrayerLibraryAdmin() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [prayers, setPrayers] = useState<any[]>([]);
+  const [filteredPrayers, setFilteredPrayers] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -45,21 +46,23 @@ export default function PrayerLibraryAdmin() {
 
   const fetchPrayers = async () => {
     try {
-      let query = supabase
+      // Fetch all prayers without filtering
+      const { data, error } = await supabase
         .from('prayer_library')
         .select('*')
         .order('month', { ascending: true })
         .order('day', { ascending: true })
         .order('intercession_number', { ascending: true });
 
-      if (selectedCategory !== 'all') {
-        query = query.eq('category', selectedCategory);
-      }
-
-      const { data, error } = await query;
-
       if (error) throw error;
       setPrayers(data || []);
+      
+      // Apply filter for display
+      if (selectedCategory === 'all') {
+        setFilteredPrayers(data || []);
+      } else {
+        setFilteredPrayers((data || []).filter(p => p.category === selectedCategory));
+      }
     } catch (error: any) {
       toast.error("Failed to load prayers");
       console.error(error);
@@ -181,15 +184,17 @@ export default function PrayerLibraryAdmin() {
     }
   };
 
-  const handleExportJSON = () => {
+  const handleExportJSON = (category: string) => {
     try {
+      const filteredPrayers = prayers.filter(p => p.category === category);
+      
       const exportData = {
-        prayers: prayers,
+        prayers: filteredPrayers,
         metadata: {
+          category: category,
           exported_at: new Date().toISOString(),
-          total_entries: prayers.length,
-          format_version: "1.0",
-          category_filter: selectedCategory
+          total_entries: filteredPrayers.length,
+          format_version: "1.0"
         }
       };
 
@@ -197,32 +202,53 @@ export default function PrayerLibraryAdmin() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `prayer-library-${selectedCategory}-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `prayer-library-${category.toLowerCase().replace(' ', '_')}-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      toast.success(`Exported ${prayers.length} prayers as JSON`);
+      toast.success(`Exported ${filteredPrayers.length} ${category} prayers as JSON`);
     } catch (error) {
       toast.error("Failed to export prayers");
       console.error(error);
     }
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = (category: string) => {
     try {
-      const headers = ['ID', 'Title', 'Category', 'Month', 'Day', 'Day of Week', 'Intercession #', 'Content'];
-      const rows = prayers.map(p => [
-        p.id,
-        `"${(p.title || '').replace(/"/g, '""')}"`,
-        p.category || '',
-        p.month || '',
-        p.day || '',
-        p.day_of_week || '',
-        p.intercession_number || '',
-        `"${(p.content || '').replace(/"/g, '""')}"`
-      ]);
+      const filteredPrayers = prayers.filter(p => p.category === category);
+      
+      let headers: string[];
+      let rows: string[][];
+
+      if (category === 'Kingdom Focus') {
+        headers = ['ID', 'Title', 'Category', 'Month', 'Day', 'Year', 'Day of Week', 'Intercession #', 'Content'];
+        rows = filteredPrayers.map(p => [
+          p.id,
+          `"${(p.title || '').replace(/"/g, '""')}"`,
+          p.category || '',
+          p.month || '',
+          p.day || '',
+          p.year || '',
+          p.day_of_week || '',
+          p.intercession_number || '',
+          `"${(p.content || '').replace(/"/g, '""')}"`
+        ]);
+      } else {
+        headers = ['ID', 'Title', 'Category', 'Day Number', 'Chapter', 'Start Verse', 'End Verse', 'Reference', 'Content'];
+        rows = filteredPrayers.map(p => [
+          p.id,
+          `"${(p.title || '').replace(/"/g, '""')}"`,
+          p.category || '',
+          p.day_number || '',
+          p.chapter || '',
+          p.start_verse || '',
+          p.end_verse || '',
+          p.reference_text || '',
+          `"${(p.content || '').replace(/"/g, '""')}"`
+        ]);
+      }
 
       const csv = [
         headers.join(','),
@@ -233,13 +259,13 @@ export default function PrayerLibraryAdmin() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `prayer-library-${selectedCategory}-${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `prayer-library-${category.toLowerCase().replace(' ', '_')}-${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      toast.success(`Exported ${prayers.length} prayers as CSV`);
+      toast.success(`Exported ${filteredPrayers.length} ${category} prayers as CSV`);
     } catch (error) {
       toast.error("Failed to export prayers");
       console.error(error);
@@ -420,7 +446,7 @@ export default function PrayerLibraryAdmin() {
           </TabsList>
 
           <TabsContent value={selectedCategory} className="space-y-4 mt-6">
-            {prayers.length === 0 ? (
+            {filteredPrayers.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <p className="text-muted-foreground mb-4">No prayers found</p>
@@ -432,7 +458,7 @@ export default function PrayerLibraryAdmin() {
               </Card>
             ) : (
               <div className="grid gap-4">
-                {prayers.map((prayer) => (
+                {filteredPrayers.map((prayer) => (
                   <Card key={prayer.id}>
                     <CardHeader>
                       <div className="flex justify-between items-start">
