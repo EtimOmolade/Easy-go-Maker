@@ -13,6 +13,9 @@ interface BulkImportDialogProps {
   onOpenChange: (open: boolean) => void;
   onImportComplete: () => void;
   userId: string;
+  prayers?: any[];
+  onExportJSON?: () => void;
+  onExportCSV?: () => void;
 }
 
 interface ParsedPrayer {
@@ -37,7 +40,7 @@ interface ParsedPrayer {
   rowNumber?: number;
 }
 
-export function BulkImportDialog({ open, onOpenChange, onImportComplete, userId }: BulkImportDialogProps) {
+export function BulkImportDialog({ open, onOpenChange, onImportComplete, userId, prayers = [], onExportJSON, onExportCSV }: BulkImportDialogProps) {
   const [parsedData, setParsedData] = useState<ParsedPrayer[]>([]);
   const [importing, setImporting] = useState(false);
   const [importStats, setImportStats] = useState<{ success: number; failed: number } | null>(null);
@@ -372,9 +375,10 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
         </DialogHeader>
 
         <Tabs defaultValue="upload" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="upload" className="text-sm">Upload File</TabsTrigger>
-            <TabsTrigger value="templates" className="text-sm">Templates</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="upload" className="text-xs sm:text-sm">Import</TabsTrigger>
+            <TabsTrigger value="export" className="text-xs sm:text-sm">Export</TabsTrigger>
+            <TabsTrigger value="templates" className="text-xs sm:text-sm">Templates</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload" className="space-y-4">
@@ -503,6 +507,61 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
                   </div>
                 </>
               )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="export" className="space-y-4">
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Export all current prayer library entries to JSON or CSV format. 
+                You can edit the exported data and re-import it using the Import tab.
+              </p>
+
+              <div className="grid gap-4">
+                <div className="border rounded-lg p-6 space-y-4">
+                  <div className="flex items-start gap-4">
+                    <FileText className="h-8 w-8 text-primary mt-1" />
+                    <div className="flex-1 space-y-2">
+                      <h3 className="font-semibold">Export as JSON</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Download all {prayers.length} prayers in JSON format. 
+                        Recommended for re-importing after editing.
+                      </p>
+                      <Button onClick={onExportJSON} className="w-full sm:w-auto">
+                        <Download className="h-4 w-4 mr-2" />
+                        Export JSON
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-6 space-y-4">
+                  <div className="flex items-start gap-4">
+                    <FileText className="h-8 w-8 text-primary mt-1" />
+                    <div className="flex-1 space-y-2">
+                      <h3 className="font-semibold">Export as CSV</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Download all {prayers.length} prayers in CSV format. 
+                        Good for viewing and editing in spreadsheet software.
+                      </p>
+                      <Button onClick={onExportCSV} variant="outline" className="w-full sm:w-auto">
+                        <Download className="h-4 w-4 mr-2" />
+                        Export CSV
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-muted rounded-lg">
+                <h4 className="font-medium mb-2 text-sm">Export Details:</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Total prayers: {prayers.length}</li>
+                  <li>• Includes all fields and metadata</li>
+                  <li>• Edit externally and re-import via Import tab</li>
+                  <li>• Timestamp included for version tracking</li>
+                </ul>
+              </div>
             </div>
           </TabsContent>
 
