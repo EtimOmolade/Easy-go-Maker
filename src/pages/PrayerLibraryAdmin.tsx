@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, Plus, Edit, Trash2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, RefreshCw, Download } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 
 
@@ -179,6 +179,71 @@ export default function PrayerLibraryAdmin() {
     }
   };
 
+  const handleExportJSON = () => {
+    try {
+      const exportData = {
+        prayers: prayers,
+        metadata: {
+          exported_at: new Date().toISOString(),
+          total_entries: prayers.length,
+          format_version: "1.0",
+          category_filter: selectedCategory
+        }
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `prayer-library-${selectedCategory}-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`Exported ${prayers.length} prayers as JSON`);
+    } catch (error) {
+      toast.error("Failed to export prayers");
+      console.error(error);
+    }
+  };
+
+  const handleExportCSV = () => {
+    try {
+      const headers = ['ID', 'Title', 'Category', 'Month', 'Day', 'Day of Week', 'Intercession #', 'Content'];
+      const rows = prayers.map(p => [
+        p.id,
+        `"${(p.title || '').replace(/"/g, '""')}"`,
+        p.category || '',
+        p.month || '',
+        p.day || '',
+        p.day_of_week || '',
+        p.intercession_number || '',
+        `"${(p.content || '').replace(/"/g, '""')}"`
+      ]);
+
+      const csv = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `prayer-library-${selectedCategory}-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`Exported ${prayers.length} prayers as CSV`);
+    } catch (error) {
+      toast.error("Failed to export prayers");
+      console.error(error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -195,6 +260,14 @@ export default function PrayerLibraryAdmin() {
             <Button onClick={handleGenerateProverbsPlan} disabled={isGenerating} size="default">
               <RefreshCw className={`h-4 w-4 ${isGenerating ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline ml-2">{isGenerating ? 'Generating...' : 'Regenerate Proverbs'}</span>
+            </Button>
+            <Button onClick={handleExportJSON} variant="outline" size="default">
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline ml-2">Export JSON</span>
+            </Button>
+            <Button onClick={handleExportCSV} variant="outline" size="default">
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline ml-2">Export CSV</span>
             </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
