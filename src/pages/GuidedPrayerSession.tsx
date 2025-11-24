@@ -646,9 +646,11 @@ const GuidedPrayerSession = () => {
     }
     
     // If audio is currently playing, restart with new voice
-    if (isPlayingAudio && currentStepIndex !== undefined && currentPointIndex !== undefined) {
+    if (isPlayingAudio && currentStepIndex !== undefined) {
       const step = guideline?.steps[currentStepIndex];
-      if (step?.type === 'kingdom' && step.points?.[currentPointIndex]) {
+      
+      // Handle kingdom prayer voice change
+      if (step?.type === 'kingdom' && currentPointIndex !== undefined && step.points?.[currentPointIndex]) {
         stopAllAudio();
         // Replay with new voice after short delay
         setTimeout(() => {
@@ -659,6 +661,38 @@ const GuidedPrayerSession = () => {
             audio.playbackRate = 0.85;
             audio.volume = 1;
             const removeFadeOut = addFadeOut(audio, 1.5);
+            setCurrentAudio(audio);
+            currentAudioRef.current = audio;
+            
+            audio.onended = () => {
+              removeFadeOut();
+              setIsPlayingAudio(false);
+              setCurrentAudio(null);
+              currentAudioRef.current = null;
+            };
+            
+            audio.play().catch(() => {
+              console.warn('⚠️ Audio playback failed');
+              setCurrentAudio(null);
+              currentAudioRef.current = null;
+            });
+            
+            setIsPlayingAudio(true);
+          }
+        }, 300);
+      }
+      
+      // Handle listening prayer voice change
+      if (step?.type === 'listening') {
+        stopAllAudio();
+        // Replay with new voice after short delay
+        setTimeout(() => {
+          const audioUrl = step.audio_urls?.[voice] || step.audio_url;
+          if (audioUrl && canStartAudio()) {
+            const audio = new Audio(audioUrl);
+            audio.playbackRate = 0.76;
+            audio.volume = 1;
+            const removeFadeOut = addFadeOut(audio, 1.75);
             setCurrentAudio(audio);
             currentAudioRef.current = audio;
             
@@ -711,9 +745,10 @@ const GuidedPrayerSession = () => {
         : null;
 
       if (currentStep && currentStep.type === 'listening' && listeningPrayer?.content) {
-        // TRY PRE-GENERATED AUDIO FIRST (Speechmatics)
-        if (currentStep.audio_url) {
-          const audio = new Audio(currentStep.audio_url);
+        // TRY PRE-GENERATED AUDIO FIRST (Speechmatics) - use selected voice
+        const audioUrl = currentStep.audio_urls?.[selectedVoice] || currentStep.audio_url;
+        if (audioUrl) {
+          const audio = new Audio(audioUrl);
           audio.playbackRate = 0.76; // Slow down Speechmatics audio for meditative scripture (70% speed)
           audio.volume = 1; // Start at full volume
 
