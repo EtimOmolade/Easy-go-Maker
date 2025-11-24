@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, Plus, Edit, Trash2, RefreshCw, Download } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, RefreshCw, Download, Upload } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
+import { BulkImportDialog } from "@/components/BulkImportDialog";
 
 
 export default function PrayerLibraryAdmin() {
@@ -25,6 +26,7 @@ export default function PrayerLibraryAdmin() {
   const [isEditing, setIsEditing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentPrayer, setCurrentPrayer] = useState<any>(null);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -261,13 +263,20 @@ export default function PrayerLibraryAdmin() {
               <RefreshCw className={`h-4 w-4 ${isGenerating ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline ml-2">{isGenerating ? 'Generating...' : 'Regenerate Proverbs'}</span>
             </Button>
-            <Button onClick={handleExportJSON} variant="outline" size="default">
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline ml-2">Export JSON</span>
-            </Button>
-            <Button onClick={handleExportCSV} variant="outline" size="default">
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline ml-2">Export CSV</span>
+            <BulkImportDialog
+              open={isBulkImportOpen}
+              onOpenChange={setIsBulkImportOpen}
+              onImportComplete={fetchPrayers}
+              userId={user?.id || ''}
+              prayers={prayers}
+              onExportJSON={handleExportJSON}
+              onExportCSV={handleExportCSV}
+            />
+            <Button onClick={() => setIsBulkImportOpen(true)} variant="outline" size="default">
+              <Upload className="h-4 w-4" />
+              <Download className="h-4 w-4 -ml-2" />
+              <span className="hidden sm:inline ml-2">Import/Export</span>
+              <span className="sm:hidden ml-2">Data</span>
             </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
