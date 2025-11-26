@@ -471,14 +471,9 @@ const GuidedPrayerSession = () => {
       // Move to next prayer point and trigger a re-render to reset timer
       setCurrentPointIndex(nextPointIndex);
       
-      // Play next point prompt after short delay
-      if (voiceEnabled) {
-        setTimeout(() => {
-          if (canStartAudio()) { // Only play if not paused
-            playVoicePrompt(VOICE_PROMPTS.KINGDOM_NEXT);
-          }
-        }, 500);
-      }
+      // REMOVED: Duplicate playVoicePrompt call (useEffect already handles this)
+      // The useEffect at line 257 will automatically play the prompt when currentPointIndex changes
+      console.log(`✅ Moving to next intercession prayer point: ${nextPointIndex + 1}`);
     } else {
       // All kingdom points complete or not a kingdom step, move to next step
       handleStepComplete();
