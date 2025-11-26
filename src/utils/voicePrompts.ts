@@ -55,6 +55,11 @@ export const playVoicePrompt = async (
   // Check if already played (unless forced)
   if (!force && playedPrompts.has(text)) {
     console.log(`⏭️ Voice prompt already played, skipping: "${text.substring(0, 40)}..."`);
+    // CRITICAL FIX: Still call onEnd callback to maintain sequential audio flow
+    if (onEnd) {
+      console.log('📞 Calling onEnd callback despite skipped prompt to trigger prayer audio');
+      onEnd();
+    }
     return;
   }
 
