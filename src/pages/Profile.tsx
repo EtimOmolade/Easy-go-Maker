@@ -311,9 +311,6 @@ const Profile = () => {
                           <p className="text-xs italic text-foreground/70">
                             "{milestone.scripture}" - {milestone.scripture_ref}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {milestone.unlockedDate}
-                          </p>
                         </div>
                       </div>
                     </div>
