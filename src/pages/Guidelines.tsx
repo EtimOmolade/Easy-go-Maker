@@ -289,7 +289,7 @@ const Guidelines = () => {
                                                               e.stopPropagation();
                                                               navigate(`/guided-session/${guideline.id}`);
                                                             }}
-                                                            className="bg-gradient-primary text-white"
+                                                            className="bg-gradient-primary text-primary dark:text-white"
                                                           >
                                                             <span className="text-xs md:text-sm">Start</span>
                                                           </Button>
