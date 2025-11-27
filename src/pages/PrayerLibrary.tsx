@@ -307,21 +307,34 @@ const PrayerLibrary = () => {
     if (selectedPrayers.size === 0) return;
 
     setIsDeleting(true);
+    const idsToDelete = Array.from(selectedPrayers);
+    const batchSize = 50; // Delete in batches to avoid URL length limits
+    const totalCount = idsToDelete.length;
+    let deletedCount = 0;
+
     try {
-      const { error } = await supabase
-        .from('prayer_library')
-        .delete()
-        .in('id', Array.from(selectedPrayers));
+      // Process in batches
+      for (let i = 0; i < idsToDelete.length; i += batchSize) {
+        const batch = idsToDelete.slice(i, i + batchSize);
+        
+        const { error } = await supabase
+          .from('prayer_library')
+          .delete()
+          .in('id', batch);
 
-      if (error) throw error;
+        if (error) throw error;
+        
+        deletedCount += batch.length;
+        console.log(`Deleted batch ${Math.floor(i / batchSize) + 1}: ${deletedCount}/${totalCount} prayers`);
+      }
 
-      toast.success(`${selectedPrayers.size} prayer points deleted`);
+      toast.success(`${totalCount} prayer points deleted`);
       setSelectedPrayers(new Set());
       setShowDeleteDialog(false);
       await fetchPrayerPoints();
     } catch (error: any) {
       console.error('Error deleting prayer points:', error);
-      toast.error(error.message || 'Failed to delete prayer points');
+      toast.error(error.message || `Failed to delete prayer points. Deleted ${deletedCount}/${totalCount}`);
     } finally {
       setIsDeleting(false);
     }
