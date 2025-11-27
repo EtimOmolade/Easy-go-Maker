@@ -312,7 +312,7 @@ const Profile = () => {
                             "{milestone.scripture}" - {milestone.scripture_ref}
                           </p>
                           <p className="text-xs text-muted-foreground mt-2">
-                            Unlocked: {new Date(milestone.unlockedDate).toLocaleDateString()}
+                            {milestone.unlockedDate}
                           </p>
                         </div>
                       </div>
