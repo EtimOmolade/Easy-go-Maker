@@ -1271,7 +1271,7 @@ const Admin = () => {
                   <CardHeader>
                     <CardTitle>Prayers by Day of Week</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="overflow-hidden">
                     <ChartContainer
                       config={{
                         prayers: {
@@ -1279,19 +1279,26 @@ const Admin = () => {
                           color: "hsl(var(--primary))",
                         },
                       }}
-                      className="h-[300px]"
+                      className="h-[250px] sm:h-[300px] w-full"
                     >
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={analytics.prayersByDay}>
+                        <BarChart data={analytics.prayersByDay} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                           <XAxis 
                             dataKey="name" 
                             stroke="hsl(var(--muted-foreground))"
-                            fontSize={12}
+                            fontSize={10}
+                            tickLine={false}
+                            axisLine={false}
+                            interval={0}
+                            tick={{ fontSize: 10 }}
                           />
                           <YAxis 
                             stroke="hsl(var(--muted-foreground))"
-                            fontSize={12}
+                            fontSize={10}
+                            tickLine={false}
+                            axisLine={false}
+                            width={30}
                           />
                           <ChartTooltip content={<ChartTooltipContent />} />
                           <Bar 
@@ -1310,7 +1317,7 @@ const Admin = () => {
                   <CardHeader>
                     <CardTitle>Voice Preferences</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="overflow-hidden">
                     <ChartContainer
                       config={{
                         value: {
@@ -1318,17 +1325,18 @@ const Admin = () => {
                           color: "hsl(var(--primary))",
                         },
                       }}
-                      className="h-[300px]"
+                      className="h-[250px] sm:h-[300px] w-full mx-auto"
                     >
                       <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
+                        <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                           <Pie
                             data={analytics.voicePreferences}
                             cx="50%"
                             cy="50%"
                             labelLine={false}
                             label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                            outerRadius={80}
+                            outerRadius="70%"
+                            innerRadius="30%"
                             fill="hsl(var(--primary))"
                             dataKey="value"
                           >
