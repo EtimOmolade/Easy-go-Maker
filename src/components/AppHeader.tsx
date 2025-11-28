@@ -11,9 +11,10 @@ interface AppHeaderProps {
   showBack?: boolean;
   backTo?: string;
   onBackClick?: () => void;
+  hideTitle?: boolean;
 }
 
-export const AppHeader = ({ title, showBack = true, backTo = "/dashboard", onBackClick }: AppHeaderProps) => {
+export const AppHeader = ({ title, showBack = true, backTo = "/dashboard", onBackClick, hideTitle = false }: AppHeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAdmin } = useAuth();
@@ -61,7 +62,7 @@ export const AppHeader = ({ title, showBack = true, backTo = "/dashboard", onBac
             onClick={handleLogoClick}
           />
         )}
-        {title && (
+        {title && !hideTitle && (
           <h1 className="text-2xl md:text-4xl font-heading font-bold text-white drop-shadow-lg">
             {title}
           </h1>

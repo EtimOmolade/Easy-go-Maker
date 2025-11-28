@@ -265,6 +265,7 @@ export type Database = {
       prayer_library: {
         Row: {
           audio_url: string | null
+          audio_urls: Json | null
           category: string | null
           chapter: number | null
           content: string
@@ -289,6 +290,7 @@ export type Database = {
         }
         Insert: {
           audio_url?: string | null
+          audio_urls?: Json | null
           category?: string | null
           chapter?: number | null
           content: string
@@ -313,6 +315,7 @@ export type Database = {
         }
         Update: {
           audio_url?: string | null
+          audio_urls?: Json | null
           category?: string | null
           chapter?: number | null
           content?: string
@@ -400,6 +403,7 @@ export type Database = {
           reminders_enabled: boolean
           streak_count: number
           two_factor_enabled: boolean | null
+          voice_preference: string | null
         }
         Insert: {
           created_at?: string
@@ -410,6 +414,7 @@ export type Database = {
           reminders_enabled?: boolean
           streak_count?: number
           two_factor_enabled?: boolean | null
+          voice_preference?: string | null
         }
         Update: {
           created_at?: string
@@ -420,6 +425,7 @@ export type Database = {
           reminders_enabled?: boolean
           streak_count?: number
           two_factor_enabled?: boolean | null
+          voice_preference?: string | null
         }
         Relationships: []
       }

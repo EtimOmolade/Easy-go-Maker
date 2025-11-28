@@ -16,6 +16,8 @@ import { speak, speakTwice, cancelSpeech, pauseTTS, resumeTTS } from "@/services
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AppHeader } from "@/components/AppHeader";
+import { useOffline } from "@/contexts/OfflineContext";
+import { cacheGuideline, getCachedGuideline, savePrayerCompletionOffline } from "@/utils/offlineStorage";
 
 interface PrayerStep {
   id: string;
@@ -24,12 +26,22 @@ interface PrayerStep {
   content: string;
   duration: number; // in seconds
   audioUrl?: string;
-  audio_url?: string; // NEW - Speechmatics generated audio
+  audio_url?: string; // Single voice audio (backward compatibility)
+  audio_urls?: {
+    sarah?: string;
+    theo?: string;
+    megan?: string;
+  };
   points?: {
     id: string;
     content: string;
     title: string;
-    audio_url?: string; // NEW - Speechmatics generated audio
+    audio_url?: string; // Single voice audio (backward compatibility)
+    audio_urls?: {
+      sarah?: string;
+      theo?: string;
+      megan?: string;
+    };
   }[];
 }
 
@@ -46,7 +58,8 @@ const GuidedPrayerSession = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+  const { isOnline } = useOffline();
+
   const [guideline, setGuideline] = useState<any>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [currentPointIndex, setCurrentPointIndex] = useState(0);
@@ -63,6 +76,7 @@ const GuidedPrayerSession = () => {
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const [isPlayingVoicePrompt, setIsPlayingVoicePrompt] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState<'sarah' | 'theo' | 'megan'>('sarah');
 
   // Use ref for synchronous audio tracking (prevents race conditions when switching steps)
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -190,6 +204,7 @@ const GuidedPrayerSession = () => {
   useEffect(() => {
     if (id && user) {
       fetchGuideline();
+      fetchUserVoicePreference();
     }
 
     // Cleanup: Stop ALL audio when component unmounts (user leaves page)
@@ -203,6 +218,20 @@ const GuidedPrayerSession = () => {
       }
     };
   }, [id, user]);
+
+  const fetchUserVoicePreference = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('profiles')
+      .select('voice_preference')
+      .eq('id', user.id)
+      .single();
+    
+    if (data?.voice_preference) {
+      setSelectedVoice(data.voice_preference as 'sarah' | 'theo' | 'megan');
+    }
+  };
 
   // Auto-disable voice when switching to free mode
   useEffect(() => {
@@ -245,9 +274,10 @@ const GuidedPrayerSession = () => {
       if (step?.type === 'kingdom' && step.points?.[currentPointIndex]) {
         const point = step.points[currentPointIndex];
 
-        // TRY PRE-GENERATED AUDIO FIRST (Speechmatics)
-        if (point.audio_url) {
-          const audio = new Audio(point.audio_url);
+        // TRY PRE-GENERATED AUDIO FIRST (Speechmatics) - Use selected voice
+        const audioUrl = point.audio_urls?.[selectedVoice] || point.audio_url;
+        if (audioUrl) {
+          const audio = new Audio(audioUrl);
           audio.playbackRate = 0.85; // Slow down Speechmatics audio (85% speed)
           audio.volume = 1; // Start at full volume
 
@@ -353,34 +383,65 @@ const GuidedPrayerSession = () => {
     if (!id) return;
 
     try {
-      const { data: guideline, error } = await supabase
-        .from('guidelines')
-        .select('*')
-        .eq('id', id)
-        .single();
+      if (isOnline) {
+        // Try to fetch from Supabase when online
+        const { data: guideline, error } = await supabase
+          .from('guidelines')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
 
-      if (guideline) {
-        // Deduplicate prayer points in each step (fix for old data with duplicates)
-        const deduplicatedGuideline = {
-          ...guideline,
-          steps: Array.isArray(guideline.steps) ? guideline.steps.map((step: any) => {
-            if (step.points && Array.isArray(step.points)) {
-              // Remove duplicate points based on ID
-              const uniquePoints = step.points.filter((point: any, index: number, self: any[]) =>
-                index === self.findIndex((p: any) => p.id === point.id)
-              );
-              return { ...step, points: uniquePoints };
-            }
-            return step;
-          }) : guideline.steps
-        };
-        setGuideline(deduplicatedGuideline);
+        if (guideline) {
+          // Deduplicate prayer points in each step (fix for old data with duplicates)
+          const deduplicatedGuideline = {
+            ...guideline,
+            steps: Array.isArray(guideline.steps) ? guideline.steps.map((step: any) => {
+              if (step.points && Array.isArray(step.points)) {
+                // Remove duplicate points based on ID
+                const uniquePoints = step.points.filter((point: any, index: number, self: any[]) =>
+                  index === self.findIndex((p: any) => p.id === point.id)
+                );
+                return { ...step, points: uniquePoints };
+              }
+              return step;
+            }) : guideline.steps
+          };
+
+          // Cache the guideline for offline access
+          await cacheGuideline(deduplicatedGuideline);
+
+          setGuideline(deduplicatedGuideline);
+        }
+      } else {
+        // Load from cache when offline
+        console.log('📵 Offline mode - loading from cache');
+        const cachedGuideline = await getCachedGuideline(id);
+
+        if (cachedGuideline) {
+          setGuideline(cachedGuideline);
+          toast.info('Loaded prayer from offline cache');
+        } else {
+          toast.error('This prayer is not available offline. Please go online to access it.');
+        }
       }
     } catch (error) {
       console.error("Error fetching guideline:", error);
-      toast.error("Failed to load guideline");
+
+      // Try to load from cache as fallback
+      try {
+        const cachedGuideline = await getCachedGuideline(id);
+        if (cachedGuideline) {
+          setGuideline(cachedGuideline);
+          toast.warning('Loaded from offline cache due to connection error');
+        } else {
+          toast.error("Failed to load guideline");
+        }
+      } catch (cacheError) {
+        console.error("Error loading from cache:", cacheError);
+        toast.error("Failed to load guideline");
+      }
     }
 
     setLoading(false);
@@ -410,14 +471,9 @@ const GuidedPrayerSession = () => {
       // Move to next prayer point and trigger a re-render to reset timer
       setCurrentPointIndex(nextPointIndex);
       
-      // Play next point prompt after short delay
-      if (voiceEnabled) {
-        setTimeout(() => {
-          if (canStartAudio()) { // Only play if not paused
-            playVoicePrompt(VOICE_PROMPTS.KINGDOM_NEXT);
-          }
-        }, 500);
-      }
+      // REMOVED: Duplicate playVoicePrompt call (useEffect already handles this)
+      // The useEffect at line 257 will automatically play the prompt when currentPointIndex changes
+      console.log(`✅ Moving to next intercession prayer point: ${nextPointIndex + 1}`);
     } else {
       // All kingdom points complete or not a kingdom step, move to next step
       handleStepComplete();
@@ -448,97 +504,109 @@ const GuidedPrayerSession = () => {
       const currentDay = now.getDate();
       const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const currentDayName = DAYS[now.getDay()];
-      
+
       const guidelineMonth = guideline.month;
       const guidelineDay = guideline.day;
       const guidelineMonthIndex = monthsOrder.indexOf(guidelineMonth);
-      
+
       const isCurrentMonth = guidelineMonthIndex === currentMonthIndex;
       const isCurrentDay = guidelineDay === currentDay;
       const isCurrentPrayer = isCurrentMonth && isCurrentDay;
-      
+
       let newStreak = 0;
       let milestone = null;
 
-      // Only update streak for current day prayers
-      if (isCurrentPrayer) {
-        const { markPrayerCompleted } = await import('@/utils/prayerHelpers');
-        const result = markPrayerCompleted(user.id);
-        newStreak = result.newStreak;
-        milestone = result.milestone;
-
-        console.log('Prayer completed! Result:', { newStreak, milestone });
-
-        // Show milestone modal if achieved
-        if (milestone) {
-          console.log('Setting milestone modal:', milestone);
-          setAchievedMilestone(milestone);
-          setShowMilestoneModal(true);
-        }
-      }
-
-      // Log daily prayer completion in Supabase (for ALL prayers - current, past, future)
-      // This updates the weekly tracker - marks the ACTUAL day the user prayed
       // Database expects lowercase day names
       const dayOfWeekLowercase = currentDayName.toLowerCase();
-
-      // Check if already completed TODAY to avoid duplicates
-      const { data: existingPrayer, error: checkError } = await supabase
-        .from('daily_prayers')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('guideline_id', guideline.id)
-        .eq('day_of_week', dayOfWeekLowercase)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error('Error checking daily prayer:', checkError);
-      }
-
-      // Only insert if not already completed TODAY
-      if (!existingPrayer) {
-        const { error: insertError } = await supabase
-          .from('daily_prayers')
-          .insert({
-            user_id: user.id,
-            guideline_id: guideline.id,
-            day_of_week: dayOfWeekLowercase, // Store the actual day user is praying (lowercase)
-            completed_at: new Date().toISOString(),
-          });
-
-        if (insertError) {
-          console.error('❌ Error inserting daily prayer:', insertError);
-          toast.error(`Failed to update prayer tracker: ${insertError.message}`);
-        } else {
-          console.log(`✅ Daily prayer tracker updated - marked ${currentDayName} as completed`);
-        }
-      } else {
-        console.log(`ℹ️ ${currentDayName} already marked as completed in tracker for this guideline`);
-      }
-
-      // Create journal entry with appropriate message
-      const journalContent = isCurrentPrayer 
+      const journalContent = isCurrentPrayer
         ? 'Completed prayer session (edit journal to add reflections)'
         : 'Completed guided prayer session (Past prayer - edit to add reflections)';
-        
-      await supabase
-        .from('journal_entries')
-        .insert({
+
+      if (isOnline) {
+        // ONLINE MODE: Save directly to Supabase
+        // Only update streak for current day prayers
+        if (isCurrentPrayer) {
+          const { markPrayerCompleted } = await import('@/utils/prayerHelpers');
+          const result = markPrayerCompleted(user.id);
+          newStreak = result.newStreak;
+          milestone = result.milestone;
+
+          console.log('Prayer completed! Result:', { newStreak, milestone });
+
+          // Show milestone modal if achieved
+          if (milestone) {
+            console.log('Setting milestone modal:', milestone);
+            setAchievedMilestone(milestone);
+            setShowMilestoneModal(true);
+          }
+        }
+
+        // Check if already completed TODAY to avoid duplicates
+        const { data: existingPrayer, error: checkError } = await supabase
+          .from('daily_prayers')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('guideline_id', guideline.id)
+          .eq('day_of_week', dayOfWeekLowercase)
+          .maybeSingle();
+
+        if (checkError) {
+          console.error('Error checking daily prayer:', checkError);
+        }
+
+        // Only insert if not already completed TODAY
+        if (!existingPrayer) {
+          const { error: insertError } = await supabase
+            .from('daily_prayers')
+            .insert({
+              user_id: user.id,
+              guideline_id: guideline.id,
+              day_of_week: dayOfWeekLowercase,
+              completed_at: new Date().toISOString(),
+            });
+
+          if (insertError) {
+            console.error('❌ Error inserting daily prayer:', insertError);
+          } else {
+            console.log(`✅ Daily prayer tracker updated - marked ${currentDayName} as completed`);
+          }
+        }
+
+        // Create journal entry
+        await supabase
+          .from('journal_entries')
+          .insert({
+            user_id: user.id,
+            title: guideline.title,
+            content: journalContent,
+            date: new Date().toISOString().split('T')[0],
+            is_answered: false,
+            is_shared: false,
+          });
+      } else {
+        // OFFLINE MODE: Queue for sync when back online
+        console.log('📵 Offline mode - saving prayer completion to sync queue');
+        await savePrayerCompletionOffline({
           user_id: user.id,
-          title: guideline.title,
-          content: journalContent,
-          date: new Date().toISOString().split('T')[0],
-          is_answered: false,
-          is_shared: false,
+          guideline_id: guideline.id,
+          day_of_week: dayOfWeekLowercase,
+          journal_entry: {
+            title: guideline.title,
+            content: journalContent,
+            date: new Date().toISOString().split('T')[0],
+          },
         });
+      }
 
       if (voiceEnabled && canStartAudio()) {
         playVoicePrompt(VOICE_PROMPTS.SESSION_COMPLETE);
       }
 
-      const message = isCurrentPrayer
-        ? `🎉 Prayer session complete! ${newStreak}-day streak!`
-        : '🎉 Prayer session complete! Saved to your journal.';
+      const message = isOnline
+        ? (isCurrentPrayer
+            ? `🎉 Prayer session complete! ${newStreak}-day streak!`
+            : '🎉 Prayer session complete! Saved to your journal.')
+        : '🎉 Prayer session complete! Will sync when you\'re back online.';
 
       toast.success(message);
 
@@ -557,6 +625,90 @@ const GuidedPrayerSession = () => {
       stopVoicePrompt();
     }
     setVoiceEnabled(!voiceEnabled);
+  };
+
+  const handleVoiceChange = async (voice: 'sarah' | 'theo' | 'megan') => {
+    setSelectedVoice(voice);
+    
+    // Update user's preference in database
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({ voice_preference: voice })
+        .eq('id', user.id);
+      
+      toast.success(`Voice changed to ${voice.charAt(0).toUpperCase() + voice.slice(1)}`);
+    }
+    
+    // If audio is currently playing, restart with new voice
+    if (isPlayingAudio && currentStepIndex !== undefined) {
+      const step = guideline?.steps[currentStepIndex];
+      
+      // Handle kingdom prayer voice change
+      if (step?.type === 'kingdom' && currentPointIndex !== undefined && step.points?.[currentPointIndex]) {
+        stopAllAudio();
+        // Replay with new voice after short delay
+        setTimeout(() => {
+          const point = step.points[currentPointIndex];
+          const audioUrl = point.audio_urls?.[voice] || point.audio_url;
+          if (audioUrl && canStartAudio()) {
+            const audio = new Audio(audioUrl);
+            audio.playbackRate = 0.85;
+            audio.volume = 1;
+            const removeFadeOut = addFadeOut(audio, 1.5);
+            setCurrentAudio(audio);
+            currentAudioRef.current = audio;
+            
+            audio.onended = () => {
+              removeFadeOut();
+              setIsPlayingAudio(false);
+              setCurrentAudio(null);
+              currentAudioRef.current = null;
+            };
+            
+            audio.play().catch(() => {
+              console.warn('⚠️ Audio playback failed');
+              setCurrentAudio(null);
+              currentAudioRef.current = null;
+            });
+            
+            setIsPlayingAudio(true);
+          }
+        }, 300);
+      }
+      
+      // Handle listening prayer voice change
+      if (step?.type === 'listening') {
+        stopAllAudio();
+        // Replay with new voice after short delay
+        setTimeout(() => {
+          const audioUrl = step.audio_urls?.[voice] || step.audio_url;
+          if (audioUrl && canStartAudio()) {
+            const audio = new Audio(audioUrl);
+            audio.playbackRate = 0.76;
+            audio.volume = 1;
+            const removeFadeOut = addFadeOut(audio, 1.75);
+            setCurrentAudio(audio);
+            currentAudioRef.current = audio;
+            
+            audio.onended = () => {
+              removeFadeOut();
+              setIsPlayingAudio(false);
+              setCurrentAudio(null);
+              currentAudioRef.current = null;
+            };
+            
+            audio.play().catch(() => {
+              console.warn('⚠️ Audio playback failed');
+              setCurrentAudio(null);
+              currentAudioRef.current = null;
+            });
+            
+            setIsPlayingAudio(true);
+          }
+        }, 300);
+      }
+    }
   };
 
   const toggleAudioReading = () => {
@@ -588,9 +740,10 @@ const GuidedPrayerSession = () => {
         : null;
 
       if (currentStep && currentStep.type === 'listening' && listeningPrayer?.content) {
-        // TRY PRE-GENERATED AUDIO FIRST (Speechmatics)
-        if (currentStep.audio_url) {
-          const audio = new Audio(currentStep.audio_url);
+        // TRY PRE-GENERATED AUDIO FIRST (Speechmatics) - use selected voice
+        const audioUrl = currentStep.audio_urls?.[selectedVoice] || currentStep.audio_url;
+        if (audioUrl) {
+          const audio = new Audio(audioUrl);
           audio.playbackRate = 0.76; // Slow down Speechmatics audio for meditative scripture (70% speed)
           audio.volume = 1; // Start at full volume
 
@@ -865,7 +1018,36 @@ const GuidedPrayerSession = () => {
                     </Badge>
                   </DropdownMenuItem>
 
-                  {!isGuidedMode && (
+                   <DropdownMenuSeparator />
+
+                   <DropdownMenuLabel>Prayer Voice</DropdownMenuLabel>
+                   
+                   <DropdownMenuItem 
+                     onClick={() => handleVoiceChange('sarah')}
+                     className={selectedVoice === 'sarah' ? 'bg-accent' : ''}
+                   >
+                     <span className="mr-2">👩</span>
+                     Sarah {selectedVoice === 'sarah' && '✓'}
+                   </DropdownMenuItem>
+                   
+                   <DropdownMenuItem 
+                     onClick={() => handleVoiceChange('theo')}
+                     className={selectedVoice === 'theo' ? 'bg-accent' : ''}
+                   >
+                     <span className="mr-2">👨</span>
+                     Theo {selectedVoice === 'theo' && '✓'}
+                   </DropdownMenuItem>
+                   
+                   <DropdownMenuItem 
+                     onClick={() => handleVoiceChange('megan')}
+                     className={selectedVoice === 'megan' ? 'bg-accent' : ''}
+                   >
+                     <span className="mr-2">👩</span>
+                     Megan {selectedVoice === 'megan' && '✓'}
+                   </DropdownMenuItem>
+                   <DropdownMenuSeparator />
+
+                   {!isGuidedMode && (
                     <div className="px-2 py-1.5 text-xs text-muted-foreground">
                       Voice guidance only works in Guided mode
                     </div>

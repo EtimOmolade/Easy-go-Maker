@@ -153,48 +153,8 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
-      {/* Animated Background */}
-      <div className="absolute inset-0 gradient-hero">
-        {/* Floating Orbs */}
-        <motion.div
-          className="absolute top-20 left-10 w-64 h-64 bg-secondary/20 rounded-full blur-3xl"
-          animate={{
-            y: [0, -30, 0],
-            x: [0, 20, 0],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-primary-light/20 rounded-full blur-3xl"
-          animate={{
-            y: [0, 30, 0],
-            x: [0, -20, 0],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-secondary/10 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      </div>
+      {/* Static Background Gradient */}
+      <div className="absolute inset-0 gradient-hero" />
 
       {/* Main Card */}
       <motion.div
@@ -221,12 +181,12 @@ const Auth = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <CardTitle className="text-4xl font-heading text-primary mb-2">
-                SpiritConnect
-              </CardTitle>
-              <CardDescription className="text-base text-foreground/70">
-                {isLogin ? "Welcome back! Sign in to continue your journey" : "Begin your prayer journey today"}
-              </CardDescription>
+            <CardTitle className="text-4xl font-heading text-foreground dark:text-foreground mb-2">
+              SpiritConnect
+            </CardTitle>
+            <CardDescription className="text-base text-foreground/70 dark:text-foreground/80">
+              {isLogin ? "Welcome back! Sign in to continue your journey" : "Begin your prayer journey today"}
+            </CardDescription>
             </motion.div>
           </CardHeader>
 
@@ -303,7 +263,7 @@ const Auth = () => {
                   <button
                     type="button"
                     onClick={() => navigate("/forgot-password")}
-                    className="text-sm text-primary hover:text-primary-light hover:underline transition-colors"
+                    className="text-sm text-primary dark:text-secondary hover:text-primary-light dark:hover:text-secondary/80 hover:underline transition-colors"
                   >
                     Forgot password?
                   </button>
@@ -312,7 +272,7 @@ const Auth = () => {
 
               <Button
                 type="submit"
-                className="w-full h-11 text-base font-medium bg-gradient-primary hover:shadow-glow-primary transition-all duration-300 relative overflow-hidden group"
+                className="w-full h-11 text-base font-medium bg-gradient-primary transition-all duration-300 relative overflow-hidden group"
                 disabled={loading}
               >
                 <span className="relative z-10">
@@ -339,7 +299,7 @@ const Auth = () => {
                 <span className="w-full border-t border-primary/20" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-white dark:bg-background px-2 text-muted-foreground dark:text-foreground/60">Or continue with</span>
               </div>
             </div>
 
@@ -374,7 +334,7 @@ const Auth = () => {
               <button
                 type="button"
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-sm text-primary hover:text-primary-light hover:underline transition-colors inline-flex items-center gap-1"
+                className="text-sm text-primary dark:text-secondary hover:text-primary-light dark:hover:text-secondary/80 hover:underline transition-colors inline-flex items-center gap-1"
               >
                 {isLogin ? (
                   <>

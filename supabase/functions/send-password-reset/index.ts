@@ -51,11 +51,12 @@ serve(async (req) => {
           <tr>
             <td align="center" style="padding: 40px 0;">
               <table role="presentation" style="width: 600px; max-width: 100%; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <!-- Header -->
+                <!-- Header with Logo -->
                 <tr>
-                  <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #7E69AB 0%, #9b87c5 100%); border-radius: 8px 8px 0 0;">
-                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">🕊️ SpiritConnect</h1>
-                    <p style="margin: 8px 0 0; color: #f0e6ff; font-size: 14px;">Your Daily Prayer Companion</p>
+                  <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #700608 0%, #8B0A0C 100%); border-radius: 8px 8px 0 0;">
+                    <img src="https://dev.spiritconnects.org/logo-192.png" alt="SpiritConnect" style="height: 64px; width: 64px; margin-bottom: 16px;" />
+                    <h1 style="margin: 0; color: #FFFEE9; font-size: 28px; font-weight: 600;">SpiritConnect</h1>
+                    <p style="margin: 8px 0 0; color: #F4E180; font-size: 14px;">Your Daily Prayer Companion</p>
                   </td>
                 </tr>
                 
@@ -71,9 +72,9 @@ serve(async (req) => {
                     <!-- CTA Button -->
                     <table role="presentation" style="margin: 0 0 24px;">
                       <tr>
-                        <td style="border-radius: 6px; background: linear-gradient(135deg, #7E69AB 0%, #9b87c5 100%);">
+                        <td style="border-radius: 6px; background: linear-gradient(135deg, #700608 0%, #8B0A0C 100%);">
                           <a href="${linkData.properties.action_link}" 
-                             style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 6px;">
+                             style="display: inline-block; padding: 14px 32px; color: #FFFEE9; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 6px;">
                             Reset Password
                           </a>
                         </td>
@@ -85,10 +86,10 @@ serve(async (req) => {
                     </p>
                     
                     <!-- Security Info -->
-                    <table role="presentation" style="width: 100%; margin: 24px 0 0; padding: 16px; background-color: #f8f5ff; border-radius: 6px; border-left: 4px solid #7E69AB;">
+                    <table role="presentation" style="width: 100%; margin: 24px 0 0; padding: 16px; background-color: #FFFEE9; border-radius: 6px; border-left: 4px solid #700608;">
                       <tr>
                         <td>
-                          <p style="margin: 0; color: #7E69AB; font-size: 14px; font-weight: 600;">🔒 Security Note</p>
+                          <p style="margin: 0; color: #700608; font-size: 14px; font-weight: 600;">🔒 Security Note</p>
                           <p style="margin: 8px 0 0; color: #666666; font-size: 13px; line-height: 1.5;">
                             This link will expire in <strong>1 hour</strong> for your security.
                           </p>

@@ -58,44 +58,105 @@ serve(async (req) => {
             to: [profile.email],
             subject: "📊 Your Weekly Prayer Summary",
             html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #1e40af;">Hey ${profile.name}! 👋</h2>
-                <p>Here's your prayer journey summary for this week:</p>
-
-                <div style="background-color: #f3f4f6; padding: 24px; border-radius: 8px; margin: 20px 0;">
-                  <div style="display: flex; justify-content: space-around; text-align: center;">
-                    <div>
-                      <h3 style="margin: 0; color: #1e40af; font-size: 32px;">${prayerCount}</h3>
-                      <p style="margin: 8px 0 0 0; color: #666;">Prayer Sessions</p>
-                    </div>
-                    <div>
-                      <h3 style="margin: 0; color: #d97706; font-size: 32px;">${streakEmoji} ${profile.streak_count}</h3>
-                      <p style="margin: 8px 0 0 0; color: #666;">Day Streak</p>
-                    </div>
-                  </div>
-                </div>
-
-                <p style="background-color: #fef3c7; padding: 16px; border-left: 4px solid #d97706; border-radius: 4px;">
-                  <strong>${encouragement}</strong> ${prayerCount < 7 ? "Try to pray every day this week!" : "You're building a strong prayer habit!"}
-                </p>
-
-                <p style="margin: 30px 0;">
-                  <a href="https://dev.spiritconnects.org/dashboard"
-                     style="background-color: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                    Continue Your Journey
-                  </a>
-                </p>
-
-                <p style="color: #666; font-size: 14px;">
-                  "Devote yourselves to prayer, being watchful and thankful." - Colossians 4:2
-                </p>
-
-                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-                <p style="color: #999; font-size: 12px;">
-                  Weekly summaries are sent every Sunday.
-                  You can turn this off in your profile settings.
-                </p>
-              </div>
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              </head>
+              <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td align="center" style="padding: 40px 0;">
+                      <table role="presentation" style="width: 600px; max-width: 100%; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <!-- Header with Logo -->
+                        <tr>
+                          <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #700608 0%, #8B0A0C 100%); border-radius: 8px 8px 0 0;">
+                            <img src="https://dev.spiritconnects.org/logo-192.png" alt="SpiritConnect" style="height: 64px; width: 64px; margin-bottom: 16px;" />
+                            <h1 style="margin: 0; color: #FFFEE9; font-size: 28px; font-weight: 600;">SpiritConnect</h1>
+                            <p style="margin: 8px 0 0; color: #F4E180; font-size: 14px;">Weekly Prayer Summary</p>
+                          </td>
+                        </tr>
+                        
+                        <!-- Content -->
+                        <tr>
+                          <td style="padding: 40px;">
+                            <h2 style="margin: 0 0 20px; color: #333333; font-size: 24px; font-weight: 600;">Hey ${profile.name}! 👋</h2>
+                            <p style="margin: 0 0 24px; color: #666666; font-size: 16px; line-height: 1.5;">
+                              Here's your prayer journey summary for this week:
+                            </p>
+                            
+                            <!-- Stats -->
+                            <table role="presentation" style="width: 100%; margin: 0 0 24px; background-color: #FFFEE9; border-radius: 8px; padding: 24px;">
+                              <tr>
+                                <td style="text-align: center; padding: 16px;">
+                                  <p style="margin: 0; color: #700608; font-size: 36px; font-weight: bold;">${prayerCount}</p>
+                                  <p style="margin: 8px 0 0; color: #666666; font-size: 14px;">Prayer Sessions</p>
+                                </td>
+                                <td style="text-align: center; padding: 16px;">
+                                  <p style="margin: 0; color: #700608; font-size: 36px; font-weight: bold;">${streakEmoji} ${profile.streak_count}</p>
+                                  <p style="margin: 8px 0 0; color: #666666; font-size: 14px;">Day Streak</p>
+                                </td>
+                              </tr>
+                            </table>
+                            
+                            <!-- Encouragement -->
+                            <table role="presentation" style="width: 100%; margin: 0 0 24px; padding: 16px; background-color: #FFFEE9; border-radius: 6px; border-left: 4px solid #F4E180;">
+                              <tr>
+                                <td>
+                                  <p style="margin: 0; color: #700608; font-size: 16px; font-weight: 600;">${encouragement}</p>
+                                  <p style="margin: 8px 0 0; color: #666666; font-size: 14px;">
+                                    ${prayerCount < 7 ? "Try to pray every day this week!" : "You're building a strong prayer habit!"}
+                                  </p>
+                                </td>
+                              </tr>
+                            </table>
+                            
+                            <!-- CTA Button -->
+                            <table role="presentation" style="margin: 0 0 24px; width: 100%;">
+                              <tr>
+                                <td align="center">
+                                  <table role="presentation">
+                                    <tr>
+                                      <td style="border-radius: 6px; background: linear-gradient(135deg, #700608 0%, #8B0A0C 100%);">
+                                        <a href="https://dev.spiritconnects.org/dashboard" 
+                                           style="display: inline-block; padding: 14px 32px; color: #FFFEE9; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 6px;">
+                                          Continue Your Journey
+                                        </a>
+                                      </td>
+                                    </tr>
+                                  </table>
+                                </td>
+                              </tr>
+                            </table>
+                            
+                            <!-- Scripture -->
+                            <p style="margin: 0; color: #666666; font-size: 14px; font-style: italic; text-align: center;">
+                              "Devote yourselves to prayer, being watchful and thankful." - Colossians 4:2
+                            </p>
+                          </td>
+                        </tr>
+                        
+                        <!-- Footer -->
+                        <tr>
+                          <td style="padding: 30px 40px; background-color: #f9f9f9; border-radius: 0 0 8px 8px; text-align: center;">
+                            <p style="margin: 0 0 8px; color: #999999; font-size: 12px;">
+                              Weekly summaries are sent every Sunday.
+                            </p>
+                            <p style="margin: 0 0 16px; color: #999999; font-size: 12px;">
+                              <a href="https://dev.spiritconnects.org/profile?unsubscribe=true" style="color: #700608; text-decoration: underline;">Unsubscribe from weekly summaries</a>
+                            </p>
+                            <p style="margin: 0; color: #999999; font-size: 12px;">
+                              © ${new Date().getFullYear()} SpiritConnect. All rights reserved.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </body>
+              </html>
             `,
           }),
         });

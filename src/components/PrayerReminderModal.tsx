@@ -25,13 +25,13 @@ const PrayerReminderModal = ({ isOpen, onClose, streakCount = 0, scriptureVerse 
     navigate("/guidelines");
   };
 
-  const handleSnooze = async () => {
+  const handleSnooze = async (minutes: number = 30) => {
     if (!user) return;
 
     setIsSnoozing(true);
     try {
       const snoozeUntil = new Date();
-      snoozeUntil.setMinutes(snoozeUntil.getMinutes() + 30);
+      snoozeUntil.setMinutes(snoozeUntil.getMinutes() + minutes);
 
       const { error } = await supabase
         .from("prayer_reminders")
@@ -40,7 +40,7 @@ const PrayerReminderModal = ({ isOpen, onClose, streakCount = 0, scriptureVerse 
 
       if (error) throw error;
 
-      toast.success("Reminder snoozed for 30 minutes");
+      toast.success(`Reminder snoozed for ${minutes} minutes`);
       onClose();
     } catch (error) {
       console.error("Error snoozing reminder:", error);
@@ -99,22 +99,22 @@ const PrayerReminderModal = ({ isOpen, onClose, streakCount = 0, scriptureVerse 
           </div>
 
           <DialogTitle className="text-2xl text-center font-heading">Time for Prayer 🕊️</DialogTitle>
-
-          <DialogDescription className="text-center space-y-3">
-            {streakCount > 0 && (
-              <div className="flex items-center justify-center gap-2 text-primary font-semibold">
-                <Flame className="w-5 h-5" />
-                <span>{streakCount} day streak - Keep it going!</span>
-              </div>
-            )}
-
-            {scriptureVerse && (
-              <p className="text-sm italic bg-muted/50 p-3 rounded-lg border border-border">"{scriptureVerse}"</p>
-            )}
-
-            <p className="text-base">Take a moment to connect with God through prayer and reflection.</p>
-          </DialogDescription>
         </DialogHeader>
+
+        <div className="text-center space-y-3 text-muted-foreground">
+          {streakCount > 0 && (
+            <div className="flex items-center justify-center gap-2 text-primary font-semibold">
+              <Flame className="w-5 h-5" />
+              <span>{streakCount} day streak - Keep it going!</span>
+            </div>
+          )}
+
+          {scriptureVerse && (
+            <p className="text-sm italic bg-muted/50 p-3 rounded-lg border border-border">"{scriptureVerse}"</p>
+          )}
+
+          <p className="text-base">Take a moment to connect with God through prayer and reflection.</p>
+        </div>
 
         <div className="flex flex-col gap-3 mt-4">
           <Button
@@ -126,9 +126,14 @@ const PrayerReminderModal = ({ isOpen, onClose, streakCount = 0, scriptureVerse 
           </Button>
 
           <div className="flex gap-2">
-            <Button onClick={handleSnooze} variant="outline" size="sm" className="flex-1" disabled={isSnoozing}>
+            <Button onClick={() => handleSnooze(15)} variant="outline" size="sm" className="flex-1" disabled={isSnoozing}>
               <Clock className="w-4 h-4 mr-2" />
-              {isSnoozing ? "Snoozing..." : "Remind in 30min"}
+              {isSnoozing ? "Snoozing..." : "15 min"}
+            </Button>
+
+            <Button onClick={() => handleSnooze(30)} variant="outline" size="sm" className="flex-1" disabled={isSnoozing}>
+              <Clock className="w-4 h-4 mr-2" />
+              {isSnoozing ? "Snoozing..." : "30 min"}
             </Button>
 
             <Button onClick={handleMarkComplete} variant="outline" size="sm" className="flex-1" disabled={isMarking}>

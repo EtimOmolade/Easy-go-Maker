@@ -161,36 +161,8 @@ const VerifyOTP = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
-      {/* Animated Background */}
-      <div className="absolute inset-0 gradient-hero">
-        {/* Floating Orbs */}
-        <motion.div
-          className="absolute top-20 left-10 w-64 h-64 bg-secondary/20 rounded-full blur-3xl"
-          animate={{
-            y: [0, -30, 0],
-            x: [0, 20, 0],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-primary-light/20 rounded-full blur-3xl"
-          animate={{
-            y: [0, 30, 0],
-            x: [0, -20, 0],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      </div>
+      {/* Static Background Gradient */}
+      <div className="absolute inset-0 gradient-hero" />
 
       {/* Main Card */}
       <motion.div
@@ -209,12 +181,7 @@ const VerifyOTP = () => {
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             >
               <div className="relative">
-                <motion.div
-                  className="absolute inset-0 bg-secondary/20 rounded-full blur-xl"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                />
-                <div className="relative p-4 bg-gradient-primary rounded-full shadow-glow-primary">
+                <div className="relative p-4 bg-gradient-primary rounded-full">
                   <Shield className="h-10 w-10 text-white" />
                 </div>
               </div>
@@ -226,10 +193,10 @@ const VerifyOTP = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <CardTitle className="text-3xl font-heading text-primary">Two-Factor Authentication</CardTitle>
-              <CardDescription className="text-base text-foreground/70 mt-2">
+              <CardTitle className="text-3xl font-heading text-foreground dark:text-foreground">Two-Factor Authentication</CardTitle>
+              <CardDescription className="text-base text-foreground/70 dark:text-foreground/80 mt-2">
                 Enter the 6-digit code sent to<br />
-                <span className="font-medium text-primary">{email}</span>
+                <span className="font-medium text-foreground dark:text-foreground">{email}</span>
               </CardDescription>
             </motion.div>
           </CardHeader>
@@ -315,7 +282,7 @@ const VerifyOTP = () => {
             >
               <Button
                 onClick={() => handleVerify()}
-                className="w-full h-11 bg-gradient-primary hover:shadow-glow-primary transition-all duration-300 relative overflow-hidden group"
+                className="w-full h-11 bg-gradient-primary transition-all duration-300 relative overflow-hidden group"
                 disabled={loading || otp.length !== 6}
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">

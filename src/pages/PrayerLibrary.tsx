@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Plus, Edit, Trash2, BookOpen, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, BookOpen, Upload, CheckSquare, Square } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -17,6 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { AppHeader } from "@/components/AppHeader";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const CATEGORIES: PrayerPointCategory[] = ['Kingdom Focus', 'Listening Prayer'];
 
@@ -56,6 +58,11 @@ const PrayerLibrary = () => {
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [editingPoint, setEditingPoint] = useState<PrayerPoint | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('Kingdom Focus');
+
+  // Bulk selection state
+  const [selectedPrayers, setSelectedPrayers] = useState<Set<string>>(new Set());
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -275,6 +282,69 @@ const PrayerLibrary = () => {
     setReferenceText("");
   };
 
+  // Bulk selection handlers
+  const handleSelectAll = () => {
+    if (selectedPrayers.size === filteredPoints.length) {
+      // Deselect all
+      setSelectedPrayers(new Set());
+    } else {
+      // Select all filtered prayers
+      setSelectedPrayers(new Set(filteredPoints.map(p => p.id)));
+    }
+  };
+
+  const handleSelectPrayer = (id: string) => {
+    const newSelected = new Set(selectedPrayers);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedPrayers(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedPrayers.size === 0) return;
+
+    setIsDeleting(true);
+    const idsToDelete = Array.from(selectedPrayers);
+    const batchSize = 50; // Delete in batches to avoid URL length limits
+    const totalCount = idsToDelete.length;
+    let deletedCount = 0;
+
+    try {
+      // Process in batches
+      for (let i = 0; i < idsToDelete.length; i += batchSize) {
+        const batch = idsToDelete.slice(i, i + batchSize);
+        
+        const { error } = await supabase
+          .from('prayer_library')
+          .delete()
+          .in('id', batch);
+
+        if (error) throw error;
+        
+        deletedCount += batch.length;
+        console.log(`Deleted batch ${Math.floor(i / batchSize) + 1}: ${deletedCount}/${totalCount} prayers`);
+      }
+
+      toast.success(`${totalCount} prayer points deleted`);
+      setSelectedPrayers(new Set());
+      setShowDeleteDialog(false);
+      await fetchPrayerPoints();
+    } catch (error: any) {
+      console.error('Error deleting prayer points:', error);
+      toast.error(error.message || `Failed to delete prayer points. Deleted ${deletedCount}/${totalCount}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Clear selection when category changes
+  useEffect(() => {
+    setSelectedPrayers(new Set());
+  }, [selectedCategory]);
+
   const getCategoryColor = (cat: string) => {
     switch (cat) {
       case 'Kingdom Focus': return 'bg-primary/10 text-primary border-primary/20';
@@ -311,6 +381,103 @@ const PrayerLibrary = () => {
 
   const filteredPoints = prayerPoints.filter(p => p.category === selectedCategory);
 
+  const handleExportJSON = (category: string) => {
+    const filtered = prayerPoints.filter(p => p.category === category);
+    
+    const exportData = filtered.map(p => {
+      if (category === 'Kingdom Focus') {
+        return {
+          category: p.category,
+          title: p.title,
+          content: p.content,
+          month: p.month,
+          day: p.day,
+          year: p.year,
+          day_of_week: p.day_of_week,
+          intercession_number: p.intercession_number,
+        };
+      } else {
+        return {
+          category: p.category,
+          title: p.title,
+          content: p.content,
+          day_number: p.day_number,
+          chapter: p.chapter,
+          start_verse: p.start_verse,
+          end_verse: p.end_verse,
+          reference_text: p.reference_text,
+        };
+      }
+    });
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${category.toLowerCase().replace(/\s+/g, '_')}_export_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success(`Exported ${filtered.length} ${category} prayers as JSON`);
+  };
+
+  const handleExportCSV = (category: string) => {
+    const filtered = prayerPoints.filter(p => p.category === category);
+    
+    let headers: string;
+    let rows: string[];
+    
+    const escapeCSV = (text: string) => {
+      if (!text) return '';
+      return `"${String(text).replace(/"/g, '""')}"`;
+    };
+    
+    if (category === 'Kingdom Focus') {
+      headers = 'category,title,content,month,day,year,day_of_week,intercession_number';
+      rows = filtered.map(p => {
+        return [
+          escapeCSV(p.category),
+          escapeCSV(p.title),
+          escapeCSV(p.content),
+          escapeCSV(p.month || ''),
+          p.day || '',
+          p.year || '',
+          escapeCSV(p.day_of_week || ''),
+          p.intercession_number || ''
+        ].join(',');
+      });
+    } else {
+      headers = 'category,title,content,day_number,chapter,start_verse,end_verse,reference_text';
+      rows = filtered.map(p => {
+        return [
+          escapeCSV(p.category),
+          escapeCSV(p.title),
+          escapeCSV(p.content),
+          p.day_number || '',
+          p.chapter || '',
+          p.start_verse || '',
+          p.end_verse || '',
+          escapeCSV(p.reference_text || '')
+        ].join(',');
+      });
+    }
+    
+    const csv = [headers, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${category.toLowerCase().replace(/\s+/g, '_')}_export_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success(`Exported ${filtered.length} ${category} prayers as CSV`);
+  };
+
   return (
     <div className="min-h-screen relative overflow-hidden gradient-hero">
       {/* Animated Background */}
@@ -344,7 +511,7 @@ const PrayerLibrary = () => {
       </div>
 
       <div className="max-w-6xl mx-auto p-4 md:p-8 relative z-10">
-        <AppHeader title="Prayer Point Library" showBack={true} backTo="/admin" />
+        <AppHeader title="Prayer Point Library" showBack={true} backTo="/admin" hideTitle={true} />
 
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -611,6 +778,9 @@ const PrayerLibrary = () => {
             setBulkImportOpen(false);
           }}
           userId={user?.id || ''}
+          prayers={prayerPoints}
+          onExportJSON={handleExportJSON}
+          onExportCSV={handleExportCSV}
         />
 
         <Tabs value={selectedCategory} onValueChange={(val) => setSelectedCategory(val)}>
@@ -622,6 +792,40 @@ const PrayerLibrary = () => {
               </TabsTrigger>
             ))}
           </TabsList>
+
+          {/* Bulk Actions Bar */}
+          {filteredPoints.length > 0 && (
+            <div className="flex items-center justify-between mb-4 p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="select-all"
+                  checked={selectedPrayers.size === filteredPoints.length && filteredPoints.length > 0}
+                  onCheckedChange={handleSelectAll}
+                />
+                <label htmlFor="select-all" className="text-sm text-white cursor-pointer">
+                  {selectedPrayers.size === filteredPoints.length && filteredPoints.length > 0
+                    ? `Deselect All (${filteredPoints.length})`
+                    : `Select All (${filteredPoints.length})`}
+                </label>
+                {selectedPrayers.size > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {selectedPrayers.size} selected
+                  </Badge>
+                )}
+              </div>
+              {selectedPrayers.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Selected ({selectedPrayers.size})
+                </Button>
+              )}
+            </div>
+          )}
 
           <TabsContent value={selectedCategory}>
             {filteredPoints.length === 0 ? (
@@ -635,22 +839,34 @@ const PrayerLibrary = () => {
             ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                   {filteredPoints.map((point) => (
-                    <Card key={point.id} className="shadow-large glass border-white/20 hover:shadow-glow transition-all overflow-hidden relative">
+                    <Card
+                      key={point.id}
+                      className={`shadow-large glass border-white/20 transition-all overflow-hidden relative ${
+                        selectedPrayers.has(point.id) ? 'ring-2 ring-primary' : ''
+                      }`}
+                    >
                       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/5" />
                       <CardHeader className="relative z-10">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1">
-                            <div className="flex flex-wrap gap-2 items-center">
-                              <Badge className={getCategoryColor(point.category)} variant="outline">
-                                {point.category}
-                              </Badge>
-                              {getScheduleInfo(point) && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {getScheduleInfo(point)}
+                          <div className="flex items-start gap-3 flex-1">
+                            <Checkbox
+                              checked={selectedPrayers.has(point.id)}
+                              onCheckedChange={() => handleSelectPrayer(point.id)}
+                              className="mt-1"
+                            />
+                            <div className="flex-1">
+                              <div className="flex flex-wrap gap-2 items-center">
+                                <Badge className={getCategoryColor(point.category)} variant="outline">
+                                  {point.category}
                                 </Badge>
-                              )}
+                                {getScheduleInfo(point) && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {getScheduleInfo(point)}
+                                  </Badge>
+                                )}
+                              </div>
+                              <CardTitle className="text-lg mt-2 text-white">{point.title}</CardTitle>
                             </div>
-                            <CardTitle className="text-lg mt-2 text-white">{point.title}</CardTitle>
                           </div>
                           <div className="flex gap-1">
                             <Button
@@ -683,6 +899,29 @@ const PrayerLibrary = () => {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Bulk Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent className="glass border-white/20">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-white">Delete Selected Prayer Points</AlertDialogTitle>
+              <AlertDialogDescription className="text-white/80">
+                Are you sure you want to delete {selectedPrayers.size} prayer point{selectedPrayers.size === 1 ? '' : 's'}?
+                This action cannot be undone and may affect scheduled guidelines.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleBulkDelete}
+                disabled={isDeleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? 'Deleting...' : `Delete ${selectedPrayers.size} Prayer Point${selectedPrayers.size === 1 ? '' : 's'}`}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

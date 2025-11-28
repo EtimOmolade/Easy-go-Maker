@@ -8,13 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Plus, Check, X, Trash2, Megaphone, Shield, UserPlus, UserMinus, Clock, AlertTriangle, Search, Edit, BookOpen } from "lucide-react";
+import { ArrowLeft, Plus, Check, X, Trash2, Megaphone, Shield, UserPlus, UserMinus, Clock, AlertTriangle, Search, Edit, BookOpen, BarChart3, Users, Activity, TrendingUp, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -105,11 +107,30 @@ const Admin = () => {
   const [editContent, setEditContent] = useState("");
   const navigate = useNavigate();
 
+  // Analytics state
+  const [analytics, setAnalytics] = useState({
+    totalUsers: 0,
+    activeUsers7Days: 0,
+    activeUsers30Days: 0,
+    totalPrayers: 0,
+    totalGuidelines: 0,
+    totalTestimonies: 0,
+    approvedTestimonies: 0,
+    pendingTestimonies: 0,
+    totalJournals: 0,
+    totalAnnouncements: 0,
+    avgStreakLength: 0,
+    prayersByDay: [],
+    voicePreferences: [],
+    testimonyStats: []
+  });
+
   useEffect(() => {
     fetchTestimonies();
     fetchEncouragementMessages();
     fetchGuidelines();
     fetchUsers();
+    fetchAnalytics();
   }, []);
 
   const fetchGuidelines = async () => {
@@ -128,6 +149,133 @@ const Admin = () => {
       }
     } catch (error) {
       console.error('Error fetching guidelines:', error);
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    try {
+      // Total users
+      const { count: totalUsers } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      // Active users (last 7 days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const { count: activeUsers7 } = await supabase
+        .from('daily_prayers')
+        .select('user_id', { count: 'exact', head: true })
+        .gte('completed_at', sevenDaysAgo.toISOString());
+
+      // Active users (last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const { count: activeUsers30 } = await supabase
+        .from('daily_prayers')
+        .select('user_id', { count: 'exact', head: true })
+        .gte('completed_at', thirtyDaysAgo.toISOString());
+
+      // Total prayers completed
+      const { count: totalPrayers } = await supabase
+        .from('daily_prayers')
+        .select('*', { count: 'exact', head: true });
+
+      // Total guidelines
+      const { count: totalGuidelines } = await supabase
+        .from('guidelines')
+        .select('*', { count: 'exact', head: true });
+
+      // Testimonies stats
+      const { count: totalTestimonies } = await supabase
+        .from('testimonies')
+        .select('*', { count: 'exact', head: true });
+
+      const { count: approvedTestimonies } = await supabase
+        .from('testimonies')
+        .select('*', { count: 'exact', head: true })
+        .eq('approved', true);
+
+      const { count: pendingTestimonies } = await supabase
+        .from('testimonies')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+      // Total journal entries
+      const { count: totalJournals } = await supabase
+        .from('journal_entries')
+        .select('*', { count: 'exact', head: true });
+
+      // Total announcements
+      const { count: totalAnnouncements } = await supabase
+        .from('encouragement_messages')
+        .select('*', { count: 'exact', head: true });
+
+      // Average streak length
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('streak_count');
+      const avgStreak = profiles?.length 
+        ? profiles.reduce((sum, p) => sum + p.streak_count, 0) / profiles.length 
+        : 0;
+
+      // Prayers by day of week
+      const { data: prayersByDay } = await supabase
+        .from('daily_prayers')
+        .select('day_of_week');
+      
+      const dayCount: Record<string, number> = {};
+      prayersByDay?.forEach(p => {
+        dayCount[p.day_of_week] = (dayCount[p.day_of_week] || 0) + 1;
+      });
+
+      const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const prayersByDayData = daysOfWeek.map(day => ({
+        name: day.slice(0, 3),
+        prayers: dayCount[day] || 0
+      }));
+
+      // Voice preferences
+      const { data: voiceData } = await supabase
+        .from('profiles')
+        .select('voice_preference');
+      
+      const voiceCount: Record<string, number> = {};
+      voiceData?.forEach(v => {
+        const voice = v.voice_preference || 'sarah';
+        voiceCount[voice] = (voiceCount[voice] || 0) + 1;
+      });
+
+      const voicePreferencesData = Object.entries(voiceCount).map(([name, value]) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        value
+      }));
+
+      // Testimony status distribution
+      const testimonyStatsData = [
+        { name: 'Approved', value: approvedTestimonies || 0, color: '#22c55e' },
+        { name: 'Pending', value: pendingTestimonies || 0, color: '#f59e0b' },
+        { name: 'Other', value: (totalTestimonies || 0) - (approvedTestimonies || 0) - (pendingTestimonies || 0), color: '#64748b' }
+      ];
+
+      setAnalytics({
+        totalUsers: totalUsers || 0,
+        activeUsers7Days: activeUsers7 || 0,
+        activeUsers30Days: activeUsers30 || 0,
+        totalPrayers: totalPrayers || 0,
+        totalGuidelines: totalGuidelines || 0,
+        totalTestimonies: totalTestimonies || 0,
+        approvedTestimonies: approvedTestimonies || 0,
+        pendingTestimonies: pendingTestimonies || 0,
+        totalJournals: totalJournals || 0,
+        totalAnnouncements: totalAnnouncements || 0,
+        avgStreakLength: Math.round(avgStreak * 10) / 10,
+        prayersByDay: prayersByDayData,
+        voicePreferences: voicePreferencesData,
+        testimonyStats: testimonyStatsData.filter(s => s.value > 0)
+      });
+    } catch (error: any) {
+      console.error('Error fetching analytics:', error);
+      toast.error('Failed to load analytics');
     }
   };
 
@@ -612,35 +760,8 @@ const Admin = () => {
   return (
     <TooltipProvider>
       <div className="min-h-screen relative overflow-hidden gradient-hero">
-        {/* Animated Background */}
-        <div className="absolute inset-0 pointer-events-none">
-          <motion.div
-            className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-3xl"
-            animate={{
-              y: [0, -50, 0],
-              x: [0, 30, 0],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 15,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-          <motion.div
-            className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-light/20 rounded-full blur-3xl"
-            animate={{
-              y: [0, 40, 0],
-              x: [0, -40, 0],
-              scale: [1, 1.3, 1],
-            }}
-            transition={{
-              duration: 12,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        </div>
+        {/* Static Background Gradient */}
+        <div className="absolute inset-0 pointer-events-none" />
 
         <div className="max-w-6xl relative z-10 mx-auto p-4 md:p-8">
           <div className="flex items-center justify-between mb-6">
@@ -673,7 +794,7 @@ const Admin = () => {
 
         <Tabs defaultValue="guidelines" className="space-y-6">
             <div className="w-full md:overflow-visible overflow-x-auto">
-              <TabsList className="inline-flex md:grid w-auto md:w-full min-w-full md:grid-cols-4">
+              <TabsList className="inline-flex md:grid w-auto md:w-full min-w-full md:grid-cols-5">
                 <TabsTrigger value="guidelines" className="whitespace-nowrap flex-shrink-0">
                   Prayer Guidelines
                 </TabsTrigger>
@@ -690,6 +811,10 @@ const Admin = () => {
                 </TabsTrigger>
                 <TabsTrigger value="users" className="whitespace-nowrap flex-shrink-0">
                   Admin Users
+                </TabsTrigger>
+                <TabsTrigger value="analytics" className="whitespace-nowrap flex-shrink-0">
+                  <BarChart3 className="h-4 w-4 mr-1" />
+                  Analytics
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -766,8 +891,8 @@ const Admin = () => {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Megaphone className="h-6 w-6 text-accent" />
+                    <CardTitle className="flex items-center gap-2 text-foreground">
+                      <Megaphone className="h-6 w-6 text-primary" />
                       Community Announcements
                     </CardTitle>
                     <p className="text-sm text-muted-foreground mt-2">
@@ -842,7 +967,7 @@ const Admin = () => {
                         <CardHeader>
                           <div className="flex justify-between items-start">
                             <div className="flex-1 overflow-hidden">
-                              <CardTitle className="text-lg">{testimony.title}</CardTitle>
+                              <CardTitle className="text-lg text-foreground">{testimony.title}</CardTitle>
                               <p className="text-sm text-muted-foreground mt-1">By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}</p>
                               {testimony.resubmitted_at && (
                                 <Badge variant="outline" className="mt-2">Resubmitted</Badge>
@@ -917,7 +1042,7 @@ const Admin = () => {
                         <CardHeader>
                           <div className="flex justify-between items-start">
                             <div className="flex-1 overflow-hidden">
-                              <CardTitle className="text-lg">{testimony.title}</CardTitle>
+                              <CardTitle className="text-lg text-foreground">{testimony.title}</CardTitle>
                               <p className="text-sm text-muted-foreground mt-1">By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}</p>
                             </div>
                             <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}><Trash2 className="h-4 w-4" /></Button>
@@ -942,8 +1067,8 @@ const Admin = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Shield className="h-6 w-6 text-accent" />
+                    <CardTitle className="flex items-center gap-2 text-foreground">
+                      <Shield className="h-6 w-6 text-primary" />
                       Admin User Management
                     </CardTitle>
                     <p className="text-sm text-muted-foreground mt-2">
@@ -994,7 +1119,7 @@ const Admin = () => {
                               )}
 
                               {!canDemote(admin) && admin.id !== user?.id && (
-                                <div className="flex items-center gap-2 mt-2 text-sm text-amber-600">
+                                <div className="flex items-center gap-2 mt-2 text-sm text-secondary">
                                   <AlertTriangle className="h-4 w-4" />
                                   <span>Has precedence over you - cannot demote</span>
                                 </div>
@@ -1034,6 +1159,240 @@ const Admin = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Analytics Tab Content */}
+          <TabsContent value="analytics">
+            <div className="space-y-6">
+              {/* Overview Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{analytics.totalUsers}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {analytics.activeUsers7Days} active (7d)
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Prayers</CardTitle>
+                    <Activity className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{analytics.totalPrayers}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Prayers completed
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Avg Streak</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{analytics.avgStreakLength}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Days average
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Journal Entries</CardTitle>
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{analytics.totalJournals}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Total entries
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Content Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Guidelines</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-primary">{analytics.totalGuidelines}</div>
+                    <p className="text-sm text-muted-foreground mt-1">Total guidelines created</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Testimonies</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Total</span>
+                        <span className="text-xl font-bold">{analytics.totalTestimonies}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-green-600">Approved</span>
+                        <span className="text-lg font-semibold text-green-600">{analytics.approvedTestimonies}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-amber-600">Pending</span>
+                        <span className="text-lg font-semibold text-amber-600">{analytics.pendingTestimonies}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Announcements</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-primary">{analytics.totalAnnouncements}</div>
+                    <p className="text-sm text-muted-foreground mt-1">Community messages sent</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Prayers by Day of Week */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Prayers by Day of Week</CardTitle>
+                  </CardHeader>
+                  <CardContent className="overflow-hidden">
+                    <ChartContainer
+                      config={{
+                        prayers: {
+                          label: "Prayers",
+                          color: "hsl(var(--primary))",
+                        },
+                      }}
+                      className="h-[250px] sm:h-[300px] w-full"
+                    >
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={analytics.prayersByDay} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis 
+                            dataKey="name" 
+                            stroke="hsl(var(--muted-foreground))"
+                            fontSize={10}
+                            tickLine={false}
+                            axisLine={false}
+                            interval={0}
+                            tick={{ fontSize: 10 }}
+                          />
+                          <YAxis 
+                            stroke="hsl(var(--muted-foreground))"
+                            fontSize={10}
+                            tickLine={false}
+                            axisLine={false}
+                            width={30}
+                          />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Bar 
+                            dataKey="prayers" 
+                            fill="hsl(var(--primary))"
+                            radius={[8, 8, 0, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Voice Preferences */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Voice Preferences</CardTitle>
+                  </CardHeader>
+                  <CardContent className="overflow-hidden">
+                    <ChartContainer
+                      config={{
+                        value: {
+                          label: "Users",
+                          color: "hsl(var(--primary))",
+                        },
+                      }}
+                      className="h-[250px] sm:h-[300px] w-full mx-auto"
+                    >
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                          <Pie
+                            data={analytics.voicePreferences}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius="70%"
+                            innerRadius="30%"
+                            fill="hsl(var(--primary))"
+                            dataKey="value"
+                          >
+                            {analytics.voicePreferences.map((entry, index) => (
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={`hsl(var(--primary) / ${1 - index * 0.2})`}
+                              />
+                            ))}
+                          </Pie>
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* User Engagement */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>User Engagement</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Active Users (7 days)</p>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold">{analytics.activeUsers7Days}</span>
+                        <span className="text-sm text-muted-foreground">
+                          / {analytics.totalUsers} ({analytics.totalUsers > 0 ? Math.round((analytics.activeUsers7Days / analytics.totalUsers) * 100) : 0}%)
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Active Users (30 days)</p>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold">{analytics.activeUsers30Days}</span>
+                        <span className="text-sm text-muted-foreground">
+                          / {analytics.totalUsers} ({analytics.totalUsers > 0 ? Math.round((analytics.activeUsers30Days / analytics.totalUsers) * 100) : 0}%)
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Prayer Completion Rate</p>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold">
+                          {analytics.totalUsers > 0 ? Math.round((analytics.totalPrayers / analytics.totalUsers)) : 0}
+                        </span>
+                        <span className="text-sm text-muted-foreground">per user</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

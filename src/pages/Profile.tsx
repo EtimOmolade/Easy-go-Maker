@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Award, Scale, Smartphone, Trash2, Moon, Sun, HelpCircle, Type, Minus, Plus, RotateCcw } from "lucide-react";
-import ReminderSettings from "@/components/ReminderSettings";
-import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Award, Scale, Smartphone, Trash2, Moon, Sun, HelpCircle, Type, Minus, Plus, RotateCcw, Volume2, Clock, X } from "lucide-react";
+import { PushNotificationSettings } from "@/components/PushNotificationSettings";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -20,12 +20,23 @@ import { format } from "date-fns";
 import { generateDeviceFingerprint } from "@/utils/deviceFingerprint";
 import NotificationDropdown from "@/components/NotificationDropdown";
 import { TutorialWalkthrough } from "@/components/TutorialWalkthrough";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import * as LucideIcons from "lucide-react";
+
 interface ProfileData {
   name: string;
   email: string;
   streak_count: number;
   reminders_enabled: boolean;
   two_factor_enabled: boolean;
+  voice_preference?: string;
+}
+
+interface ReminderSettings {
+  reminder_times: string[];
+  days_of_week: number[];
+  enabled: boolean;
 }
 const Profile = () => {
   const {
@@ -42,6 +53,7 @@ const Profile = () => {
     resetFontSize
   } = useFontSize();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [name, setName] = useState("");
   const [reminders, setReminders] = useState(true);
@@ -52,9 +64,47 @@ const Profile = () => {
   const [currentFingerprint, setCurrentFingerprint] = useState<string>("");
   const [tutorialEnabled, setTutorialEnabled] = useState(false);
   const [runTutorial, setRunTutorial] = useState(false);
+  const [voicePreference, setVoicePreference] = useState<string>("sarah");
+  const [reminderSettings, setReminderSettings] = useState<ReminderSettings>({
+    reminder_times: [],
+    days_of_week: [1, 2, 3, 4, 5, 6, 7],
+    enabled: true,
+  });
+  
+  // Handle unsubscribe from email link
+  useEffect(() => {
+    const handleUnsubscribe = async () => {
+      const unsubscribe = searchParams.get('unsubscribe');
+      if (unsubscribe === 'true' && user) {
+        try {
+          const { error } = await supabase
+            .from("profiles")
+            .update({ reminders_enabled: false })
+            .eq("id", user.id);
+          
+          if (error) throw error;
+          
+          setReminders(false);
+          toast.success("You've been unsubscribed from email notifications", {
+            description: "You can re-enable them anytime in your profile settings."
+          });
+          
+          // Clear the query param
+          navigate('/profile', { replace: true });
+        } catch (error) {
+          console.error("Error unsubscribing:", error);
+          toast.error("Failed to unsubscribe. Please try toggling the setting manually.");
+        }
+      }
+    };
+    
+    handleUnsubscribe();
+  }, [searchParams, user, navigate]);
+  
   useEffect(() => {
     fetchProfile();
     fetchTrustedDevices();
+    fetchReminderSettings();
     setCurrentFingerprint(generateDeviceFingerprint());
     // Check tutorial status
     const hasSeenTutorial = localStorage.getItem('hasSeenTutorial');
@@ -70,7 +120,7 @@ const Profile = () => {
       const {
         data,
         error
-      } = await supabase.from("profiles").select("name, email, streak_count, reminders_enabled, two_factor_enabled").eq("id", user.id).single();
+      } = await supabase.from("profiles").select("name, email, streak_count, reminders_enabled, two_factor_enabled, voice_preference").eq("id", user.id).single();
       if (error) {
         console.error("Error fetching profile:", error);
         toast.error("Failed to load profile");
@@ -79,6 +129,7 @@ const Profile = () => {
         setName(data.name);
         setReminders(data.reminders_enabled);
         setTwoFactorEnabled(data.two_factor_enabled || false);
+        setVoicePreference(data.voice_preference || 'sarah');
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -99,7 +150,8 @@ const Profile = () => {
         error
       } = await supabase.from("profiles").update({
         name,
-        reminders_enabled: reminders
+        reminders_enabled: reminders,
+        voice_preference: voicePreference
       }).eq("id", user.id).select();
       if (error) {
         console.error("Error updating profile:", error);
@@ -115,6 +167,28 @@ const Profile = () => {
     }
     setLoading(false);
   };
+  const fetchReminderSettings = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('prayer_reminders')
+        .select('reminder_times, days_of_week, enabled')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      if (data) {
+        setReminderSettings({
+          reminder_times: data.reminder_times || [],
+          days_of_week: data.days_of_week || [1, 2, 3, 4, 5, 6, 7],
+          enabled: data.enabled ?? true,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching reminder settings:', error);
+    }
+  };
+
   const fetchTrustedDevices = async () => {
     if (!user) return;
     try {
@@ -238,56 +312,67 @@ const Profile = () => {
         {/* Achievements Card */}
         <Card className="mb-6 shadow-medium">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="h-6 w-6 text-accent" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Award className="h-6 w-6 text-primary" />
               Prayer Achievements
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="text-center p-4 bg-accent/10 rounded-lg">
               <p className="text-sm text-muted-foreground mb-1">Current Prayer Streak</p>
-              <p className="text-3xl font-bold text-accent">{currentStreak} Day{currentStreak !== 1 ? 's' : ''}</p>
+              <p className="text-3xl font-bold text-foreground">{currentStreak} Day{currentStreak !== 1 ? 's' : ''}</p>
             </div>
 
             {/* Unlocked Achievements */}
             {unlocked.length > 0 && <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Unlocked</h3>
-                {unlocked.map(milestone => <div key={milestone.level} className="p-4 rounded-lg bg-primary/10 border-2 border-primary/20">
-                    <div className="flex items-start gap-3">
-                      <span className="text-4xl">{milestone.emoji}</span>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-foreground">{milestone.name}</h4>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {milestone.message}
-                        </p>
-                        <p className="text-xs italic text-foreground/70">
-                          "{milestone.scripture}" - {milestone.scripture_ref}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Unlocked: {new Date(milestone.unlockedDate).toLocaleDateString()}
-                        </p>
+                {unlocked.map(milestone => {
+                  const IconComponent = (LucideIcons as any)[milestone.icon];
+                  return (
+                    <div key={milestone.level} className="p-4 rounded-lg bg-primary/10 border-2 border-primary/20">
+                      <div className="flex items-start gap-3">
+                        <div className={`${milestone.bgColor} p-3 rounded-full flex-shrink-0`}>
+                          {IconComponent && <IconComponent className={`${milestone.iconColor} w-10 h-10`} strokeWidth={1.5} />}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-foreground">{milestone.name}</h4>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {milestone.message}
+                          </p>
+                          <p className="text-xs italic text-foreground/70">
+                            "{milestone.scripture}" - {milestone.scripture_ref}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>)}
+                  );
+                })}
               </div>}
 
             {/* Locked Achievements */}
             {locked.length > 0 && <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Locked</h3>
-                {locked.map(milestone => <div key={milestone.level} className="p-4 rounded-lg bg-muted/50 border-2 border-muted opacity-60">
-                    <div className="flex items-start gap-3">
-                      <span className="text-4xl grayscale">{milestone.emoji}</span>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-muted-foreground">{milestone.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {milestone.daysNeeded} more day{milestone.daysNeeded !== 1 ? 's' : ''} to unlock
-                        </p>
-                        <p className="text-xs italic text-muted-foreground mt-1">
-                          Requires {milestone.streak_needed}-day prayer streak
-                        </p>
+                {locked.map(milestone => {
+                  const IconComponent = (LucideIcons as any)[milestone.icon];
+                  return (
+                    <div key={milestone.level} className="p-4 rounded-lg bg-muted/50 border-2 border-muted opacity-60">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-muted/50 p-3 rounded-full flex-shrink-0">
+                          {IconComponent && <IconComponent className="text-muted-foreground w-10 h-10" strokeWidth={1.5} />}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-muted-foreground">{milestone.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {milestone.daysNeeded} more day{milestone.daysNeeded !== 1 ? 's' : ''} to unlock
+                          </p>
+                          <p className="text-xs italic text-muted-foreground mt-1">
+                            Requires {milestone.streak_needed}-day prayer streak
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>)}
+                  );
+                })}
               </div>}
 
             {unlocked.length === 0 && <p className="text-center text-muted-foreground py-4">
@@ -318,15 +403,15 @@ const Profile = () => {
 
               <div className="flex items-center justify-between space-x-2">
                 <div className="flex-1 space-y-1">
-                  <Label htmlFor="darkMode" className="flex items-center gap-2">
+                  <Label htmlFor="classicMode" className="flex items-center gap-2">
                     {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                    Dark Mode
+                    Classic Mode
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Toggle between light and dark theme
+                    Toggle between light and classic theme
                   </p>
                 </div>
-                <Switch id="darkMode" checked={theme === 'dark'} onCheckedChange={toggleTheme} />
+                <Switch id="classicMode" checked={theme === 'dark'} onCheckedChange={toggleTheme} />
               </div>
 
               <div className="space-y-3">
@@ -399,14 +484,394 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Prayer Reminders Settings */}
-        <ReminderSettings />
+        {/* Audio Settings Card */}
+        <Card className="mb-8 shadow-medium backdrop-blur-sm bg-card/95">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Volume2 className="w-5 h-5 text-primary" />
+              Audio Settings
+            </CardTitle>
+            <CardDescription>
+              Choose your preferred voice for prayer audio guidance
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Label>Prayer Voice Preference</Label>
+            <RadioGroup 
+              value={voicePreference} 
+              onValueChange={(value: string) => setVoicePreference(value)}
+              className="space-y-3"
+            >
+              <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-accent/10 cursor-pointer transition-colors">
+                <RadioGroupItem value="sarah" id="sarah" />
+                <Label htmlFor="sarah" className="flex-1 cursor-pointer">
+                  <div className="font-medium">Sarah</div>
+                  <div className="text-sm text-muted-foreground">
+                    Clear, gentle female voice (default)
+                  </div>
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-accent/10 cursor-pointer transition-colors">
+                <RadioGroupItem value="theo" id="theo" />
+                <Label htmlFor="theo" className="flex-1 cursor-pointer">
+                  <div className="font-medium">Theo</div>
+                  <div className="text-sm text-muted-foreground">
+                    Calm, deep male voice
+                  </div>
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-accent/10 cursor-pointer transition-colors">
+                <RadioGroupItem value="megan" id="megan" />
+                <Label htmlFor="megan" className="flex-1 cursor-pointer">
+                  <div className="font-medium">Megan</div>
+                  <div className="text-sm text-muted-foreground">
+                    Warm, expressive female voice
+                  </div>
+                </Label>
+              </div>
+            </RadioGroup>
+            
+            <p className="text-xs text-muted-foreground">
+              Your voice preference will be used for all future prayer sessions. 
+              You can change voices during a prayer session anytime.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Prayer Reminder Settings */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Clock className="w-5 h-5 text-primary" />
+              Prayer Reminders
+            </CardTitle>
+            <CardDescription>
+              Customize when and which days you want to receive prayer reminders
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="reminders-enabled">Enable Prayer Reminders</Label>
+              <Switch
+                id="reminders-enabled"
+                checked={reminderSettings.enabled}
+                onCheckedChange={async (checked) => {
+                  setReminderSettings(prev => ({ ...prev, enabled: checked }));
+                  try {
+                    const { data: current, error: fetchError } = await supabase
+                      .from('prayer_reminders')
+                      .select('id')
+                      .eq('user_id', user?.id)
+                      .maybeSingle();
+                    
+                    if (fetchError) throw fetchError;
+                    
+                    if (current?.id) {
+                      const { error } = await supabase
+                        .from('prayer_reminders')
+                        .update({ enabled: checked })
+                        .eq('id', current.id);
+                      if (error) throw error;
+                    } else {
+                      const { error } = await supabase
+                        .from('prayer_reminders')
+                        .insert({
+                          user_id: user?.id,
+                          enabled: checked,
+                          reminder_times: ['07:00', '20:00'],
+                          notification_methods: ['in-app', 'push'],
+                        });
+                      if (error) throw error;
+                    }
+                    
+                    toast.success(`Reminders ${checked ? 'enabled' : 'disabled'}`);
+                    fetchReminderSettings();
+                  } catch (error) {
+                    console.error('Error updating reminders:', error);
+                    toast.error('Failed to update reminders');
+                  }
+                }}
+              />
+            </div>
+
+            {reminderSettings.enabled && (
+              <>
+                {/* Active Days */}
+                <div className="space-y-3">
+                  <Label>Active Days</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Select which days to receive reminders
+                  </p>
+                  <div className="grid grid-cols-7 gap-2">
+                    {[
+                      { label: 'S', value: 7, name: 'Sunday' },
+                      { label: 'M', value: 1, name: 'Monday' },
+                      { label: 'T', value: 2, name: 'Tuesday' },
+                      { label: 'W', value: 3, name: 'Wednesday' },
+                      { label: 'T', value: 4, name: 'Thursday' },
+                      { label: 'F', value: 5, name: 'Friday' },
+                      { label: 'S', value: 6, name: 'Saturday' },
+                    ].map((day) => {
+                      const isActive = reminderSettings.days_of_week.includes(day.value);
+                      return (
+                        <Button
+                          key={day.value}
+                          type="button"
+                          variant={isActive ? "default" : "outline"}
+                          size="sm"
+                          className="h-10 w-full"
+                          onClick={async () => {
+                            const newDays = isActive
+                              ? reminderSettings.days_of_week.filter(d => d !== day.value)
+                              : [...reminderSettings.days_of_week, day.value];
+                            
+                            if (newDays.length === 0) {
+                              toast.error('At least one day must be selected');
+                              return;
+                            }
+                            
+                            setReminderSettings(prev => ({ ...prev, days_of_week: newDays }));
+                            
+                            try {
+                              const { data: current, error: fetchError } = await supabase
+                                .from('prayer_reminders')
+                                .select('id')
+                                .eq('user_id', user?.id)
+                                .maybeSingle();
+                              
+                              if (fetchError) throw fetchError;
+                              
+                              if (current?.id) {
+                                const { error } = await supabase
+                                  .from('prayer_reminders')
+                                  .update({ days_of_week: newDays })
+                                  .eq('id', current.id);
+                                if (error) throw error;
+                                toast.success('Days updated');
+                              }
+                            } catch (error) {
+                              console.error('Error updating days:', error);
+                              toast.error('Failed to update days');
+                            }
+                          }}
+                          title={day.name}
+                        >
+                          {day.label}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Current Reminder Times */}
+                {reminderSettings.reminder_times.length > 0 && (
+                  <div className="space-y-3">
+                    <Label>Your Reminder Times</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {reminderSettings.reminder_times.map((time, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 rounded-lg border bg-muted/30"
+                        >
+                          <span className="font-medium">{time}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            onClick={async () => {
+                              const newTimes = reminderSettings.reminder_times.filter((_, i) => i !== index);
+                              
+                              setReminderSettings(prev => ({ ...prev, reminder_times: newTimes }));
+                              
+                              try {
+                                const { data: current, error: fetchError } = await supabase
+                                  .from('prayer_reminders')
+                                  .select('id')
+                                  .eq('user_id', user?.id)
+                                  .maybeSingle();
+                                
+                                if (fetchError) throw fetchError;
+                                
+                                if (current?.id) {
+                                  const { error } = await supabase
+                                    .from('prayer_reminders')
+                                    .update({ reminder_times: newTimes })
+                                    .eq('id', current.id);
+                                  if (error) throw error;
+                                  toast.success('Reminder time removed');
+                                }
+                              } catch (error) {
+                                console.error('Error removing reminder:', error);
+                                toast.error('Failed to remove reminder');
+                              }
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Preset Reminder Times */}
+                <div className="space-y-3">
+                  <Label>Quick Add Times</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Add common prayer times quickly
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {['06:00', '09:00', '12:00', '15:00', '18:00', '20:00', '21:00', '22:00'].map((presetTime) => {
+                      const isAdded = reminderSettings.reminder_times.includes(presetTime);
+                      return (
+                        <Button
+                          key={presetTime}
+                          type="button"
+                          variant={isAdded ? "secondary" : "outline"}
+                          size="sm"
+                          disabled={isAdded}
+                          onClick={async () => {
+                            const newTimes = [...reminderSettings.reminder_times, presetTime].sort();
+                            
+                            setReminderSettings(prev => ({ ...prev, reminder_times: newTimes }));
+                            
+                            try {
+                              const { data: current, error: fetchError } = await supabase
+                                .from('prayer_reminders')
+                                .select('id')
+                                .eq('user_id', user?.id)
+                                .maybeSingle();
+                              
+                              if (fetchError) throw fetchError;
+                              
+                              if (current?.id) {
+                                const { error } = await supabase
+                                  .from('prayer_reminders')
+                                  .update({
+                                    reminder_times: newTimes,
+                                    enabled: true,
+                                    notification_methods: ['in-app', 'push'],
+                                  })
+                                  .eq('id', current.id);
+                                if (error) throw error;
+                              } else {
+                                const { error } = await supabase
+                                  .from('prayer_reminders')
+                                  .insert({
+                                    user_id: user?.id,
+                                    reminder_times: newTimes,
+                                    enabled: true,
+                                    notification_methods: ['in-app', 'push'],
+                                  });
+                                if (error) throw error;
+                              }
+                              
+                              toast.success('Reminder time added');
+                            } catch (error) {
+                              console.error('Error adding reminder:', error);
+                              toast.error('Failed to add reminder');
+                            }
+                          }}
+                        >
+                          {presetTime}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom Time Input */}
+                <div className="space-y-3">
+                  <Label>Custom Time</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Add your own reminder time
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      type="time"
+                      placeholder="Add reminder time"
+                      className="flex-1"
+                      id="new-reminder-time"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      onClick={async () => {
+                        const input = document.getElementById('new-reminder-time') as HTMLInputElement;
+                        if (!input.value) {
+                          toast.error('Please select a time');
+                          return;
+                        }
+                        
+                        if (reminderSettings.reminder_times.includes(input.value)) {
+                          toast.error('This time is already added');
+                          return;
+                        }
+                        
+                        const newTimes = [...reminderSettings.reminder_times, input.value].sort();
+                        
+                        setReminderSettings(prev => ({ ...prev, reminder_times: newTimes }));
+                        
+                        try {
+                          const { data: current, error: fetchError } = await supabase
+                            .from('prayer_reminders')
+                            .select('id')
+                            .eq('user_id', user?.id)
+                            .maybeSingle();
+                          
+                          if (fetchError) throw fetchError;
+                          
+                          if (current?.id) {
+                            const { error } = await supabase
+                              .from('prayer_reminders')
+                              .update({
+                                reminder_times: newTimes,
+                                enabled: true,
+                                notification_methods: ['in-app', 'push'],
+                              })
+                              .eq('id', current.id);
+                            if (error) throw error;
+                          } else {
+                            const { error } = await supabase
+                              .from('prayer_reminders')
+                              .insert({
+                                user_id: user?.id,
+                                reminder_times: newTimes,
+                                enabled: true,
+                                notification_methods: ['in-app', 'push'],
+                              });
+                            if (error) throw error;
+                          }
+                          
+                          toast.success('Reminder time added');
+                          input.value = '';
+                        } catch (error) {
+                          console.error('Error adding reminder:', error);
+                          toast.error('Failed to add reminder');
+                        }
+                      }}
+                    >
+                      Add Custom Time
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Push Notification Settings */}
+        <PushNotificationSettings />
 
         {/* Trusted Devices Card - Only show if 2FA is enabled */}
         {twoFactorEnabled && <Card className="shadow-medium mb-6">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Smartphone className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                <Smartphone className="h-5 w-5 text-primary" />
                 Trusted Devices
               </CardTitle>
               <CardDescription>
@@ -442,8 +907,8 @@ const Profile = () => {
         {/* Legal & Policies Section */}
         <Card className="shadow-medium my-[20px]">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Scale className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Scale className="h-5 w-5 text-primary" />
               Legal & Policies
             </CardTitle>
             <CardDescription className="text-xs">

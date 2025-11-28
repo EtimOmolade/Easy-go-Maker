@@ -102,21 +102,74 @@ serve(async (req) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "SpiritConnect <onboarding@resend.dev>",
+        from: "SpiritConnect <noreply@spiritconnects.org>",
         to: [userEmail],
         subject: "Your SpiritConnect Verification Code",
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #7E69AB;">SpiritConnect Verification</h2>
-            <p>Your verification code is:</p>
-            <div style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
-              ${otp}
-            </div>
-            <p>This code will expire in 5 minutes.</p>
-            <p>If you didn't request this code, please ignore this email.</p>
-            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-            <p style="color: #666; font-size: 12px;">SpiritConnect - Your Daily Prayer Companion</p>
-          </div>
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td align="center" style="padding: 40px 0;">
+                  <table role="presentation" style="width: 600px; max-width: 100%; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <!-- Header with Logo -->
+                    <tr>
+                      <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #700608 0%, #8B0A0C 100%); border-radius: 8px 8px 0 0;">
+                        <img src="https://dev.spiritconnects.org/logo-192.png" alt="SpiritConnect" style="height: 64px; width: 64px; margin-bottom: 16px;" />
+                        <h1 style="margin: 0; color: #FFFEE9; font-size: 28px; font-weight: 600;">SpiritConnect</h1>
+                        <p style="margin: 8px 0 0; color: #F4E180; font-size: 14px;">Two-Factor Authentication</p>
+                      </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                      <td style="padding: 40px;">
+                        <h2 style="margin: 0 0 20px; color: #333333; font-size: 24px; font-weight: 600;">Verification Code</h2>
+                        <p style="margin: 0 0 24px; color: #666666; font-size: 16px; line-height: 1.5;">
+                          Enter this code to complete your sign-in:
+                        </p>
+                        
+                        <!-- OTP Code -->
+                        <div style="background-color: #FFFEE9; padding: 24px; text-align: center; font-size: 36px; font-weight: bold; letter-spacing: 8px; margin: 20px 0; border: 2px solid #F4E180; border-radius: 8px; color: #700608;">
+                          ${otp}
+                        </div>
+                        
+                        <!-- Security Info -->
+                        <table role="presentation" style="width: 100%; margin: 24px 0 0; padding: 16px; background-color: #FFFEE9; border-radius: 6px; border-left: 4px solid #700608;">
+                          <tr>
+                            <td>
+                              <p style="margin: 0; color: #700608; font-size: 14px; font-weight: 600;">⏱️ This code expires in 5 minutes</p>
+                              <p style="margin: 8px 0 0; color: #666666; font-size: 13px; line-height: 1.5;">
+                                If you didn't request this code, please ignore this email.
+                              </p>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                      <td style="padding: 30px 40px; background-color: #f9f9f9; border-radius: 0 0 8px 8px; text-align: center;">
+                        <p style="margin: 0 0 8px; color: #999999; font-size: 12px;">
+                          SpiritConnect - Your Daily Prayer Companion
+                        </p>
+                        <p style="margin: 0; color: #999999; font-size: 12px;">
+                          © ${new Date().getFullYear()} SpiritConnect. All rights reserved.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
         `,
       }),
     });

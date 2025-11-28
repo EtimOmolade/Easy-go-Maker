@@ -6,6 +6,8 @@ import {
   getUnsyncedJournalEntries,
   markJournalSynced,
   getUnsyncedPrayerHistory,
+  markPrayerHistorySynced,
+  cleanupSyncedEntries,
 } from "@/utils/offlineStorage";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -46,6 +48,7 @@ export const OfflineProvider = ({ children }: { children: React.ReactNode }) => 
 
     setIsSyncing(true);
     let syncedCount = 0;
+    let failedCount = 0;
 
     try {
       // Sync journal entries
@@ -55,44 +58,118 @@ export const OfflineProvider = ({ children }: { children: React.ReactNode }) => 
           const { error } = await supabase
             .from('journal_entries')
             .insert({
+              user_id: entry.user_id,
+              title: entry.title,
               content: entry.content,
+              date: entry.date,
               guideline_id: entry.guideline_id,
               created_at: entry.created_at,
+              is_answered: entry.is_answered || false,
+              is_shared: entry.is_shared || false,
             } as any);
 
           if (!error && entry.id) {
             await markJournalSynced(entry.id);
             syncedCount++;
+          } else {
+            failedCount++;
+            console.error('Error syncing journal entry:', error);
           }
         } catch (error) {
+          failedCount++;
           console.error('Error syncing journal entry:', error);
         }
       }
 
-      // Sync prayer history
+      // Sync prayer completions (includes daily_prayers + journal entries)
       const unsyncedPrayer = await getUnsyncedPrayerHistory();
       for (const history of unsyncedPrayer) {
         try {
-          const { error } = await (supabase as any)
-            .from('prayer_history')
-            .insert({
-              guideline_id: history.guideline_id,
-              completed_at: history.date,
-            });
+          if (history.type === 'completion') {
+            // This is a prayer session completion
+            const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const dayOfWeekLowercase = history.day_of_week.toLowerCase();
 
-          if (!error) {
-            syncedCount++;
+            // Check if already synced to avoid duplicates
+            const { data: existingPrayer } = await supabase
+              .from('daily_prayers')
+              .select('*')
+              .eq('user_id', history.user_id)
+              .eq('guideline_id', history.guideline_id)
+              .eq('day_of_week', dayOfWeekLowercase)
+              .maybeSingle();
+
+            if (!existingPrayer) {
+              // Sync daily prayer record
+              const { error: prayerError } = await supabase
+                .from('daily_prayers')
+                .insert({
+                  user_id: history.user_id,
+                  guideline_id: history.guideline_id,
+                  day_of_week: dayOfWeekLowercase,
+                  completed_at: history.date || new Date().toISOString(),
+                });
+
+              if (prayerError) {
+                console.error('Error syncing daily prayer:', prayerError);
+                failedCount++;
+                continue;
+              }
+
+              // Sync associated journal entry
+              if (history.journal_entry) {
+                const { error: journalError } = await supabase
+                  .from('journal_entries')
+                  .insert({
+                    user_id: history.user_id,
+                    title: history.journal_entry.title,
+                    content: history.journal_entry.content,
+                    date: history.journal_entry.date,
+                    is_answered: false,
+                    is_shared: false,
+                  });
+
+                if (journalError) {
+                  console.error('Error syncing prayer journal entry:', journalError);
+                  // Don't increment failedCount here - prayer was synced successfully
+                }
+              }
+
+              if (history.id) {
+                await markPrayerHistorySynced(history.id);
+              }
+              syncedCount++;
+            } else {
+              // Already synced, just mark as synced in IndexedDB
+              if (history.id) {
+                await markPrayerHistorySynced(history.id);
+              }
+            }
+          } else {
+            // Legacy prayer history - skip (prayer_history table no longer exists)
+            console.log('Skipping legacy prayer history entry');
+            if (history.id) {
+              await markPrayerHistorySynced(history.id);
+            }
           }
         } catch (error) {
-          console.error('Error syncing prayer history:', error);
+          failedCount++;
+          console.error('Error syncing prayer data:', error);
         }
       }
+
+      // Clean up synced entries from IndexedDB
+      await cleanupSyncedEntries();
 
       // Clear sync queue
       await clearSyncQueue();
 
       if (syncedCount > 0) {
-        toast.success(`Synced ${syncedCount} item${syncedCount > 1 ? 's' : ''} successfully!`);
+        toast.success(`✅ Synced ${syncedCount} item${syncedCount > 1 ? 's' : ''} successfully!`);
+      }
+
+      if (failedCount > 0) {
+        toast.warning(`⚠️ ${failedCount} item${failedCount > 1 ? 's' : ''} failed to sync. Will retry automatically.`);
       }
 
       await checkPendingSync();

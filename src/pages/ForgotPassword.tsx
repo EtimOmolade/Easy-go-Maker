@@ -26,8 +26,12 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/update-password`,
+      // Use custom edge function for branded email
+      const { data, error } = await supabase.functions.invoke("send-password-reset", {
+        body: {
+          email,
+          redirectTo: `${window.location.origin}/update-password`,
+        },
       });
 
       if (error) throw error;
@@ -44,36 +48,8 @@ const ForgotPassword = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
-      {/* Animated Background */}
-      <div className="absolute inset-0 gradient-hero">
-        {/* Floating Orbs */}
-        <motion.div
-          className="absolute top-20 left-10 w-64 h-64 bg-secondary/20 rounded-full blur-3xl"
-          animate={{
-            y: [0, -30, 0],
-            x: [0, 20, 0],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-primary-light/20 rounded-full blur-3xl"
-          animate={{
-            y: [0, 30, 0],
-            x: [0, -20, 0],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      </div>
+      {/* Static Background Gradient */}
+      <div className="absolute inset-0 gradient-hero" />
 
       {/* Main Card */}
       <motion.div
@@ -104,9 +80,9 @@ const ForgotPassword = () => {
               </Button>
             )}
             <div>
-              <CardTitle className="text-2xl font-heading text-primary">Forgot Password</CardTitle>
+              <CardTitle className="text-2xl font-heading text-foreground dark:text-foreground">Forgot Password</CardTitle>
             </div>
-            <CardDescription className="text-base text-foreground/70">
+            <CardDescription className="text-base text-foreground/70 dark:text-foreground/80">
               {sent
                 ? "We've sent you a password reset link"
                 : "Enter your email to receive a password reset link"}
@@ -157,7 +133,7 @@ const ForgotPassword = () => {
 
                 <Button
                   onClick={() => navigate("/auth")}
-                  className="w-full h-11 bg-gradient-primary hover:shadow-glow-primary transition-all duration-300"
+                  className="w-full h-11 bg-gradient-primary transition-all duration-300"
                 >
                   Back to Login
                 </Button>
@@ -194,7 +170,7 @@ const ForgotPassword = () => {
                 >
                   <Button
                     type="submit"
-                    className="w-full h-11 bg-gradient-primary hover:shadow-glow-primary transition-all duration-300 relative overflow-hidden group"
+                    className="w-full h-11 bg-gradient-primary transition-all duration-300 relative overflow-hidden group"
                     disabled={loading}
                   >
                     <span className="relative z-10 flex items-center justify-center gap-2">

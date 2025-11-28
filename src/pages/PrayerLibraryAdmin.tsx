@@ -12,19 +12,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, Plus, Edit, Trash2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, RefreshCw, Download, Upload } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
+import { BulkImportDialog } from "@/components/BulkImportDialog";
 
 
 export default function PrayerLibraryAdmin() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [prayers, setPrayers] = useState<any[]>([]);
+  const [filteredPrayers, setFilteredPrayers] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentPrayer, setCurrentPrayer] = useState<any>(null);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -43,21 +46,23 @@ export default function PrayerLibraryAdmin() {
 
   const fetchPrayers = async () => {
     try {
-      let query = supabase
+      // Fetch all prayers without filtering
+      const { data, error } = await supabase
         .from('prayer_library')
         .select('*')
         .order('month', { ascending: true })
         .order('day', { ascending: true })
         .order('intercession_number', { ascending: true });
 
-      if (selectedCategory !== 'all') {
-        query = query.eq('category', selectedCategory);
-      }
-
-      const { data, error } = await query;
-
       if (error) throw error;
       setPrayers(data || []);
+      
+      // Apply filter for display
+      if (selectedCategory === 'all') {
+        setFilteredPrayers(data || []);
+      } else {
+        setFilteredPrayers((data || []).filter(p => p.category === selectedCategory));
+      }
     } catch (error: any) {
       toast.error("Failed to load prayers");
       console.error(error);
@@ -171,11 +176,99 @@ export default function PrayerLibraryAdmin() {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'Kingdom Focus':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-primary/10 text-primary';
       case 'Listening Prayer':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-secondary/20 text-secondary-foreground';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  const handleExportJSON = (category: string) => {
+    try {
+      const filteredPrayers = prayers.filter(p => p.category === category);
+      
+      const exportData = {
+        prayers: filteredPrayers,
+        metadata: {
+          category: category,
+          exported_at: new Date().toISOString(),
+          total_entries: filteredPrayers.length,
+          format_version: "1.0"
+        }
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `prayer-library-${category.toLowerCase().replace(' ', '_')}-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`Exported ${filteredPrayers.length} ${category} prayers as JSON`);
+    } catch (error) {
+      toast.error("Failed to export prayers");
+      console.error(error);
+    }
+  };
+
+  const handleExportCSV = (category: string) => {
+    try {
+      const filteredPrayers = prayers.filter(p => p.category === category);
+      
+      let headers: string[];
+      let rows: string[][];
+
+      if (category === 'Kingdom Focus') {
+        headers = ['ID', 'Title', 'Category', 'Month', 'Day', 'Year', 'Day of Week', 'Intercession #', 'Content'];
+        rows = filteredPrayers.map(p => [
+          p.id,
+          `"${(p.title || '').replace(/"/g, '""')}"`,
+          p.category || '',
+          p.month || '',
+          p.day || '',
+          p.year || '',
+          p.day_of_week || '',
+          p.intercession_number || '',
+          `"${(p.content || '').replace(/"/g, '""')}"`
+        ]);
+      } else {
+        headers = ['ID', 'Title', 'Category', 'Day Number', 'Chapter', 'Start Verse', 'End Verse', 'Reference', 'Content'];
+        rows = filteredPrayers.map(p => [
+          p.id,
+          `"${(p.title || '').replace(/"/g, '""')}"`,
+          p.category || '',
+          p.day_number || '',
+          p.chapter || '',
+          p.start_verse || '',
+          p.end_verse || '',
+          p.reference_text || '',
+          `"${(p.content || '').replace(/"/g, '""')}"`
+        ]);
+      }
+
+      const csv = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `prayer-library-${category.toLowerCase().replace(' ', '_')}-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`Exported ${filteredPrayers.length} ${category} prayers as CSV`);
+    } catch (error) {
+      toast.error("Failed to export prayers");
+      console.error(error);
     }
   };
 
@@ -186,7 +279,7 @@ export default function PrayerLibraryAdmin() {
 
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold">Prayer Library Management</h1>
+            <h1 className="text-4xl font-bold text-foreground">Prayer Library Management</h1>
             <p className="text-muted-foreground mt-2">
               Manage Kingdom Focus prayers and Listening Prayer content
             </p>
@@ -195,6 +288,21 @@ export default function PrayerLibraryAdmin() {
             <Button onClick={handleGenerateProverbsPlan} disabled={isGenerating} size="default">
               <RefreshCw className={`h-4 w-4 ${isGenerating ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline ml-2">{isGenerating ? 'Generating...' : 'Regenerate Proverbs'}</span>
+            </Button>
+            <BulkImportDialog
+              open={isBulkImportOpen}
+              onOpenChange={setIsBulkImportOpen}
+              onImportComplete={fetchPrayers}
+              userId={user?.id || ''}
+              prayers={prayers}
+              onExportJSON={handleExportJSON}
+              onExportCSV={handleExportCSV}
+            />
+            <Button onClick={() => setIsBulkImportOpen(true)} variant="outline" size="default">
+              <Upload className="h-4 w-4" />
+              <Download className="h-4 w-4 -ml-2" />
+              <span className="hidden sm:inline ml-2">Import/Export</span>
+              <span className="sm:hidden ml-2">Data</span>
             </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
@@ -338,7 +446,7 @@ export default function PrayerLibraryAdmin() {
           </TabsList>
 
           <TabsContent value={selectedCategory} className="space-y-4 mt-6">
-            {prayers.length === 0 ? (
+            {filteredPrayers.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <p className="text-muted-foreground mb-4">No prayers found</p>
@@ -350,7 +458,7 @@ export default function PrayerLibraryAdmin() {
               </Card>
             ) : (
               <div className="grid gap-4">
-                {prayers.map((prayer) => (
+                {filteredPrayers.map((prayer) => (
                   <Card key={prayer.id}>
                     <CardHeader>
                       <div className="flex justify-between items-start">
@@ -370,7 +478,7 @@ export default function PrayerLibraryAdmin() {
                                 </Badge>
                               )}
                             </div>
-                            <CardTitle className="text-xl">{prayer.title}</CardTitle>
+                            <CardTitle className="text-xl text-foreground">{prayer.title}</CardTitle>
                           </div>
                         <div className="flex gap-2">
                           <Button size="sm" variant="outline" onClick={() => handleEdit(prayer)}>

@@ -530,7 +530,7 @@ const Journal = () => {
           </Dialog>
 
         {/* Search Bar */}
-        <div className="mb-6">
+        <div className="mt-4 mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
@@ -577,7 +577,7 @@ const Journal = () => {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-xl mb-2">{entry.title}</CardTitle>
+                      <CardTitle className="text-xl mb-2 text-foreground">{entry.title}</CardTitle>
                       <p className="text-sm text-muted-foreground">
                         {new Date(entry.date).toLocaleDateString('en-US', {
                           weekday: 'long',

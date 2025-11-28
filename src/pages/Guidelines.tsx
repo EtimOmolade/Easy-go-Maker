@@ -9,6 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/AppHeader";
+import {
+  cacheGuidelinesList,
+  getCachedGuidelinesList,
+} from "@/utils/offlineStorage";
 
 interface Guideline {
   id: string;
@@ -40,16 +44,35 @@ const Guidelines = () => {
 
   const fetchGuidelines = async () => {
     try {
+      // Try cache first for offline support
+      const cached = await getCachedGuidelinesList();
+      if (cached && cached.length > 0) {
+        console.log(`📦 Using ${cached.length} cached guidelines`);
+        setGuidelines(cached);
+        setLoading(false);
+      }
+
+      // Fetch fresh data from network
       const { data, error } = await supabase
         .from("guidelines")
         .select("*")
         .order("month", { ascending: true })
         .order("day", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        // Only show error if we don't have cached data
+        if (!cached || cached.length === 0) {
+          throw error;
+        }
+      } else {
+        // Cache the fresh data
+        if (data && data.length > 0) {
+          await cacheGuidelinesList(data);
+        }
 
-      setGuidelines((data as any[]) || []);
-      setLoading(false);
+        setGuidelines((data as any[]) || []);
+        setLoading(false);
+      }
     } catch (error) {
       console.error("Error fetching guidelines:", error);
       toast.error("Failed to load guidelines");
@@ -233,15 +256,15 @@ const Guidelines = () => {
                                   animate={{ opacity: 1, x: 0 }}
                                   transition={{ delay: guidelineIndex * 0.05 }}
                                 >
-                                  <Card className="shadow-medium bg-white/90 border-white/30">
+                                  <Card className="shadow-medium bg-card/90 border-border/30">
                                     <CardContent className="p-3 md:p-4">
                                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                         <div className="flex-1 min-w-0">
                                           <div className="flex flex-wrap items-center gap-2 mb-1">
-                                            <Badge variant="outline" className="text-xs whitespace-nowrap text-gray-900 border-gray-300">
+                                            <Badge variant="outline" className="text-xs whitespace-nowrap">
                                               {monthName} {guideline.day}
                                             </Badge>
-                                            <Badge variant="outline" className="text-xs hidden sm:inline-flex text-gray-900 border-gray-300">
+                                            <Badge variant="outline" className="text-xs hidden sm:inline-flex">
                                               {guideline.day_of_week}
                                             </Badge>
                                             {isLocked && (
@@ -251,25 +274,25 @@ const Guidelines = () => {
                                               </Badge>
                                             )}
                                           </div>
-                                          <h4 className="font-medium text-sm md:text-base truncate text-gray-900">
+                                          <h4 className="font-medium text-sm md:text-base truncate text-foreground">
                                             {guideline.title}
                                           </h4>
-                                          <p className="text-xs text-gray-600">
+                                          <p className="text-xs text-muted-foreground">
                                             {guideline.steps?.length || 0} step{guideline.steps?.length !== 1 ? 's' : ''}
                                           </p>
                                         </div>
                                         <div className="flex gap-2 self-end sm:self-center">
                                           {!isLocked && (
-                                            <Button
-                                              size="sm"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                navigate(`/guided-session/${guideline.id}`);
-                                              }}
-                                              className="bg-gradient-primary text-gray-900"
-                                            >
-                                              <span className="text-xs md:text-sm">Start</span>
-                                            </Button>
+                                                          <Button
+                                                            size="sm"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              navigate(`/guided-session/${guideline.id}`);
+                                                            }}
+                                                            className="bg-gradient-primary text-primary dark:text-white"
+                                                          >
+                                                            <span className="text-xs md:text-sm">Start</span>
+                                                          </Button>
                                           )}
                                           <Tooltip>
                                             <TooltipTrigger asChild>

@@ -56,25 +56,88 @@ serve(async (req) => {
               to: [profile.email],
               subject: "🙏 Don't forget your prayer time today!",
               html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                  <h2 style="color: #1e40af;">Hello ${profile.name}! 👋</h2>
-                  <p>We noticed you haven't completed your prayer session today.</p>
-                  <p>Take a moment to connect with God and continue your prayer journey.</p>
-                  <p style="margin: 30px 0;">
-                    <a href="https://dev.spiritconnects.org/dashboard"
-                       style="background-color: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                      Start Praying Now
-                    </a>
-                  </p>
-                  <p style="color: #666; font-size: 14px;">
-                    "Pray without ceasing." - 1 Thessalonians 5:17
-                  </p>
-                  <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-                  <p style="color: #999; font-size: 12px;">
-                    You're receiving this because you have reminders enabled.
-                    You can turn this off in your profile settings.
-                  </p>
-                </div>
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <meta charset="utf-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                </head>
+                <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                      <td align="center" style="padding: 40px 0;">
+                        <table role="presentation" style="width: 600px; max-width: 100%; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                          <!-- Header with Logo -->
+                          <tr>
+                            <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #700608 0%, #8B0A0C 100%); border-radius: 8px 8px 0 0;">
+                              <img src="https://dev.spiritconnects.org/logo-192.png" alt="SpiritConnect" style="height: 64px; width: 64px; margin-bottom: 16px;" />
+                              <h1 style="margin: 0; color: #FFFEE9; font-size: 28px; font-weight: 600;">SpiritConnect</h1>
+                              <p style="margin: 8px 0 0; color: #F4E180; font-size: 14px;">Prayer Reminder</p>
+                            </td>
+                          </tr>
+                          
+                          <!-- Content -->
+                          <tr>
+                            <td style="padding: 40px;">
+                              <h2 style="margin: 0 0 20px; color: #333333; font-size: 24px; font-weight: 600;">Hello ${profile.name}! 👋</h2>
+                              <p style="margin: 0 0 16px; color: #666666; font-size: 16px; line-height: 1.5;">
+                                We noticed you haven't completed your prayer session today.
+                              </p>
+                              <p style="margin: 0 0 24px; color: #666666; font-size: 16px; line-height: 1.5;">
+                                Take a moment to connect with God and continue your prayer journey.
+                              </p>
+                              
+                              <!-- CTA Button -->
+                              <table role="presentation" style="margin: 0 0 24px; width: 100%;">
+                                <tr>
+                                  <td align="center">
+                                    <table role="presentation">
+                                      <tr>
+                                        <td style="border-radius: 6px; background: linear-gradient(135deg, #700608 0%, #8B0A0C 100%);">
+                                          <a href="https://dev.spiritconnects.org/dashboard" 
+                                             style="display: inline-block; padding: 14px 32px; color: #FFFEE9; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 6px;">
+                                            Start Praying Now
+                                          </a>
+                                        </td>
+                                      </tr>
+                                    </table>
+                                  </td>
+                                </tr>
+                              </table>
+                              
+                              <!-- Scripture -->
+                              <table role="presentation" style="width: 100%; margin: 24px 0 0; padding: 20px; background-color: #FFFEE9; border-radius: 6px; border-left: 4px solid #F4E180;">
+                                <tr>
+                                  <td>
+                                    <p style="margin: 0; color: #700608; font-size: 14px; font-style: italic;">
+                                      "Pray without ceasing." - 1 Thessalonians 5:17
+                                    </p>
+                                  </td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+                          
+                          <!-- Footer -->
+                          <tr>
+                            <td style="padding: 30px 40px; background-color: #f9f9f9; border-radius: 0 0 8px 8px; text-align: center;">
+                              <p style="margin: 0 0 8px; color: #999999; font-size: 12px;">
+                                You're receiving this because you have reminders enabled.
+                              </p>
+                              <p style="margin: 0 0 16px; color: #999999; font-size: 12px;">
+                                <a href="https://dev.spiritconnects.org/profile?unsubscribe=true" style="color: #700608; text-decoration: underline;">Unsubscribe from reminders</a>
+                              </p>
+                              <p style="margin: 0; color: #999999; font-size: 12px;">
+                                © ${new Date().getFullYear()} SpiritConnect. All rights reserved.
+                              </p>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </body>
+                </html>
               `,
             }),
           });

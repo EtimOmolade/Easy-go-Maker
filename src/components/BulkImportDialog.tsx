@@ -13,6 +13,9 @@ interface BulkImportDialogProps {
   onOpenChange: (open: boolean) => void;
   onImportComplete: () => void;
   userId: string;
+  prayers?: any[];
+  onExportJSON?: (category: string) => void;
+  onExportCSV?: (category: string) => void;
 }
 
 interface ParsedPrayer {
@@ -37,7 +40,7 @@ interface ParsedPrayer {
   rowNumber?: number;
 }
 
-export function BulkImportDialog({ open, onOpenChange, onImportComplete, userId }: BulkImportDialogProps) {
+export function BulkImportDialog({ open, onOpenChange, onImportComplete, userId, prayers = [], onExportJSON, onExportCSV }: BulkImportDialogProps) {
   const [parsedData, setParsedData] = useState<ParsedPrayer[]>([]);
   const [importing, setImporting] = useState(false);
   const [importStats, setImportStats] = useState<{ success: number; failed: number } | null>(null);
@@ -372,9 +375,10 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
         </DialogHeader>
 
         <Tabs defaultValue="upload" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="upload" className="text-sm">Upload File</TabsTrigger>
-            <TabsTrigger value="templates" className="text-sm">Templates</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="upload" className="text-xs sm:text-sm">Import</TabsTrigger>
+            <TabsTrigger value="export" className="text-xs sm:text-sm">Export</TabsTrigger>
+            <TabsTrigger value="templates" className="text-xs sm:text-sm">Templates</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload" className="space-y-4">
@@ -503,6 +507,92 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
                   </div>
                 </>
               )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="export" className="space-y-4">
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Export prayers by category. Each category has a different structure optimized for its content.
+              </p>
+
+              {/* Kingdom Focus Export */}
+              <div className="border rounded-lg p-6 space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-base sm:text-lg">Kingdom Focus Prayers</h3>
+                    <span className="text-sm text-muted-foreground">
+                      {prayers.filter((p: any) => p.category === 'Kingdom Focus').length} prayers
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Includes: month, day, year, day_of_week, intercession_number
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button 
+                    onClick={() => onExportJSON?.('Kingdom Focus')} 
+                    className="flex-1"
+                    disabled={prayers.filter((p: any) => p.category === 'Kingdom Focus').length === 0}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export as JSON
+                  </Button>
+                  <Button 
+                    onClick={() => onExportCSV?.('Kingdom Focus')} 
+                    variant="outline"
+                    className="flex-1"
+                    disabled={prayers.filter((p: any) => p.category === 'Kingdom Focus').length === 0}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export as CSV
+                  </Button>
+                </div>
+              </div>
+
+              {/* Listening Prayer Export */}
+              <div className="border rounded-lg p-6 space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-base sm:text-lg">Listening Prayer</h3>
+                    <span className="text-sm text-muted-foreground">
+                      {prayers.filter((p: any) => p.category === 'Listening Prayer').length} prayers
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Includes: day_number, chapter, start_verse, end_verse, reference_text
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button 
+                    onClick={() => onExportJSON?.('Listening Prayer')} 
+                    className="flex-1"
+                    disabled={prayers.filter((p: any) => p.category === 'Listening Prayer').length === 0}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export as JSON
+                  </Button>
+                  <Button 
+                    onClick={() => onExportCSV?.('Listening Prayer')} 
+                    variant="outline"
+                    className="flex-1"
+                    disabled={prayers.filter((p: any) => p.category === 'Listening Prayer').length === 0}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export as CSV
+                  </Button>
+                </div>
+              </div>
+
+              <div className="p-4 bg-muted rounded-lg">
+                <h4 className="font-medium mb-2 text-sm">Export Notes:</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Export each category separately for better organization</li>
+                  <li>• JSON format recommended for re-importing</li>
+                  <li>• CSV format good for spreadsheet editing</li>
+                  <li>• Edit externally and re-import via Import tab</li>
+                </ul>
+              </div>
             </div>
           </TabsContent>
 
