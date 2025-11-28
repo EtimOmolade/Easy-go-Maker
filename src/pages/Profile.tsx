@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Award, Scale, Smartphone, Trash2, Moon, Sun, HelpCircle, Type, Minus, Plus, RotateCcw, Volume2, Clock, X } from "lucide-react";
 import { PushNotificationSettings } from "@/components/PushNotificationSettings";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -53,6 +53,7 @@ const Profile = () => {
     resetFontSize
   } = useFontSize();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [name, setName] = useState("");
   const [reminders, setReminders] = useState(true);
@@ -69,6 +70,36 @@ const Profile = () => {
     days_of_week: [1, 2, 3, 4, 5, 6, 7],
     enabled: true,
   });
+  
+  // Handle unsubscribe from email link
+  useEffect(() => {
+    const handleUnsubscribe = async () => {
+      const unsubscribe = searchParams.get('unsubscribe');
+      if (unsubscribe === 'true' && user) {
+        try {
+          const { error } = await supabase
+            .from("profiles")
+            .update({ reminders_enabled: false })
+            .eq("id", user.id);
+          
+          if (error) throw error;
+          
+          setReminders(false);
+          toast.success("You've been unsubscribed from email notifications", {
+            description: "You can re-enable them anytime in your profile settings."
+          });
+          
+          // Clear the query param
+          navigate('/profile', { replace: true });
+        } catch (error) {
+          console.error("Error unsubscribing:", error);
+          toast.error("Failed to unsubscribe. Please try toggling the setting manually.");
+        }
+      }
+    };
+    
+    handleUnsubscribe();
+  }, [searchParams, user, navigate]);
   
   useEffect(() => {
     fetchProfile();

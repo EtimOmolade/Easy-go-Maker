@@ -34,10 +34,11 @@ serve(async (req) => {
           <tr>
             <td align="center" style="padding: 40px 0;">
               <table role="presentation" style="width: 600px; max-width: 100%; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <!-- Header -->
+                <!-- Header with Logo -->
                 <tr>
                   <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #700608 0%, #8B0A0C 100%); border-radius: 8px 8px 0 0;">
-                    <h1 style="margin: 0; color: #FFFEE9; font-size: 32px; font-weight: 600;">🕊️ Welcome to SpiritConnect</h1>
+                    <img src="https://dev.spiritconnects.org/logo-192.png" alt="SpiritConnect" style="height: 64px; width: 64px; margin-bottom: 16px;" />
+                    <h1 style="margin: 0; color: #FFFEE9; font-size: 32px; font-weight: 600;">Welcome to SpiritConnect</h1>
                     <p style="margin: 12px 0 0; color: #F4E180; font-size: 16px;">Your journey of daily prayer begins today</p>
                   </td>
                 </tr>
