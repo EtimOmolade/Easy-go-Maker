@@ -509,7 +509,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Actions */}
-                <motion.div className="flex items-center gap-3 w-full lg:w-auto" initial={{
+                <motion.div className="flex items-center justify-between md:justify-end gap-4 w-full lg:w-auto" initial={{
                 opacity: 0,
                 x: 20
               }} animate={{
