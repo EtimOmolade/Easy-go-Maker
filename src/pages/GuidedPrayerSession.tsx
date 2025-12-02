@@ -18,6 +18,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { AppHeader } from "@/components/AppHeader";
 import { useOffline } from "@/contexts/OfflineContext";
 import { cacheGuideline, getCachedGuideline, savePrayerCompletionOffline } from "@/utils/offlineStorage";
+import { formatBibleReferenceForDisplay } from "@/utils/bibleReferenceFormatter";
+
 
 interface PrayerStep {
   id: string;
@@ -1123,7 +1125,7 @@ const GuidedPrayerSession = () => {
                 <>
                   <div className="p-6 bg-white/50 backdrop-blur-md rounded-lg border border-white/30 shadow-medium">
                     <h4 className="font-semibold mb-2 text-foreground">{currentPoint.title}</h4>
-                    <p className="text-foreground/90 whitespace-pre-wrap">{currentPoint.content}</p>
+                    <p className="text-foreground/90 whitespace-pre-wrap">{formatBibleReferenceForDisplay(currentPoint.content)}</p>
                   </div>
                   
                   {currentStep.audioUrl && (
@@ -1198,9 +1200,9 @@ const GuidedPrayerSession = () => {
                 <>
                   <div className="p-6 bg-white/50 backdrop-blur-md rounded-lg border border-white/30 shadow-medium">
                     <h4 className="font-semibold mb-3 text-foreground">{listeningPrayer.title || listeningPrayer.reference || 'Scripture Reading'}</h4>
-                    <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{listeningPrayer.content}</p>
+                    <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{formatBibleReferenceForDisplay(listeningPrayer.content)}</p>
                     {listeningPrayer.reference && (
-                      <p className="text-sm text-muted-foreground mt-3 italic">— {listeningPrayer.reference}</p>
+                      <p className="text-sm text-muted-foreground mt-3 italic">— {formatBibleReferenceForDisplay(listeningPrayer.reference)}</p>
                     )}
                   </div>
                   
