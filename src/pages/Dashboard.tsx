@@ -14,7 +14,7 @@ import {
 } from "@/utils/offlineStorage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone, BookHeart } from "lucide-react";
+import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone, BookHeart, Menu } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import EncouragementPopup from "@/components/EncouragementPopup";
@@ -29,6 +29,7 @@ import { haptics } from "@/utils/haptics";
 import { WelcomeWizard } from "@/components/WelcomeWizard";
 import { TutorialWalkthrough } from "@/components/TutorialWalkthrough";
 import NotificationDropdown from "@/components/NotificationDropdown";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import logoText from "@/assets/logo-text.png";
 import logoOnly from "@/assets/logo-only.png";
 import prayIcon from "@/assets/pray.png";
@@ -508,7 +509,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Actions */}
-                <motion.div className="flex items-center gap-3 w-full lg:w-auto" initial={{
+                <motion.div className="flex items-center justify-between md:justify-end gap-4 w-full lg:w-auto" initial={{
                 opacity: 0,
                 x: 20
               }} animate={{
@@ -519,18 +520,47 @@ const Dashboard = () => {
                 delay: 0.4
               }}>
                   {user && !shouldHideNotification && <NotificationDropdown userId={user.id} isAdmin={isAdmin} />}
+                  
+                  {/* Desktop Sign Out Button */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button variant="outline" onClick={() => {
                       haptics.light();
                       signOut();
-                    }} className="border-white/20 text-white bg-white/10 hover:border-white/40 hover:bg-white/20 transition-all backdrop-blur-sm min-h-[44px] flex-1 lg:flex-initial">
+                    }} className="hidden md:flex border-white/20 text-white bg-white/10 hover:border-white/40 hover:bg-white/20 transition-all backdrop-blur-sm min-h-[44px]">
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Sign Out</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Sign out of your account</TooltipContent>
                   </Tooltip>
+
+                  {/* Mobile Menu Sheet */}
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" size="icon" className="md:hidden border-white/20 text-white bg-white/10 hover:border-white/40 hover:bg-white/20 transition-all backdrop-blur-sm min-h-[44px] min-w-[44px]">
+                        <Menu className="h-5 w-5" />
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="bottom" className="rounded-t-3xl">
+                      <SheetHeader className="pb-4">
+                        <SheetTitle className="text-center">Account</SheetTitle>
+                      </SheetHeader>
+                      <div className="space-y-3 pb-6">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            haptics.light();
+                            signOut();
+                          }} 
+                          className="w-full justify-start min-h-[52px] text-base border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <LogOut className="mr-3 h-5 w-5" />
+                          Sign Out
+                        </Button>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
                 </motion.div>
               </div>
             </div>

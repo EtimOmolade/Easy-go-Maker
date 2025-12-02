@@ -404,7 +404,7 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
                   </Button>
                 </div>
 
-                <div className="border-2 border-dashed rounded-lg p-6 text-center space-y-2">
+                {/*<div className="border-2 border-dashed rounded-lg p-6 text-center space-y-2">
                   <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
                   <Label htmlFor="json-upload" className="block">
                     <span className="text-sm font-medium">Upload JSON File</span>
@@ -422,7 +422,7 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
                       Choose JSON File
                     </label>
                   </Button>
-                </div>
+                </div>*/}
               </div>
 
               {parsedData.length > 0 && (
@@ -530,14 +530,14 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <Button 
+                  {/*<Button 
                     onClick={() => onExportJSON?.('Kingdom Focus')} 
                     className="flex-1"
                     disabled={prayers.filter((p: any) => p.category === 'Kingdom Focus').length === 0}
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Export as JSON
-                  </Button>
+                  </Button>*/}
                   <Button 
                     onClick={() => onExportCSV?.('Kingdom Focus')} 
                     variant="outline"
@@ -564,14 +564,14 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <Button 
+                  {/*<Button 
                     onClick={() => onExportJSON?.('Listening Prayer')} 
                     className="flex-1"
                     disabled={prayers.filter((p: any) => p.category === 'Listening Prayer').length === 0}
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Export as JSON
-                  </Button>
+                  </Button>*/}
                   <Button 
                     onClick={() => onExportCSV?.('Listening Prayer')} 
                     variant="outline"
@@ -588,7 +588,7 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
                 <h4 className="font-medium mb-2 text-sm">Export Notes:</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
                   <li>• Export each category separately for better organization</li>
-                  <li>• JSON format recommended for re-importing</li>
+                  {/*<li>• JSON format recommended for re-importing</li>*/}
                   <li>• CSV format good for spreadsheet editing</li>
                   <li>• Edit externally and re-import via Import tab</li>
                 </ul>
@@ -616,11 +616,11 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
                       <span className="hidden sm:inline ml-2">CSV Template</span>
                       <span className="sm:hidden ml-2">CSV</span>
                     </Button>
-                    <Button variant="outline" onClick={() => downloadJSONTemplate('Kingdom Focus')} size="sm" className="flex-1">
+                    {/*<Button variant="outline" onClick={() => downloadJSONTemplate('Kingdom Focus')} size="sm" className="flex-1">
                       <Download className="h-4 w-4" />
                       <span className="hidden sm:inline ml-2">JSON Template</span>
                       <span className="sm:hidden ml-2">JSON</span>
-                    </Button>
+                    </Button>*/}
                   </div>
                 </div>
 
@@ -635,11 +635,11 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
                       <span className="hidden sm:inline ml-2">CSV Template</span>
                       <span className="sm:hidden ml-2">CSV</span>
                     </Button>
-                    <Button variant="outline" onClick={() => downloadJSONTemplate('Listening Prayer')} size="sm" className="flex-1">
+                    {/*<Button variant="outline" onClick={() => downloadJSONTemplate('Listening Prayer')} size="sm" className="flex-1">
                       <Download className="h-4 w-4" />
                       <span className="hidden sm:inline ml-2">JSON Template</span>
                       <span className="sm:hidden ml-2">JSON</span>
-                    </Button>
+                    </Button>*/}
                   </div>
                 </div>
               </div>
