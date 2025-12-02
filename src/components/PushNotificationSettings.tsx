@@ -96,7 +96,7 @@ export const PushNotificationSettings = () => {
 
   if (!isSupported) {
     return (
-      <Card>
+      <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BellOff className="h-5 w-5" />
@@ -111,7 +111,7 @@ export const PushNotificationSettings = () => {
   }
 
   return (
-    <Card>
+    <Card className="mb-6">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bell className="h-5 w-5" />
