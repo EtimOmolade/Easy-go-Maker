@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Loader2, BookOpen, Eye, EyeOff, Sparkles } from "lucide-react";
 import { generateDeviceFingerprint } from "@/utils/deviceFingerprint";
+import { hashDeviceFingerprint } from "@/utils/securityUtils";
 import logoText from "@/assets/logo-text.png";
 
 const Auth = () => {
@@ -66,15 +67,16 @@ const Auth = () => {
             .single();
 
           if (profileData?.two_factor_enabled) {
-            // Generate device fingerprint
+            // Generate device fingerprint and hash it for comparison
             const fingerprint = generateDeviceFingerprint();
+            const hashedFingerprint = await hashDeviceFingerprint(fingerprint);
 
-            // Check if this device is already trusted
+            // Check if this device is already trusted (compare hashed fingerprint)
             const { data: trustedDevice } = await supabase
               .from("trusted_devices")
               .select("*")
               .eq("user_id", data.user.id)
-              .eq("device_fingerprint", fingerprint)
+              .eq("device_fingerprint", hashedFingerprint)
               .gt("expires_at", new Date().toISOString())
               .maybeSingle();
 
