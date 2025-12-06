@@ -97,6 +97,8 @@ const Index = () => {
               <motion.img 
                 src={logoText} 
                 alt="SpiritConnect" 
+                width={224}
+                height={160}
                 className="h-40 md:h-56 w-auto relative z-10"
                 animate={{
                   y: [0, -15, 0],
@@ -167,6 +169,7 @@ const Index = () => {
         </motion.div>
 
         {/* Features Section */}
+        <h2 className="sr-only">Key Features</h2>
         <motion.div
           className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32"
         >
@@ -241,9 +244,9 @@ const Index = () => {
                     {item.step}
                   </motion.div>
                   <div className="mt-4">
-                    <h3 className="text-xl font-heading font-semibold text-white mb-2">
+                    <h4 className="text-xl font-heading font-semibold text-white mb-2">
                       {item.title}
-                    </h3>
+                    </h4>
                     <p className="text-white/90 text-sm leading-relaxed">
                       {item.description}
                     </p>
@@ -276,9 +279,9 @@ const Index = () => {
               >
                 <Sparkles className="h-16 w-16 text-secondary mx-auto mb-6 drop-shadow-lg" />
               </motion.div>
-              <h2 className="text-4xl md:text-5xl font-heading font-bold text-white mb-4">
+              <h3 className="text-4xl md:text-5xl font-heading font-bold text-white mb-4">
                 Build Your Prayer Streak
-              </h2>
+              </h3>
               <p className="text-white/90 text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
                 Stay consistent with your prayer life and earn badges as you reach milestones. Track your daily streaks and celebrate your spiritual growth!
               </p>
@@ -294,9 +297,9 @@ const Index = () => {
           transition={{ duration: 0.8 }}
           className="text-center"
         >
-          <h2 className="text-3xl md:text-5xl font-heading font-bold text-white mb-6">
+          <h3 className="text-3xl md:text-5xl font-heading font-bold text-white mb-6">
             Ready to Transform Your Prayer Life?
-          </h2>
+          </h3>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
             Join thousands of believers who are deepening their faith journey with SpiritConnect
           </p>

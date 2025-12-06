@@ -15,7 +15,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, BookMarked, MessageSquare, User, LogOut, Shield, Flame, Megaphone, BookHeart, Menu } from "lucide-react";
-import * as LucideIcons from "lucide-react";
+import { DynamicIcon } from "@/components/DynamicIcon";
 import { Badge } from "@/components/ui/badge";
 import EncouragementPopup from "@/components/EncouragementPopup";
 import { MilestoneAchievementModal } from "@/components/MilestoneAchievementModal";
@@ -538,7 +538,7 @@ const Dashboard = () => {
                   {/* Mobile Menu Sheet */}
                   <Sheet>
                     <SheetTrigger asChild>
-                      <Button variant="outline" size="icon" className="md:hidden border-white/20 text-white bg-white/10 hover:border-white/40 hover:bg-white/20 transition-all backdrop-blur-sm min-h-[44px] min-w-[44px]">
+                      <Button variant="outline" size="icon" className="md:hidden border-white/20 text-white bg-white/10 hover:border-white/40 hover:bg-white/20 transition-all backdrop-blur-sm min-h-[44px] min-w-[44px]" aria-label="Open menu">
                         <Menu className="h-5 w-5" />
                       </Button>
                     </SheetTrigger>
@@ -755,24 +755,20 @@ const Dashboard = () => {
                         >
                           {(() => {
                             const currentMilestone = milestoneData.lastAchieved || milestoneData.nextMilestone;
-                            const IconComponent = (LucideIcons as any)[currentMilestone.icon];
-                            return IconComponent ? (
+                            return (
                               <div 
-                                className="p-6 rounded-3xl"
-                                style={{
-                                  backgroundColor: currentMilestone.bgColor
-                                }}
+                                className={`p-6 rounded-3xl ${currentMilestone.bgColor}`}
                               >
-                                <IconComponent 
-                                  className="h-16 w-16" 
+                                <DynamicIcon 
+                                  name={currentMilestone.icon}
+                                  className={`h-16 w-16 ${currentMilestone.iconColor}`}
                                   style={{ 
-                                    color: currentMilestone.iconColor,
                                     filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
                                   }} 
                                   strokeWidth={2.5}
                                 />
                               </div>
-                            ) : null;
+                            );
                           })()}
                         </motion.div>
                         <div className="text-center">

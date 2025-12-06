@@ -120,7 +120,7 @@ const PrayerReminderModal = ({ isOpen, onClose, streakCount = 0, scriptureVerse 
           <Button
             onClick={handleStartPraying}
             size="lg"
-            className="w-full bg-gradient-primary opacity-90 hover:opacity-90 transition-all text-primary-foreground dark:text-white"
+            className="w-full bg-gradient-primary hover:opacity-90 transition-all text-rose-800 dark:text-white"
           >
             Start Praying Now
           </Button>

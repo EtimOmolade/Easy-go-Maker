@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Loader2, Shield, RefreshCw, ArrowLeft, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { generateDeviceFingerprint, getDeviceName, generateTrustToken } from "@/utils/deviceFingerprint";
+import { hashDeviceFingerprint, hashTrustToken } from "@/utils/securityUtils";
 import logoText from "@/assets/logo-text.png";
 
 const VerifyOTP = () => {
@@ -96,13 +97,17 @@ const VerifyOTP = () => {
         const deviceName = getDeviceName();
         deviceToken = generateTrustToken();
 
-        // Insert trusted device
+        // Hash fingerprint and token before storage for security
+        const hashedFingerprint = await hashDeviceFingerprint(fingerprint);
+        const hashedToken = await hashTrustToken(deviceToken);
+
+        // Insert trusted device with hashed values
         await supabase
           .from("trusted_devices")
           .insert({
             user_id: userId,
-            device_fingerprint: fingerprint,
-            trust_token: deviceToken,
+            device_fingerprint: hashedFingerprint,
+            trust_token: hashedToken,
             device_name: deviceName,
             user_agent: navigator.userAgent,
           });

@@ -3,13 +3,14 @@ const RUNTIME_CACHE = 'spirit-connect-runtime-v2';
 const IMAGE_CACHE = 'spirit-connect-images';
 const AUDIO_CACHE = 'spirit-connect-audio';
 
-// Assets to cache on install
+// Assets to cache on install (critical for FCP/LCP)
 const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/site.webmanifest',
   '/logo-192.png',
   '/logo-512.png',
+  '/favicon.png',
   '/assets/music/Ambient_Music.mp3',
 ];
 

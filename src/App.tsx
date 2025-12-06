@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,23 +11,28 @@ import { OfflineProvider } from "@/contexts/OfflineContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ReminderSystem from "@/components/ReminderSystem";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { DashboardSkeleton, JournalSkeleton, GuidelinesSkeleton } from "@/components/LoadingSkeleton";
+
+// Eagerly loaded pages (public entry points)
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import UpdatePassword from "./pages/UpdatePassword";
 import VerifyOTP from "./pages/VerifyOTP";
-import Dashboard from "./pages/Dashboard";
-import Guidelines from "./pages/Guidelines";
-import GuidelineDetails from "./pages/GuidelineDetails";
-import GuidedPrayerSession from "./pages/GuidedPrayerSession";
-import Journal from "./pages/Journal";
-import Testimonies from "./pages/Testimonies";
-import Profile from "./pages/Profile";
-import Admin from "./pages/Admin";
-import PrayerLibrary from "./pages/PrayerLibrary";
-import PrayerLibraryAdmin from "./pages/PrayerLibraryAdmin";
-import CreateGuideline from "./pages/CreateGuideline";
 import NotFound from "./pages/NotFound";
+
+// Lazy loaded pages (protected routes)
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Guidelines = lazy(() => import("./pages/Guidelines"));
+const GuidelineDetails = lazy(() => import("./pages/GuidelineDetails"));
+const GuidedPrayerSession = lazy(() => import("./pages/GuidedPrayerSession"));
+const Journal = lazy(() => import("./pages/Journal"));
+const Testimonies = lazy(() => import("./pages/Testimonies"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Admin = lazy(() => import("./pages/Admin"));
+const PrayerLibrary = lazy(() => import("./pages/PrayerLibrary"));
+const PrayerLibraryAdmin = lazy(() => import("./pages/PrayerLibraryAdmin"));
+const CreateGuideline = lazy(() => import("./pages/CreateGuideline"));
 
 const queryClient = new QueryClient();
 
@@ -52,7 +58,9 @@ const App = () => (
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <Dashboard />
+                  </Suspense>
                 </ProtectedRoute>
               }
             />
@@ -60,7 +68,9 @@ const App = () => (
               path="/guidelines"
               element={
                 <ProtectedRoute>
-                  <Guidelines />
+                  <Suspense fallback={<GuidelinesSkeleton />}>
+                    <Guidelines />
+                  </Suspense>
                 </ProtectedRoute>
               }
             />
@@ -68,7 +78,9 @@ const App = () => (
               path="/guideline/:id"
               element={
                 <ProtectedRoute>
-                  <GuidelineDetails />
+                  <Suspense fallback={<GuidelinesSkeleton />}>
+                    <GuidelineDetails />
+                  </Suspense>
                 </ProtectedRoute>
               }
             />
@@ -76,7 +88,9 @@ const App = () => (
               path="/guided-session/:id"
               element={
                 <ProtectedRoute>
-                  <GuidedPrayerSession />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <GuidedPrayerSession />
+                  </Suspense>
                 </ProtectedRoute>
               }
             />
@@ -84,7 +98,9 @@ const App = () => (
               path="/journal"
               element={
                 <ProtectedRoute>
-                  <Journal />
+                  <Suspense fallback={<JournalSkeleton />}>
+                    <Journal />
+                  </Suspense>
                 </ProtectedRoute>
               }
             />
@@ -92,7 +108,9 @@ const App = () => (
               path="/testimonies"
               element={
                 <ProtectedRoute>
-                  <Testimonies />
+                  <Suspense fallback={<JournalSkeleton />}>
+                    <Testimonies />
+                  </Suspense>
                 </ProtectedRoute>
               }
             />
@@ -100,7 +118,9 @@ const App = () => (
               path="/profile"
               element={
                 <ProtectedRoute>
-                  <Profile />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <Profile />
+                  </Suspense>
                 </ProtectedRoute>
               }
             />
@@ -108,7 +128,9 @@ const App = () => (
               path="/admin"
               element={
                 <ProtectedRoute requireAdmin>
-                  <Admin />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <Admin />
+                  </Suspense>
                 </ProtectedRoute>
               }
             />
@@ -116,7 +138,9 @@ const App = () => (
               path="/prayer-library"
               element={
                 <ProtectedRoute requireAdmin>
-                  <PrayerLibrary />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <PrayerLibrary />
+                  </Suspense>
                 </ProtectedRoute>
               }
             />
@@ -124,7 +148,9 @@ const App = () => (
               path="/prayer-library-admin"
               element={
                 <ProtectedRoute requireAdmin>
-                  <PrayerLibraryAdmin />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <PrayerLibraryAdmin />
+                  </Suspense>
                 </ProtectedRoute>
               }
             />
@@ -132,7 +158,9 @@ const App = () => (
               path="/create-guideline"
               element={
                 <ProtectedRoute requireAdmin>
-                  <CreateGuideline />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <CreateGuideline />
+                  </Suspense>
                 </ProtectedRoute>
               }
             />
