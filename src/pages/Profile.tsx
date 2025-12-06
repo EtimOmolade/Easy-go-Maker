@@ -389,7 +389,13 @@ const Profile = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={profile?.email || ""} disabled className="bg-muted" />
+                <Input 
+                  id="email" 
+                  type="email" 
+                  value={profile?.email ? `${profile.email.slice(0, 2)}****${profile.email.slice(profile.email.indexOf('@') - 1)}` : ""} 
+                  disabled 
+                  className="bg-muted" 
+                />
                 <p className="text-xs text-muted-foreground">
                   Email cannot be changed
                 </p>
