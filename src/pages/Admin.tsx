@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Plus, Check, X, Trash2, Megaphone, Shield, UserPlus, UserMinus, Clock, AlertTriangle, Search, Edit, BookOpen, BarChart3, Users, Activity, TrendingUp, FileText } from "lucide-react";
+import { ArrowLeft, Plus, Check, X, Trash2, Megaphone, Shield, UserPlus, UserMinus, Clock, AlertTriangle, Search, Edit, BookOpen, BarChart3, Users, Activity, TrendingUp, FileText, MinusCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -324,6 +324,7 @@ const Admin = () => {
           profiles!testimonies_user_id_fkey (name)
         `)
         .neq('status', 'rejected')
+        .neq('status', 'dismissed')
         .order('date', { ascending: false });
 
       if (error) {
@@ -621,21 +622,22 @@ const Admin = () => {
     }
   };
 
-  const handleDeleteTestimony = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this testimony?")) return;
-
+  const handleDismissTestimony = async (id: string) => {
     try {
       const { error } = await supabase
         .from('testimonies')
-        .delete()
+        .update({
+          status: 'dismissed',
+          admin_note: `Dismissed by ${user?.user_metadata?.name || 'Admin'} at ${new Date().toISOString()}`
+        })
         .eq('id', id);
 
       if (error) throw error;
-      toast.success("Testimony deleted");
+      toast.success("Testimony dismissed from queue");
       await fetchTestimonies();
     } catch (error: any) {
-      console.error('Error deleting testimony:', error);
-      toast.error(error.message || 'Failed to delete testimony');
+      console.error('Error dismissing testimony:', error);
+      toast.error('Failed to dismiss testimony');
     }
   };
 
@@ -1009,11 +1011,11 @@ const Admin = () => {
                                 </Tooltip>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}>
-                                      <Trash2 className="h-4 w-4" />
+                                    <Button size="sm" variant="outline" onClick={() => handleDismissTestimony(testimony.id)}>
+                                      <MinusCircle className="h-4 w-4" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>Delete testimony</TooltipContent>
+                                  <TooltipContent>Dismiss from queue</TooltipContent>
                                 </Tooltip>
                               </div>
                             </div>
@@ -1045,7 +1047,7 @@ const Admin = () => {
                               <CardTitle className="text-lg text-foreground">{testimony.title}</CardTitle>
                               <p className="text-sm text-muted-foreground mt-1">By {testimony.profiles?.name} • {new Date(testimony.date).toLocaleDateString()}</p>
                             </div>
-                            <Button size="sm" variant="outline" onClick={() => handleDeleteTestimony(testimony.id)}><Trash2 className="h-4 w-4" /></Button>
+                            <Badge variant="secondary" className="text-xs">Approved</Badge>
                           </div>
                         </CardHeader>
                         <CardContent className="space-y-3">
