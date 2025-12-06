@@ -499,7 +499,7 @@ const Journal = () => {
                         <div className="flex-1">
                           <audio src={audioPreview} controls className="w-full" />
                         </div>
-                        <Button type="button" onClick={deleteRecording} variant="outline" size="icon">
+                        <Button type="button" onClick={deleteRecording} variant="outline" size="icon" aria-label="Delete recording">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </>

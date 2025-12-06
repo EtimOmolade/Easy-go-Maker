@@ -217,7 +217,7 @@ const NotificationDropdown = ({ userId }: NotificationDropdownProps) => {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" className="relative">
+        <Button variant="outline" size="icon" className="relative" aria-label="Open notifications">
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
             <Badge
@@ -276,8 +276,9 @@ const NotificationDropdown = ({ userId }: NotificationDropdownProps) => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="h-6 w-6 min-h-0 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={(e) => handleDeleteNotification(notification.id, e)}
+                            aria-label="Delete notification"
                           >
                             <X className="h-3 w-3" />
                           </Button>

@@ -538,7 +538,7 @@ const Dashboard = () => {
                   {/* Mobile Menu Sheet */}
                   <Sheet>
                     <SheetTrigger asChild>
-                      <Button variant="outline" size="icon" className="md:hidden border-white/20 text-white bg-white/10 hover:border-white/40 hover:bg-white/20 transition-all backdrop-blur-sm min-h-[44px] min-w-[44px]">
+                      <Button variant="outline" size="icon" className="md:hidden border-white/20 text-white bg-white/10 hover:border-white/40 hover:bg-white/20 transition-all backdrop-blur-sm min-h-[44px] min-w-[44px]" aria-label="Open menu">
                         <Menu className="h-5 w-5" />
                       </Button>
                     </SheetTrigger>
