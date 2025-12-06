@@ -1067,19 +1067,20 @@ const Admin = () => {
           <TabsContent value="users">
             <Card className="shadow-medium">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex-1">
                     <CardTitle className="flex items-center gap-2 text-foreground">
-                      <Shield className="h-6 w-6 text-primary" />
-                      Admin User Management
+                      <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                      <span className="text-lg sm:text-xl">Admin User Management</span>
                     </CardTitle>
-                    <p className="text-sm text-muted-foreground mt-2">
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-2">
                       Manage admin users and their permissions. Newer admins cannot demote older admins.
                     </p>
                   </div>
-                  <Button onClick={() => setShowPromoteDialog(true)}>
-                    <UserPlus className="mr-2 h-4 w-4" />
+                  <Button onClick={() => setShowPromoteDialog(true)} className="w-full sm:w-auto">
+                    <UserPlus className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Promote User</span>
+                    <span className="sm:hidden ml-2">Promote</span>
                   </Button>
                 </div>
               </CardHeader>
@@ -1089,31 +1090,31 @@ const Admin = () => {
                     No admins found.
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {adminUsers.map((admin, index) => (
                       <Card key={admin.id} className={index === 0 ? "border-2 border-accent/30" : ""}>
-                        <CardContent className="pt-6">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h4 className="font-semibold text-lg">{admin.name}</h4>
+                        <CardContent className="pt-4 sm:pt-6">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <h4 className="font-semibold text-base sm:text-lg truncate">{admin.name}</h4>
                                 {index === 0 && (
-                                  <Badge variant="default" className="bg-accent text-accent-foreground">
+                                  <Badge variant="default" className="bg-accent text-accent-foreground text-xs whitespace-nowrap">
                                     Senior Admin
                                   </Badge>
                                 )}
                                 {admin.id === user?.id && (
-                                  <Badge variant="secondary">You</Badge>
+                                  <Badge variant="secondary" className="text-xs">You</Badge>
                                 )}
                               </div>
-                              <p className="text-sm text-muted-foreground mb-3">{admin.email}</p>
+                              <p className="text-xs sm:text-sm text-muted-foreground mb-3 break-all">{admin.email}</p>
 
                               {admin.adminSince && (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <Clock className="h-4 w-4" />
-                                  <span>
+                                <div className="flex items-start sm:items-center gap-2 text-xs sm:text-sm text-muted-foreground mb-2">
+                                  <Clock className="h-4 w-4 flex-shrink-0 mt-0.5 sm:mt-0" />
+                                  <span className="break-words">
                                     Admin since {formatDate(admin.adminSince)}
-                                    <span className="ml-1">
+                                    <span className="block sm:inline sm:ml-1">
                                       ({getDaysSince(admin.adminSince)} days ago)
                                     </span>
                                   </span>
@@ -1121,8 +1122,8 @@ const Admin = () => {
                               )}
 
                               {!canDemote(admin) && admin.id !== user?.id && (
-                                <div className="flex items-center gap-2 mt-2 text-sm text-secondary">
-                                  <AlertTriangle className="h-4 w-4" />
+                                <div className="flex items-start gap-2 mt-2 text-xs sm:text-sm text-secondary">
+                                  <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                                   <span>Has precedence over you - cannot demote</span>
                                 </div>
                               )}
@@ -1133,10 +1134,11 @@ const Admin = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setDemoteTarget(admin)}
-                                className="text-destructive hover:text-destructive"
+                                className="text-destructive hover:text-destructive w-full sm:w-auto flex-shrink-0"
                               >
-                                <UserMinus className="mr-2 h-4 w-4" />
-                                Demote
+                                <UserMinus className="h-4 w-4 sm:mr-2" />
+                                <span className="sm:hidden ml-2">Demote</span>
+                                <span className="hidden sm:inline">Demote</span>
                               </Button>
                             )}
                           </div>
@@ -1147,16 +1149,16 @@ const Admin = () => {
                 )}
 
                 {/* Info Box */}
-                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <h5 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Admin Precedence Rules
+                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h5 className="font-semibold text-xs sm:text-sm mb-2 flex items-center gap-2">
+                    <Shield className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                    <span>Admin Precedence Rules</span>
                   </h5>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Admins are listed in order of seniority (oldest first)</li>
-                    <li>You can only demote admins who became admin after you</li>
-                    <li>You cannot demote yourself</li>
-                    <li>Senior admins have permanent status from junior admins</li>
+                  <ul className="text-xs sm:text-sm text-muted-foreground space-y-1 list-disc list-inside pl-0 sm:pl-1">
+                    <li className="break-words">Admins are listed in order of seniority (oldest first)</li>
+                    <li className="break-words">You can only demote admins who became admin after you</li>
+                    <li className="break-words">You cannot demote yourself</li>
+                    <li className="break-words">Senior admins have permanent status from junior admins</li>
                   </ul>
                 </div>
               </CardContent>
