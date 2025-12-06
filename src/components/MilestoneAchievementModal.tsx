@@ -4,7 +4,7 @@ import confetti from "canvas-confetti";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { MILESTONES } from "@/data/mockData";
-import * as LucideIcons from "lucide-react";
+import { DynamicIcon } from "@/components/DynamicIcon";
 
 interface MilestoneAchievementModalProps {
   milestoneLevel: number;
@@ -66,9 +66,6 @@ export const MilestoneAchievementModal = ({
 
   if (!milestone) return null;
 
-  // Get the icon component dynamically
-  const IconComponent = (LucideIcons as any)[milestone.icon];
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md p-8 text-center border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-secondary/5 backdrop-blur-xl">
@@ -93,7 +90,7 @@ export const MilestoneAchievementModal = ({
               className="flex justify-center"
             >
               <div className={`${milestone.bgColor} p-6 rounded-full`}>
-                {IconComponent && <IconComponent className={`${milestone.iconColor} w-20 h-20`} strokeWidth={1.5} />}
+                <DynamicIcon name={milestone.icon} className={`${milestone.iconColor} w-20 h-20`} strokeWidth={1.5} />
               </div>
             </motion.div>
 
