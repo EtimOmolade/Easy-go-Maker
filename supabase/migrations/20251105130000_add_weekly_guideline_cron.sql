@@ -20,8 +20,8 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 SELECT cron.schedule(
   'generate-daily-guideline',
   '30 0 * * *',  -- 00:30 UTC daily
-  $$
-  DO $$
+  $cmd$
+  DO $body$
   DECLARE
     current_month TEXT;
     current_day INTEGER;
@@ -48,8 +48,8 @@ SELECT cron.schedule(
         'userId', '00000000-0000-0000-0000-000000000000'  -- System user
       )
     );
-  END $$;
-  $$
+  END $body$;
+  $cmd$
 );
 
 -- ============================================
