@@ -404,7 +404,7 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
                   </Button>
                 </div>
 
-                {<div className="border-2 border-dashed rounded-lg p-6 text-center space-y-2">
+                <div className="border-2 border-dashed rounded-lg p-6 text-center space-y-2">
                   <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
                   <Label htmlFor="json-upload" className="block">
                     <span className="text-sm font-medium">Upload JSON File</span>
