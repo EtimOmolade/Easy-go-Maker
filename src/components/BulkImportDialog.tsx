@@ -588,7 +588,7 @@ Listening Prayer,Proverbs 1:21-33,"Read Proverbs 1:21-33. Meditate on the wisdom
                 <h4 className="font-medium mb-2 text-sm">Export Notes:</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
                   <li>• Export each category separately for better organization</li>
-                  {/*<li>• JSON format recommended for re-importing</li>*/}
+                  <li>• JSON format recommended for re-importing</li>
                   <li>• CSV format good for spreadsheet editing</li>
                   <li>• Edit externally and re-import via Import tab</li>
                 </ul>

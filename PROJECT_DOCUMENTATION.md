@@ -6,7 +6,7 @@ This document outlines the complete development process, project structure, mana
 
 ---
 
-## Table of Contents
+# Table of Contents
 
 1. [Project Genesis](#1-project-genesis)
 2. [Development Phases](#2-development-phases)
