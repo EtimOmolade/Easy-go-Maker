@@ -68,13 +68,13 @@ function normalizeBookName(bookName: string): string {
 
 /**
  * Formats Bible references from spoken format to standard format
- * 
+ *
  * Handles various patterns:
  * - "chapter X verse Y" → "X:Y"
  * - "chapter X verses Y to Z" → "X:Y-Z"
  * - "verses Y to Z" → "Y-Z"
  * - Book names with ordinals (First John → 1 John)
- * 
+ *
  * @param text - The text containing spoken Bible references
  * @returns The text with Bible references formatted in standard notation
  */
@@ -82,41 +82,44 @@ export function formatBibleReferenceForDisplay(text: string): string {
   let formattedText = text;
 
   // Pattern 1: "Book chapter X verse Y" or "Book chapter X verses Y to Z"
-  const chapterVersePattern = /(\b(?:First|Second|Third|1|2|3)?\s*[A-Za-z]+)\s+chapter\s+([\w\s]+?)\s+verses?\s+([\w\s]+?)(?:\s+to\s+([\w\s]+?))?(?=\.|,|\s|$)/gi;
-  
+  // Fixed: Changed lookahead to only match sentence-ending punctuation, not spaces
+  const chapterVersePattern = /(\b(?:First|Second|Third|1|2|3)?\s*[A-Za-z]+)\s+chapter\s+([\w\s]+?)\s+verses?\s+([\w\s]+?)(?:\s+to\s+([\w\s]+?))?(?=\.|,|;|$)/gi;
+
   formattedText = formattedText.replace(chapterVersePattern, (match, book, chapter, verse1, verse2) => {
     const bookName = normalizeBookName(book);
     const chapterNum = parseSpokenNumber(chapter);
     const verseNum1 = parseSpokenNumber(verse1);
-    
+
     if (verse2) {
       const verseNum2 = parseSpokenNumber(verse2);
       return `${bookName} ${chapterNum}:${verseNum1}-${verseNum2}`;
     }
-    
+
     return `${bookName} ${chapterNum}:${verseNum1}`;
   });
 
   // Pattern 2: Handle cases where "Book" is already followed by a chapter number in words
   // Example: "Psalm chapter sixty nine verse nine"
-  const simplePattern = /(\b(?:First|Second|Third)?\s*[A-Za-z]+)\s+chapter\s+([\w\s]+?)\s+verses?\s+([\w\s]+?)(?:\s+to\s+([\w\s]+?))?(?=\.|,|\s|$)/gi;
-  
+  // Fixed: Changed lookahead to only match sentence-ending punctuation, not spaces
+  const simplePattern = /(\b(?:First|Second|Third)?\s*[A-Za-z]+)\s+chapter\s+([\w\s]+?)\s+verses?\s+([\w\s]+?)(?:\s+to\s+([\w\s]+?))?(?=\.|,|;|$)/gi;
+
   formattedText = formattedText.replace(simplePattern, (match, book, chapter, verse1, verse2) => {
     const bookName = normalizeBookName(book);
     const chapterNum = parseSpokenNumber(chapter);
     const verseNum1 = parseSpokenNumber(verse1);
-    
+
     if (verse2) {
       const verseNum2 = parseSpokenNumber(verse2);
       return `${bookName} ${chapterNum}:${verseNum1}-${verseNum2}`;
     }
-    
+
     return `${bookName} ${chapterNum}:${verseNum1}`;
   });
 
   // Pattern 3: "verses X to Y" (without chapter, for continued references)
-  const versesOnlyPattern = /verses?\s+([\w\s]+?)\s+to\s+([\w\s]+?)(?=\.|,|\s|$)/gi;
-  
+  // Fixed: Changed lookahead to only match sentence-ending punctuation, not spaces
+  const versesOnlyPattern = /verses?\s+([\w\s]+?)\s+to\s+([\w\s]+?)(?=\.|,|;|$)/gi;
+
   formattedText = formattedText.replace(versesOnlyPattern, (match, verse1, verse2) => {
     const verseNum1 = parseSpokenNumber(verse1);
     const verseNum2 = parseSpokenNumber(verse2);

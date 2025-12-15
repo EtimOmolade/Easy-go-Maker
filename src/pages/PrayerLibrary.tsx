@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Plus, Edit, Trash2, BookOpen, Upload, CheckSquare, Square } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, BookOpen, Upload, CheckSquare, Square, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -58,6 +58,7 @@ const PrayerLibrary = () => {
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [editingPoint, setEditingPoint] = useState<PrayerPoint | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('Kingdom Focus');
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Bulk selection state
   const [selectedPrayers, setSelectedPrayers] = useState<Set<string>>(new Set());
@@ -340,9 +341,10 @@ const PrayerLibrary = () => {
     }
   };
 
-  // Clear selection when category changes
+  // Clear selection and search when category changes
   useEffect(() => {
     setSelectedPrayers(new Set());
+    setSearchQuery("");
   }, [selectedCategory]);
 
   const getCategoryColor = (cat: string) => {
@@ -379,7 +381,23 @@ const PrayerLibrary = () => {
     return null;
   };
 
-  const filteredPoints = prayerPoints.filter(p => p.category === selectedCategory);
+  const filteredPoints = prayerPoints.filter(p => {
+    // Filter by category
+    if (p.category !== selectedCategory) return false;
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      return (
+        p.title.toLowerCase().includes(query) ||
+        p.content.toLowerCase().includes(query) ||
+        (p.month && p.month.toLowerCase().includes(query)) ||
+        (p.reference_text && p.reference_text.toLowerCase().includes(query))
+      );
+    }
+
+    return true;
+  });
 
   const handleExportJSON = (category: string) => {
     const filtered = prayerPoints.filter(p => p.category === category);
@@ -792,6 +810,25 @@ const PrayerLibrary = () => {
               </TabsTrigger>
             ))}
           </TabsList>
+
+          {/* Search Bar */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
+              <Input
+                type="text"
+                placeholder="Search prayers by title, content, or scripture reference..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20"
+              />
+            </div>
+            {searchQuery && (
+              <p className="text-sm text-white/70 mt-2">
+                Found {filteredPoints.length} prayer{filteredPoints.length === 1 ? '' : 's'} matching "{searchQuery}"
+              </p>
+            )}
+          </div>
 
           {/* Bulk Actions Bar */}
           {filteredPoints.length > 0 && (
