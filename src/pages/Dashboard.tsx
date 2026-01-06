@@ -113,29 +113,83 @@ const Dashboard = () => {
     }
   }, [user, isAdmin]);
 
-  // Check if user should see onboarding
+  // Check if user should see onboarding (from database)
   useEffect(() => {
-    if (user && !loading) {
-      const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
-      if (!hasSeenWelcome) {
-        // Small delay to let the dashboard load first
-        setTimeout(() => {
-          setShowWelcomeWizard(true);
-        }, 500);
+    const checkOnboardingStatus = async () => {
+      if (user && !loading) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+          
+          if (error) {
+            console.error('Error checking onboarding status:', error);
+            return;
+          }
+          
+          // Type assertion for onboarding_completed field (add column to profiles table)
+          const profileData = data as any;
+          if (!profileData?.onboarding_completed) {
+            // Small delay to let the dashboard load first
+            setTimeout(() => {
+              setShowWelcomeWizard(true);
+            }, 500);
+          }
+        } catch (error) {
+          console.error('Error checking onboarding status:', error);
+        }
+      }
+    };
+    
+    checkOnboardingStatus();
+  }, [user, loading]);
+
+  const handleWelcomeComplete = async () => {
+    setShowWelcomeWizard(false);
+    
+    // Update database to mark onboarding as completed
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ onboarding_completed: true } as any)
+          .eq('id', user.id);
+        
+        if (error) {
+          console.error('Error updating onboarding status:', error);
+        }
+      } catch (error) {
+        console.error('Error updating onboarding status:', error);
       }
     }
-  }, [user, loading]);
-  const handleWelcomeComplete = () => {
-    setShowWelcomeWizard(false);
-    localStorage.setItem('hasSeenWelcome', 'true');
+    
     // Start the tutorial walkthrough after welcome wizard
     setTimeout(() => {
       setRunTutorial(true);
     }, 500);
   };
-  const handleTutorialComplete = () => {
+
+  const handleTutorialComplete = async () => {
     setRunTutorial(false);
-    localStorage.setItem('hasSeenTutorial', 'true');
+    
+    // Update database to mark tutorial as completed
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ tutorial_completed: true } as any)
+          .eq('id', user.id);
+        
+        if (error) {
+          console.error('Error updating tutorial status:', error);
+        }
+      } catch (error) {
+        console.error('Error updating tutorial status:', error);
+      }
+    }
+    
     toast.success("Welcome to SpiritConnect! You're all set to begin your prayer journey.");
   };
   const checkForNewMilestones = () => {
