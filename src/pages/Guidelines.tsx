@@ -90,13 +90,28 @@ const Guidelines = () => {
     return acc;
   }, {} as Record<string, any[]>);
 
-  const monthsOrder = ['June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthsOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const months = monthsOrder.filter(m => groupedByMonth[m] && groupedByMonth[m].length > 0);
 
   // Sort days within each month
   Object.keys(groupedByMonth).forEach(monthKey => {
     groupedByMonth[monthKey].sort((a, b) => a.day - b.day);
   });
+
+  // Helper function to get the year for a given month from the guidelines data
+  const getYearForMonth = (monthName: string): number => {
+    const monthGuidelines = groupedByMonth[monthName];
+    if (monthGuidelines && monthGuidelines.length > 0) {
+      // Get the year from the first guideline's date_uploaded field
+      const firstGuideline = monthGuidelines[0];
+      if (firstGuideline.date_uploaded) {
+        const date = new Date(firstGuideline.date_uploaded);
+        return date.getFullYear();
+      }
+    }
+    // Fallback to current year if no date_uploaded found
+    return new Date().getFullYear();
+  };
 
   // Get current date info for access control
   const now = new Date();
@@ -232,7 +247,7 @@ const Guidelines = () => {
                               {monthName}
                             </Badge>
                             <CardTitle className="text-lg md:text-xl text-white">
-                              {monthName} 2025 Prayers
+                              {monthName} {getYearForMonth(monthName)} Prayers
                             </CardTitle>
                           </div>
                           <Calendar className={`h-5 w-5 text-white transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
