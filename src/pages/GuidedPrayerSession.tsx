@@ -969,7 +969,7 @@ const GuidedPrayerSession = () => {
 
       <div className="max-w-4xl relative z-10 mx-auto p-3 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-4 md:mb-6">
-          <AppHeader showBack={true} backTo={`/guideline/${id}`} />
+          <AppHeader showBack={true} backTo={`/guideline/${id}`} hideNotifications={true} />
 
           <TooltipProvider>
             <div className="flex gap-2">

@@ -12,9 +12,10 @@ interface AppHeaderProps {
   backTo?: string;
   onBackClick?: () => void;
   hideTitle?: boolean;
+  hideNotifications?: boolean;
 }
 
-export const AppHeader = ({ title, showBack = true, backTo = "/dashboard", onBackClick, hideTitle = false }: AppHeaderProps) => {
+export const AppHeader = ({ title, showBack = true, backTo = "/dashboard", onBackClick, hideTitle = false, hideNotifications = false }: AppHeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAdmin } = useAuth();
@@ -32,10 +33,10 @@ export const AppHeader = ({ title, showBack = true, backTo = "/dashboard", onBac
   };
 
   // Hide notification center for admins ONLY on Admin Dashboard and Guided-Session pages
-  const shouldHideNotification = isAdmin && (
+  const shouldHideNotification = hideNotifications || (isAdmin && (
     location.pathname === '/admin' ||
     location.pathname.includes('/guided-session')
-  );
+  ));
 
   return (
     <div className="flex items-center justify-between mb-6">
@@ -54,7 +55,7 @@ export const AppHeader = ({ title, showBack = true, backTo = "/dashboard", onBac
             src={logoOnly}
             alt="SpiritConnect Home"
             className="h-10 w-10 cursor-pointer"
-            whileHover={{ 
+            whileHover={{
               scale: 1.1,
               filter: "brightness(1.2)"
             }}
@@ -68,7 +69,7 @@ export const AppHeader = ({ title, showBack = true, backTo = "/dashboard", onBac
           </h1>
         )}
       </div>
-      
+
       {user && !shouldHideNotification && (
         <NotificationDropdown userId={user.id} isAdmin={isAdmin} />
       )}
