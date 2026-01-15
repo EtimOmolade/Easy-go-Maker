@@ -500,9 +500,9 @@ const GuidedPrayerSession = () => {
     try {
       // Determine if this is current day prayer (date-aware)
       const now = new Date();
+      const currentYear = now.getFullYear();
       const currentMonthIndex = now.getMonth();
-      const monthsOrder = ['June', 'July', 'August', 'September', 'October', 'November', 'December'];
-      const currentMonthName = monthsOrder[currentMonthIndex] || '';
+      const monthsOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
       const currentDay = now.getDate();
       const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const currentDayName = DAYS[now.getDay()];
@@ -511,9 +511,13 @@ const GuidedPrayerSession = () => {
       const guidelineDay = guideline.day;
       const guidelineMonthIndex = monthsOrder.indexOf(guidelineMonth);
 
+      // Get year from date_uploaded if available, otherwise assume current year
+      const guidelineYear = guideline.date_uploaded ? new Date(guideline.date_uploaded).getFullYear() : currentYear;
+
+      const isCurrentYear = guidelineYear === currentYear;
       const isCurrentMonth = guidelineMonthIndex === currentMonthIndex;
       const isCurrentDay = guidelineDay === currentDay;
-      const isCurrentPrayer = isCurrentMonth && isCurrentDay;
+      const isCurrentPrayer = isCurrentYear && isCurrentMonth && isCurrentDay;
 
       let newStreak = 0;
       let milestone = null;
@@ -1272,10 +1276,10 @@ const GuidedPrayerSession = () => {
               onClick={() => !isGuidedMode && setCurrentStepIndex(idx)}
               disabled={isGuidedMode}
               className={`aspect-square rounded-lg border-2 flex items-center justify-center text-xs font-medium transition-all ${completedSteps.includes(idx)
-                  ? 'bg-primary border-primary text-primary-foreground'
-                  : idx === currentStepIndex
-                    ? 'bg-accent border-accent text-accent-foreground'
-                    : 'bg-card border-border hover:border-accent'
+                ? 'bg-primary border-primary text-primary-foreground'
+                : idx === currentStepIndex
+                  ? 'bg-accent border-accent text-accent-foreground'
+                  : 'bg-card border-border hover:border-accent'
                 } ${isGuidedMode ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
             >
               {idx + 1}

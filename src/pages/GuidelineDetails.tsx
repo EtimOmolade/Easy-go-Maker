@@ -22,7 +22,7 @@ const GuidelineDetails = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   const [guideline, setGuideline] = useState<any>(null);
   const [dailyPrayers, setDailyPrayers] = useState<DailyPrayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,29 +93,41 @@ const GuidelineDetails = () => {
 
     // Date-aware access control
     const now = new Date();
+    const currentYear = now.getFullYear();
     const monthsOrder = ['January', 'February', 'March', 'April', 'May', 'June',
-                         'July', 'August', 'September', 'October', 'November', 'December'];
+      'July', 'August', 'September', 'October', 'November', 'December'];
     const currentMonthIndex = now.getMonth();
     const currentDay = now.getDate();
-    const currentDayName = DAYS[now.getDay()];
 
     const guidelineMonth = guideline.month;
     const guidelineDay = guideline.day;
     const guidelineMonthIndex = monthsOrder.indexOf(guidelineMonth);
 
-    // Check if month is in the future
+    // Get year from date_uploaded if available, otherwise assume current year
+    const guidelineYear = guideline.date_uploaded ? new Date(guideline.date_uploaded).getFullYear() : currentYear;
+
+    // Check year status
+    if (guidelineYear > currentYear) {
+      setAccessStatus('locked');
+      return;
+    }
+    if (guidelineYear < currentYear) {
+      setAccessStatus('past');
+      return;
+    }
+
+    // Same year - check month status
     if (guidelineMonthIndex > currentMonthIndex) {
       setAccessStatus('locked');
       return;
     }
 
-    // Check if month is in the past
     if (guidelineMonthIndex < currentMonthIndex) {
       setAccessStatus('past');
       return;
     }
 
-    // Same month - check day
+    // Same year, same month - check day
     if (guidelineDay === currentDay) {
       setAccessStatus('current');
     } else if (guidelineDay > currentDay) {
@@ -264,13 +276,13 @@ const GuidelineDetails = () => {
                 <span className="text-xs md:text-sm text-white/80">{completedCount}/{DAYS.length} days</span>
               </div>
               <div className="w-full bg-accent/20 rounded-full h-2">
-                <div 
+                <div
                   className="bg-primary h-2 rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
             </div>
-            
+
             {isCompleted ? (
               <div className="space-y-3">
                 <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg text-center">
@@ -329,18 +341,16 @@ const GuidelineDetails = () => {
               {dailyPrayers.map((prayer) => (
                 <div
                   key={prayer.day}
-                  className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 ${
-                    prayer.completed
+                  className={`flex items-center justify-between p-3 md:p-4 rounded-lg border-2 ${prayer.completed
                       ? 'bg-primary/10 border-primary'
                       : 'bg-card border-border'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2 md:gap-3">
-                    <div className={`w-5 h-5 md:w-6 md:h-6 rounded-full border-2 flex items-center justify-center ${
-                      prayer.completed
+                    <div className={`w-5 h-5 md:w-6 md:h-6 rounded-full border-2 flex items-center justify-center ${prayer.completed
                         ? 'bg-primary border-primary'
                         : 'border-border'
-                    }`}>
+                      }`}>
                       {prayer.completed && <Check className="h-3 w-3 md:h-4 md:w-4 text-primary-foreground" />}
                     </div>
                     <span className="font-medium text-sm md:text-base">{prayer.day}</span>

@@ -122,14 +122,20 @@ const Guidelines = () => {
 
   // Function to check if a guideline is accessible
   const getAccessStatus = (guideline: any): 'locked' | 'current' | 'past' => {
+    const guidelineYear = getYearForMonth(guideline.month);
+    const currentYear = now.getFullYear();
     const guidelineMonthIndex = monthsOrder.indexOf(guideline.month);
     const guidelineDay = guideline.day;
 
-    // Check month status
+    // Check year status
+    if (guidelineYear > currentYear) return 'locked';
+    if (guidelineYear < currentYear) return 'past';
+
+    // Same year - check month status
     if (guidelineMonthIndex > currentMonthIndex) return 'locked';
     if (guidelineMonthIndex < currentMonthIndex) return 'past';
 
-    // Same month - check day
+    // Same year, same month - check day
     if (guidelineDay === currentDay) return 'current';
     if (guidelineDay > currentDay) return 'locked';
     return 'past';

@@ -349,7 +349,7 @@ const Dashboard = () => {
       const {
         data,
         error
-      } = await supabase.from("guidelines").select("*").eq("month", month).eq("day", day).single();
+      } = await supabase.from("guidelines").select("*").eq("month", month).eq("day", day).order('date_uploaded', { ascending: false }).limit(1).maybeSingle();
       if (error) {
         console.error("Error fetching today's guideline:", error);
       } else {
