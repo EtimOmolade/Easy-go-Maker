@@ -326,8 +326,7 @@ const GuidedPrayerSession = () => {
             speakTwice(point.content, {
               rate: 0.65,
               pitch: 1,
-              volume: 1,
-              voice: selectedVoice
+              volume: 1
             });
           };
 
@@ -339,8 +338,7 @@ const GuidedPrayerSession = () => {
             speakTwice(point.content, {
               rate: 0.65,
               pitch: 1,
-              volume: 1,
-              voice: selectedVoice
+              volume: 1
             });
           });
 
@@ -350,8 +348,7 @@ const GuidedPrayerSession = () => {
           speakTwice(point.content, {
             rate: 0.65,
             pitch: 1,
-            volume: 1,
-            voice: selectedVoice
+            volume: 1
           });
         }
       }
@@ -776,7 +773,6 @@ const GuidedPrayerSession = () => {
               rate: 0.5, // Very slow for meditative scripture
               pitch: 1,
               volume: 1,
-              voice: selectedVoice,
               onEnd: () => setIsPlayingAudio(false)
             });
           };
@@ -792,7 +788,6 @@ const GuidedPrayerSession = () => {
               rate: 0.5,
               pitch: 1,
               volume: 1,
-              voice: selectedVoice,
               onEnd: () => setIsPlayingAudio(false)
             });
           });
@@ -805,7 +800,6 @@ const GuidedPrayerSession = () => {
             rate: 0.5, // Very slow for meditative scripture reading
             pitch: 1,
             volume: 1,
-            voice: selectedVoice,
             onEnd: () => setIsPlayingAudio(false)
           });
         }
@@ -834,7 +828,6 @@ const GuidedPrayerSession = () => {
                 rate: 0.65,
                 pitch: 1,
                 volume: 1,
-                voice: selectedVoice,
                 onEnd: () => setIsPlayingAudio(false)
               });
             };
@@ -847,7 +840,6 @@ const GuidedPrayerSession = () => {
                 rate: 0.65,
                 pitch: 1,
                 volume: 1,
-                voice: selectedVoice,
                 onEnd: () => setIsPlayingAudio(false)
               });
             });
@@ -859,7 +851,6 @@ const GuidedPrayerSession = () => {
               rate: 0.65,
               pitch: 1,
               volume: 1,
-              voice: selectedVoice,
               onEnd: () => setIsPlayingAudio(false)
             });
           }
@@ -1281,10 +1272,10 @@ const GuidedPrayerSession = () => {
               onClick={() => !isGuidedMode && setCurrentStepIndex(idx)}
               disabled={isGuidedMode}
               className={`aspect-square rounded-lg border-2 flex items-center justify-center text-xs font-medium transition-all ${completedSteps.includes(idx)
-                ? 'bg-primary border-primary text-primary-foreground'
-                : idx === currentStepIndex
-                  ? 'bg-accent border-accent text-accent-foreground'
-                  : 'bg-card border-border hover:border-accent'
+                  ? 'bg-primary border-primary text-primary-foreground'
+                  : idx === currentStepIndex
+                    ? 'bg-accent border-accent text-accent-foreground'
+                    : 'bg-card border-border hover:border-accent'
                 } ${isGuidedMode ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
             >
               {idx + 1}

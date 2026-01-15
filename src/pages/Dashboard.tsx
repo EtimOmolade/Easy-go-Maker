@@ -131,19 +131,7 @@ const Dashboard = () => {
 
           // Type assertion for onboarding_completed field (add column to profiles table)
           const profileData = data as any;
-
-          // Check for manual tutorial trigger from URL
-          const searchParams = new URLSearchParams(location.search);
-          const forceTutorial = searchParams.get('tutorial') === 'true';
-
-          if (forceTutorial || !profileData?.onboarding_completed) {
-            console.log('🏁 Dashboard: Triggering onboarding wizard (forceTutorial:', forceTutorial, ')');
-
-            // Clean up the URL if it was a forced tutorial
-            if (forceTutorial) {
-              window.history.replaceState({}, '', window.location.pathname);
-            }
-
+          if (!profileData?.onboarding_completed) {
             // Small delay to let the dashboard load first
             setTimeout(() => {
               setShowWelcomeWizard(true);
@@ -239,10 +227,6 @@ const Dashboard = () => {
         // Only show error if we don't have cached data
         if (!cached) {
           toast.error("Failed to load profile data");
-        }
-        // Ensure loading is set to false even on error to prevent hang
-        if (loading) {
-          setLoading(false);
         }
       } else {
         // Cache the fresh data

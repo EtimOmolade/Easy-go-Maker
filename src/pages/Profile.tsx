@@ -478,8 +478,6 @@ const Profile = () => {
                 setTutorialEnabled(checked);
                 if (checked && user) {
                   try {
-                    console.log('🔄 Profile: Enabling tutorial for user:', user.id);
-
                     // Update database to reset both onboarding and tutorial status
                     const { error } = await supabase
                       .from("profiles")
@@ -489,33 +487,21 @@ const Profile = () => {
                       })
                       .eq("id", user.id);
 
-                    if (error) {
-                      console.error("❌ Profile: Supabase update failed:", error);
-                      throw error;
-                    }
-                    console.log('✅ Profile: Supabase update successful');
+                    if (error) throw error;
 
-                    try {
-                      await deleteFromStore(STORES.USER_DATA, user.id);
-                      console.log('✅ Profile: Offline user data cleared');
-                    } catch (storeError) {
-                      console.warn("⚠️ Profile: Failed to clear offline user data, continuing:", storeError);
-                    }
+                    await deleteFromStore(STORES.USER_DATA, user.id);
 
                     localStorage.removeItem('hasSeenWelcome');
                     localStorage.removeItem('hasSeenTutorial');
-                    console.log('✅ Profile: Local storage flags cleared');
 
                     toast.success("Tutorial enabled! Redirecting to Dashboard...");
 
                     // Redirect to dashboard where the tutorial elements are located
-                    console.log('🚀 Profile: Initiating redirect to /dashboard?tutorial=true');
                     setTimeout(() => {
-                      console.log('🚀 Profile: Executing navigate("/dashboard?tutorial=true")');
-                      navigate("/dashboard?tutorial=true");
+                      navigate("/dashboard");
                     }, 1500);
                   } catch (error) {
-                    console.error("❌ Profile: Error resetting tutorial:", error);
+                    console.error("Error resetting tutorial:", error);
                     toast.error("Failed to enable tutorial. Please try again.");
                     setTutorialEnabled(false);
                   }
