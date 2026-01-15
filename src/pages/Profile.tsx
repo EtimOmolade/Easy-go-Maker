@@ -509,10 +509,10 @@ const Profile = () => {
                     toast.success("Tutorial enabled! Redirecting to Dashboard...");
 
                     // Redirect to dashboard where the tutorial elements are located
-                    console.log('🚀 Profile: Initiating forceful redirect to /dashboard?tutorial=true');
+                    console.log('🚀 Profile: Initiating redirect to /dashboard?tutorial=true');
                     setTimeout(() => {
-                      console.log('🚀 Profile: Executing window.location.href = "/dashboard?tutorial=true"');
-                      window.location.href = "/dashboard?tutorial=true";
+                      console.log('🚀 Profile: Executing navigate("/dashboard?tutorial=true")');
+                      navigate("/dashboard?tutorial=true");
                     }, 1500);
                   } catch (error) {
                     console.error("❌ Profile: Error resetting tutorial:", error);
