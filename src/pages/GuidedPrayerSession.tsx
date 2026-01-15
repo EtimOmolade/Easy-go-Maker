@@ -362,16 +362,19 @@ const GuidedPrayerSession = () => {
           onEnd: () => {
             // Wait 3 seconds after prompt finishes, THEN play prayer audio
             setTimeout(() => {
-              if (canStartAudio()) {
+              // CRITICAL: Re-check voiceEnabled inside timeout in case user toggled it OFF during the pause
+              if (canStartAudio() && voiceEnabled) {
                 playPrayerAudio();
               }
             }, 3000);
           }
         });
       }
-    } else if (isGuidedMode) {
-      // Guided mode but voice disabled - play prayer audio immediately
-      playPrayerAudio();
+    } else if (isGuidedMode && !voiceEnabled) {
+      // Guided mode but voice disabled - DO NOT play prayer audio automatically
+      console.log('🔇 Voice Guidance disabled - suppressing all automatic audio');
+      stopAllAudio();
+      stopVoicePrompt();
     }
     // FREE MODE: Don't auto-play audio, user controls it manually with toggleAudioReading
 
