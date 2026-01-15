@@ -92,11 +92,11 @@ const Index = () => {
                   ease: "easeInOut",
                 }}
               />
-              
+
               {/* Logo with Animated Lighting */}
-              <motion.img 
-                src={logoText} 
-                alt="SpiritConnect" 
+              <motion.img
+                src={logoText}
+                alt="SpiritConnect"
                 width={224}
                 height={160}
                 className="h-40 md:h-56 w-auto relative z-10"

@@ -60,7 +60,7 @@ const ForgotPassword = () => {
       >
         <Card className="glass shadow-large border-white/20 backdrop-blur-xl">
           <CardHeader className="space-y-4">
-            <motion.div 
+            <motion.div
               className="flex justify-center"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}

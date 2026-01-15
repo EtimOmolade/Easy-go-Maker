@@ -113,12 +113,12 @@ const GuidedPrayerSession = () => {
     // Replace verse references like "17:1-9" with "17, verses 1 to 9."
     // Use "to" instead of "through" to avoid sounding like "three"
     let formatted = text.replace(/(\d+):(\d+)-(\d+)/g, '$1, verses $2 to $3.')
-                        .replace(/(\d+):(\d+)(?!-)/g, '$1, verse $2.'); // Handle single verses like "17:1"
+      .replace(/(\d+):(\d+)(?!-)/g, '$1, verse $2.'); // Handle single verses like "17:1"
 
     // Add full stop after Bible version (KJV, NIV, etc.) for pause before scripture content
     // Pattern: "(KJV)" becomes "(KJV). " or "KJV" becomes "KJV. "
     formatted = formatted.replace(/\(([A-Z]{2,5})\)/g, '($1). ')
-                         .replace(/([A-Z]{2,5})(?=\s+[A-Z])/g, '$1. '); // Version followed by capital letter (verse start)
+      .replace(/([A-Z]{2,5})(?=\s+[A-Z])/g, '$1. '); // Version followed by capital letter (verse start)
 
     // Add commas for better pacing between phrases
     formatted = formatted.replace(/\.\s+/g, '. , '); // Add comma after periods for slight pause
@@ -223,13 +223,13 @@ const GuidedPrayerSession = () => {
 
   const fetchUserVoicePreference = async () => {
     if (!user) return;
-    
+
     const { data } = await supabase
       .from('profiles')
       .select('voice_preference')
       .eq('id', user.id)
       .single();
-    
+
     if (data?.voice_preference) {
       setSelectedVoice(data.voice_preference as 'sarah' | 'theo' | 'megan');
     }
@@ -326,7 +326,8 @@ const GuidedPrayerSession = () => {
             speakTwice(point.content, {
               rate: 0.65,
               pitch: 1,
-              volume: 1
+              volume: 1,
+              voice: selectedVoice
             });
           };
 
@@ -338,7 +339,8 @@ const GuidedPrayerSession = () => {
             speakTwice(point.content, {
               rate: 0.65,
               pitch: 1,
-              volume: 1
+              volume: 1,
+              voice: selectedVoice
             });
           });
 
@@ -348,7 +350,8 @@ const GuidedPrayerSession = () => {
           speakTwice(point.content, {
             rate: 0.65,
             pitch: 1,
-            volume: 1
+            volume: 1,
+            voice: selectedVoice
           });
         }
       }
@@ -468,11 +471,11 @@ const GuidedPrayerSession = () => {
   const handlePointComplete = () => {
     const currentStep = guideline.steps?.[currentStepIndex];
     const nextPointIndex = currentPointIndex + 1;
-    
+
     if (currentStep?.type === 'kingdom' && nextPointIndex < (currentStep.points?.length || 0)) {
       // Move to next prayer point and trigger a re-render to reset timer
       setCurrentPointIndex(nextPointIndex);
-      
+
       // REMOVED: Duplicate playVoicePrompt call (useEffect already handles this)
       // The useEffect at line 257 will automatically play the prompt when currentPointIndex changes
       console.log(`✅ Moving to next intercession prayer point: ${nextPointIndex + 1}`);
@@ -606,8 +609,8 @@ const GuidedPrayerSession = () => {
 
       const message = isOnline
         ? (isCurrentPrayer
-            ? `🎉 Prayer session complete! ${newStreak}-day streak!`
-            : '🎉 Prayer session complete! Saved to your journal.')
+          ? `🎉 Prayer session complete! ${newStreak}-day streak!`
+          : '🎉 Prayer session complete! Saved to your journal.')
         : '🎉 Prayer session complete! Will sync when you\'re back online.';
 
       toast.success(message);
@@ -631,21 +634,21 @@ const GuidedPrayerSession = () => {
 
   const handleVoiceChange = async (voice: 'sarah' | 'theo' | 'megan') => {
     setSelectedVoice(voice);
-    
+
     // Update user's preference in database
     if (user) {
       await supabase
         .from('profiles')
         .update({ voice_preference: voice })
         .eq('id', user.id);
-      
+
       toast.success(`Voice changed to ${voice.charAt(0).toUpperCase() + voice.slice(1)}`);
     }
-    
+
     // If audio is currently playing, restart with new voice
     if (isPlayingAudio && currentStepIndex !== undefined) {
       const step = guideline?.steps[currentStepIndex];
-      
+
       // Handle kingdom prayer voice change
       if (step?.type === 'kingdom' && currentPointIndex !== undefined && step.points?.[currentPointIndex]) {
         stopAllAudio();
@@ -660,25 +663,25 @@ const GuidedPrayerSession = () => {
             const removeFadeOut = addFadeOut(audio, 1.5);
             setCurrentAudio(audio);
             currentAudioRef.current = audio;
-            
+
             audio.onended = () => {
               removeFadeOut();
               setIsPlayingAudio(false);
               setCurrentAudio(null);
               currentAudioRef.current = null;
             };
-            
+
             audio.play().catch(() => {
               console.warn('⚠️ Audio playback failed');
               setCurrentAudio(null);
               currentAudioRef.current = null;
             });
-            
+
             setIsPlayingAudio(true);
           }
         }, 300);
       }
-      
+
       // Handle listening prayer voice change
       if (step?.type === 'listening') {
         stopAllAudio();
@@ -692,20 +695,20 @@ const GuidedPrayerSession = () => {
             const removeFadeOut = addFadeOut(audio, 1.75);
             setCurrentAudio(audio);
             currentAudioRef.current = audio;
-            
+
             audio.onended = () => {
               removeFadeOut();
               setIsPlayingAudio(false);
               setCurrentAudio(null);
               currentAudioRef.current = null;
             };
-            
+
             audio.play().catch(() => {
               console.warn('⚠️ Audio playback failed');
               setCurrentAudio(null);
               currentAudioRef.current = null;
             });
-            
+
             setIsPlayingAudio(true);
           }
         }, 300);
@@ -773,6 +776,7 @@ const GuidedPrayerSession = () => {
               rate: 0.5, // Very slow for meditative scripture
               pitch: 1,
               volume: 1,
+              voice: selectedVoice,
               onEnd: () => setIsPlayingAudio(false)
             });
           };
@@ -788,6 +792,7 @@ const GuidedPrayerSession = () => {
               rate: 0.5,
               pitch: 1,
               volume: 1,
+              voice: selectedVoice,
               onEnd: () => setIsPlayingAudio(false)
             });
           });
@@ -800,6 +805,7 @@ const GuidedPrayerSession = () => {
             rate: 0.5, // Very slow for meditative scripture reading
             pitch: 1,
             volume: 1,
+            voice: selectedVoice,
             onEnd: () => setIsPlayingAudio(false)
           });
         }
@@ -828,6 +834,7 @@ const GuidedPrayerSession = () => {
                 rate: 0.65,
                 pitch: 1,
                 volume: 1,
+                voice: selectedVoice,
                 onEnd: () => setIsPlayingAudio(false)
               });
             };
@@ -840,6 +847,7 @@ const GuidedPrayerSession = () => {
                 rate: 0.65,
                 pitch: 1,
                 volume: 1,
+                voice: selectedVoice,
                 onEnd: () => setIsPlayingAudio(false)
               });
             });
@@ -851,6 +859,7 @@ const GuidedPrayerSession = () => {
               rate: 0.65,
               pitch: 1,
               volume: 1,
+              voice: selectedVoice,
               onEnd: () => setIsPlayingAudio(false)
             });
           }
@@ -865,14 +874,14 @@ const GuidedPrayerSession = () => {
       const audio = new Audio('/assets/music/Ambient_Music.mp3');
       audio.loop = true;
       audio.volume = 0.15; // Subtle 15% volume
-      
+
       audio.play().catch(err => {
         console.warn('⚠️ Background music autoplay blocked:', err);
         // User needs to interact with page first (browser policy)
       });
-      
+
       setBgAudio(audio);
-      
+
       return () => {
         audio.pause();
         audio.src = '';
@@ -924,7 +933,7 @@ const GuidedPrayerSession = () => {
     : null;
 
   // Get listening prayer directly (single object, not array)
-  const listeningPrayer = currentStep?.type === 'listening' 
+  const listeningPrayer = currentStep?.type === 'listening'
     ? (currentStep.points?.[0] || currentStep.prayer || currentStep)
     : null;
 
@@ -1020,36 +1029,36 @@ const GuidedPrayerSession = () => {
                     </Badge>
                   </DropdownMenuItem>
 
-                   <DropdownMenuSeparator />
+                  <DropdownMenuSeparator />
 
-                   <DropdownMenuLabel>Prayer Voice</DropdownMenuLabel>
-                   
-                   <DropdownMenuItem 
-                     onClick={() => handleVoiceChange('sarah')}
-                     className={selectedVoice === 'sarah' ? 'bg-accent' : ''}
-                   >
-                     <span className="mr-2">👩</span>
-                     Sarah {selectedVoice === 'sarah' && '✓'}
-                   </DropdownMenuItem>
-                   
-                   <DropdownMenuItem 
-                     onClick={() => handleVoiceChange('theo')}
-                     className={selectedVoice === 'theo' ? 'bg-accent' : ''}
-                   >
-                     <span className="mr-2">👨</span>
-                     Theo {selectedVoice === 'theo' && '✓'}
-                   </DropdownMenuItem>
-                   
-                   <DropdownMenuItem 
-                     onClick={() => handleVoiceChange('megan')}
-                     className={selectedVoice === 'megan' ? 'bg-accent' : ''}
-                   >
-                     <span className="mr-2">👩</span>
-                     Megan {selectedVoice === 'megan' && '✓'}
-                   </DropdownMenuItem>
-                   <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Prayer Voice</DropdownMenuLabel>
 
-                   {!isGuidedMode && (
+                  <DropdownMenuItem
+                    onClick={() => handleVoiceChange('sarah')}
+                    className={selectedVoice === 'sarah' ? 'bg-accent' : ''}
+                  >
+                    <span className="mr-2">👩</span>
+                    Sarah {selectedVoice === 'sarah' && '✓'}
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    onClick={() => handleVoiceChange('theo')}
+                    className={selectedVoice === 'theo' ? 'bg-accent' : ''}
+                  >
+                    <span className="mr-2">👨</span>
+                    Theo {selectedVoice === 'theo' && '✓'}
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    onClick={() => handleVoiceChange('megan')}
+                    className={selectedVoice === 'megan' ? 'bg-accent' : ''}
+                  >
+                    <span className="mr-2">👩</span>
+                    Megan {selectedVoice === 'megan' && '✓'}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+
+                  {!isGuidedMode && (
                     <div className="px-2 py-1.5 text-xs text-muted-foreground">
                       Voice guidance only works in Guided mode
                     </div>
@@ -1070,12 +1079,12 @@ const GuidedPrayerSession = () => {
 
         <Card className="shadow-large glass border-white/20 mb-4 md:mb-6">
           <CardHeader className="p-4 md:p-6">
-              <div className="flex items-center justify-between mb-3 md:mb-4">
-                <Badge variant="secondary" className="text-xs bg-gradient-secondary text-white border-0">{guideline.day_of_week}</Badge>
-                <span className="text-xs md:text-sm text-white/80">
-                  Step {currentStepIndex + 1} of {guideline.steps?.length || 0}
-                </span>
-              </div>
+            <div className="flex items-center justify-between mb-3 md:mb-4">
+              <Badge variant="secondary" className="text-xs bg-gradient-secondary text-white border-0">{guideline.day_of_week}</Badge>
+              <span className="text-xs md:text-sm text-white/80">
+                Step {currentStepIndex + 1} of {guideline.steps?.length || 0}
+              </span>
+            </div>
             <CardTitle className="text-lg md:text-xl lg:text-2xl text-white">{guideline.title}</CardTitle>
             <Progress value={progress} className="h-2 mt-3 md:mt-4" />
           </CardHeader>
@@ -1090,8 +1099,8 @@ const GuidedPrayerSession = () => {
               <p className="text-center text-white/90">
                 This guided prayer session will take you through {guideline.steps?.length || 0} steps including kingdom focused prayers, personal supplication, listening prayer, and reflection.
               </p>
-              <Button 
-                onClick={handleBeginSession} 
+              <Button
+                onClick={handleBeginSession}
                 className="w-full"
                 size="lg"
               >
@@ -1127,7 +1136,7 @@ const GuidedPrayerSession = () => {
                     <h4 className="font-semibold mb-2 text-foreground">{currentPoint.title}</h4>
                     <p className="text-foreground/90 whitespace-pre-wrap">{formatBibleReferenceForDisplay(currentPoint.content)}</p>
                   </div>
-                  
+
                   {currentStep.audioUrl && (
                     <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
                       <audio controls className="w-full">
@@ -1136,7 +1145,7 @@ const GuidedPrayerSession = () => {
                       </audio>
                     </div>
                   )}
-                  
+
                   {isGuidedMode && !completedSteps.includes(currentStepIndex) ? (
                     <PrayerTimer
                       key={`kingdom-${currentStepIndex}-${currentPointIndex}`}
@@ -1169,7 +1178,7 @@ const GuidedPrayerSession = () => {
                       Now is the time to bring your personal requests to God. Share what's on your heart - your needs, your family, your work, your health. God is listening.
                     </p>
                   </div>
-                  
+
                   {currentStep.audioUrl && (
                     <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
                       <audio controls className="w-full">
@@ -1178,7 +1187,7 @@ const GuidedPrayerSession = () => {
                       </audio>
                     </div>
                   )}
-                  
+
                   {isGuidedMode && !completedSteps.includes(currentStepIndex) ? (
                     <PrayerTimer
                       key={`personal-${currentStepIndex}`}
@@ -1205,7 +1214,7 @@ const GuidedPrayerSession = () => {
                       <p className="text-sm text-muted-foreground mt-3 italic">— {formatBibleReferenceForDisplay(listeningPrayer.reference)}</p>
                     )}
                   </div>
-                  
+
                   {currentStep.custom_audio_url && (
                     <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
                       <audio controls className="w-full">
@@ -1214,9 +1223,9 @@ const GuidedPrayerSession = () => {
                       </audio>
                     </div>
                   )}
-                  
+
                   <div className="flex gap-3">
-                    <Button 
+                    <Button
                       onClick={toggleAudioReading}
                       variant={isPlayingAudio ? "secondary" : "default"}
                       className="flex-1"
@@ -1233,7 +1242,7 @@ const GuidedPrayerSession = () => {
                         </>
                       )}
                     </Button>
-                    <Button 
+                    <Button
                       onClick={handleStepComplete}
                       variant="outline"
                     >
@@ -1251,9 +1260,9 @@ const GuidedPrayerSession = () => {
                       Take time to reflect on what you've prayed and what God has spoken to you. Write down your thoughts, insights, and what you sense God is saying.
                     </p>
                   </div>
-                  
-                  <Button 
-                    onClick={handleSessionComplete} 
+
+                  <Button
+                    onClick={handleSessionComplete}
                     className="w-full"
                     size="lg"
                   >
@@ -1271,13 +1280,12 @@ const GuidedPrayerSession = () => {
               key={step.id}
               onClick={() => !isGuidedMode && setCurrentStepIndex(idx)}
               disabled={isGuidedMode}
-              className={`aspect-square rounded-lg border-2 flex items-center justify-center text-xs font-medium transition-all ${
-                completedSteps.includes(idx)
-                  ? 'bg-primary border-primary text-primary-foreground'
-                  : idx === currentStepIndex
+              className={`aspect-square rounded-lg border-2 flex items-center justify-center text-xs font-medium transition-all ${completedSteps.includes(idx)
+                ? 'bg-primary border-primary text-primary-foreground'
+                : idx === currentStepIndex
                   ? 'bg-accent border-accent text-accent-foreground'
                   : 'bg-card border-border hover:border-accent'
-              } ${isGuidedMode ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                } ${isGuidedMode ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
             >
               {idx + 1}
             </button>

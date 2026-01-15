@@ -7,10 +7,18 @@ interface TTSOptions {
   rate?: number;
   pitch?: number;
   volume?: number;
+  voice?: 'sarah' | 'theo' | 'megan' | string;
   onEnd?: () => void;
 }
 
 let currentAudio: HTMLAudioElement | null = null;
+
+// Map user voice preferences to Google Cloud TTS voice names
+const GOOGLE_VOICE_MAP: Record<string, string> = {
+  sarah: 'en-US-Neural2-F', // Gentle female voice
+  theo: 'en-US-Neural2-D',  // Calm male voice
+  megan: 'en-US-Neural2-C', // Warm expressive female voice
+};
 
 /**
  * Speaks text using Google Cloud TTS with Web Speech API fallback
@@ -18,15 +26,16 @@ let currentAudio: HTMLAudioElement | null = null;
  * @param options - Voice configuration options
  */
 export async function speak(text: string, options: TTSOptions = {}): Promise<void> {
-  const { rate = 1, pitch = 1, volume = 1, onEnd } = options;
+  const { rate = 1, pitch = 1, volume = 1, voice = 'sarah', onEnd } = options;
 
   // Try Google Cloud TTS first if API key is available
   const apiKey = import.meta.env.VITE_GOOGLE_CLOUD_TTS_API_KEY;
 
   if (apiKey) {
-    console.log('🎙️ Using Google Cloud TTS (Neural2-D voice)');
+    const googleVoiceName = GOOGLE_VOICE_MAP[voice] || GOOGLE_VOICE_MAP.sarah;
+    console.log(`🎙️ TTS Service: Attempting ${voice} (${googleVoiceName}) via Google TTS`);
     try {
-      await speakWithGoogleTTS(text, { rate, pitch, volume, onEnd });
+      await speakWithGoogleTTS(text, { rate, pitch, volume, voice, onEnd });
       return;
     } catch (error) {
       console.warn('⚠️ Google Cloud TTS failed, falling back to Web Speech API:', error);
@@ -37,7 +46,7 @@ export async function speak(text: string, options: TTSOptions = {}): Promise<voi
   }
 
   // Fallback to Web Speech API
-  speakWithWebSpeech(text, { rate, pitch, volume, onEnd });
+  speakWithWebSpeech(text, { rate, pitch, volume, voice, onEnd });
 }
 
 /**
@@ -53,16 +62,14 @@ async function speakWithGoogleTTS(
     throw new Error('Google Cloud TTS API key not configured');
   }
 
+  const voiceName = GOOGLE_VOICE_MAP[options.voice || 'sarah'] || 'en-US-Neural2-F';
+
   // Prepare the request
   const request = {
     input: { text },
     voice: {
       languageCode: 'en-US',
-      name: 'en-US-Neural2-D', // High-quality neural voice (male)
-      // Alternative high-quality voices:
-      // 'en-US-Neural2-F' - Female voice
-      // 'en-US-Neural2-C' - Female voice (warm)
-      // 'en-US-Neural2-A' - Male voice (deep)
+      name: voiceName,
     },
     audioConfig: {
       audioEncoding: 'MP3',
@@ -125,6 +132,30 @@ function speakWithWebSpeech(text: string, options: TTSOptions): void {
   utterance.rate = options.rate || 1;
   utterance.pitch = options.pitch || 1;
   utterance.volume = options.volume || 1;
+
+  // Voice selection strategy for Web Speech API (System Voices)
+  const voices = window.speechSynthesis.getVoices();
+  const selectedVoiceKey = options.voice || 'sarah';
+
+  // Try to match voice gender
+  const isMale = selectedVoiceKey === 'theo';
+
+  let preferredVoice = voices.find(v =>
+    v.lang.startsWith('en') &&
+    (isMale ?
+      (v.name.includes('Male') || v.name.includes('Daniel') || v.name.includes('Alex') || v.name.includes('James')) :
+      (v.name.includes('Female') || v.name.includes('Samantha') || v.name.includes('Victoria') || v.name.includes('Karen')))
+  );
+
+  // Fallback to any English voice
+  if (!preferredVoice) {
+    preferredVoice = voices.find(v => v.lang.startsWith('en'));
+  }
+
+  if (preferredVoice) {
+    console.log(`⚠️ TTS Service: Falling back to System Voice: ${preferredVoice.name}`);
+    utterance.voice = preferredVoice;
+  }
 
   if (options.onEnd) {
     utterance.onend = options.onEnd;

@@ -298,16 +298,16 @@ const Guidelines = () => {
                                         </div>
                                         <div className="flex gap-2 self-end sm:self-center">
                                           {!isLocked && (
-                                                          <Button
-                                                            size="sm"
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              navigate(`/guided-session/${guideline.id}`);
-                                                            }}
-                                                            className="bg-gradient-primary text-primary dark:text-white"
-                                                          >
-                                                            <span className="text-xs md:text-sm">Start</span>
-                                                          </Button>
+                                            <Button
+                                              size="sm"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigate(`/guided-session/${guideline.id}`);
+                                              }}
+                                              className="bg-gradient-primary text-primary dark:text-white"
+                                            >
+                                              <span className="text-xs md:text-sm">Start</span>
+                                            </Button>
                                           )}
                                           <Tooltip>
                                             <TooltipTrigger asChild>

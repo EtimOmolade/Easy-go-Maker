@@ -183,12 +183,12 @@ const Auth = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-            <CardTitle className="text-4xl font-heading text-foreground dark:text-foreground mb-2">
-              SpiritConnect
-            </CardTitle>
-            <CardDescription className="text-base text-foreground/70 dark:text-foreground/80">
-              {isLogin ? "Welcome back! Sign in to continue your journey" : "Begin your prayer journey today"}
-            </CardDescription>
+              <CardTitle className="text-4xl font-heading text-foreground dark:text-foreground mb-2">
+                SpiritConnect
+              </CardTitle>
+              <CardDescription className="text-base text-foreground/70 dark:text-foreground/80">
+                {isLogin ? "Welcome back! Sign in to continue your journey" : "Begin your prayer journey today"}
+              </CardDescription>
             </motion.div>
           </CardHeader>
 

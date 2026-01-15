@@ -70,7 +70,7 @@ export const WelcomeWizard = ({ isOpen, onComplete }: WelcomeWizardProps) => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
+    <Dialog open={isOpen} onOpenChange={() => { }}>
       <DialogContent className="max-w-2xl border-white/20 p-0 overflow-hidden bg-gradient-to-br from-background to-background/95">
         <div className="relative">
           {/* Animated Background Orbs */}
@@ -143,8 +143,8 @@ export const WelcomeWizard = ({ isOpen, onComplete }: WelcomeWizardProps) => {
                       ease: "easeInOut",
                     }}
                   >
-                    <motion.img 
-                      src={logoOnly} 
+                    <motion.img
+                      src={logoOnly}
                       alt="SpiritConnect Logo"
                       className="w-full h-full object-contain drop-shadow-2xl"
                       style={{ filter: 'brightness(1.1) contrast(1.2)' }}
@@ -173,9 +173,9 @@ export const WelcomeWizard = ({ isOpen, onComplete }: WelcomeWizardProps) => {
                       ease: "easeInOut",
                     }}
                   >
-                    <img 
-                      src={prayingHandsIcon} 
-                      alt="Prayer" 
+                    <img
+                      src={prayingHandsIcon}
+                      alt="Prayer"
                       className="h-14 w-14 brightness-0 invert"
                     />
                   </motion.div>
@@ -220,7 +220,7 @@ export const WelcomeWizard = ({ isOpen, onComplete }: WelcomeWizardProps) => {
               </Button>
               <Button
                 onClick={handleNext}
-                className="flex-1 bg-gradient-primary text-primary-foreground"
+                className="flex-1"
               >
                 {isLastStep ? (
                   <>
@@ -241,11 +241,10 @@ export const WelcomeWizard = ({ isOpen, onComplete }: WelcomeWizardProps) => {
               {wizardSteps.map((_, index) => (
                 <motion.div
                   key={index}
-                  className={`h-2 rounded-full transition-all ${
-                    index === currentStep
-                      ? "w-8 bg-primary"
-                      : "w-2 bg-muted-foreground/30"
-                  }`}
+                  className={`h-2 rounded-full transition-all ${index === currentStep
+                    ? "w-8 bg-primary"
+                    : "w-2 bg-muted-foreground/30"
+                    }`}
                   animate={index === currentStep ? { scale: [1, 1.2, 1] } : {}}
                   transition={{ duration: 0.5 }}
                 />
